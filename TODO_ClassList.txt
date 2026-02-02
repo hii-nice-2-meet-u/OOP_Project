@@ -1,0 +1,37 @@
+
+✅ BoardGameCafeCoreSystem
+✅ BoardGameCafe
+
+✅ Lobby
+    ✅ LobbyVip
+✅ PlayTable
+
+✅ BoardGame
+
+✅ Person
+    ✅ Owner
+    ✅ Manager
+    ✅ Staff
+        ✅ ReceptionStaff
+    ✅ Customer
+        ✅ Member
+        ✅ NonMember
+
+▶️ OnlineSystem
+
+▶️ Registration
+
+▶️ Reservation
+▶️ ReservationManager
+
+▶️ Payment
+
+▶️ Transaction
+▶️ AuditLog
+
+▶️ OrderSystem
+
+✅ MenuList
+✅ MenuItem
+    ✅ Food
+    ✅ Drink
