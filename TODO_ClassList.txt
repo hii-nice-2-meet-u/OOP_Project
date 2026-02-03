@@ -17,8 +17,6 @@
         ✅ Member
         ✅ NonMember
 
-// ▶️ OnlineSystem
-
 ✅ Registration
 
 ✅ Reservation
@@ -38,5 +36,4 @@
 ✅ MenuItem
     ✅ Food
     ✅ Drink
-
-Coupon  
+ 
