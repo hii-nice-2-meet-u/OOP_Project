@@ -1,6 +1,23 @@
 import BGC_menu
 
 
+class Transaction:
+    def __init__(self):
+        self.__transaction_id = None
+        self.__timestamp = None
+        self.__customer = None
+        self.__items = []
+        self.__total_amount = 0.0
+
+
+class AuditLog:
+    def __init__(self):
+        self.__log_id = None
+        self.__timestamp = None
+        self.__action = None
+        self.__performed_by = None
+
+
 class BoardGameCafeSystem:
     def __init__(self):
         self.__owners = []
@@ -15,7 +32,7 @@ class BoardGameCafe:
         self.__location = None
         self.__lobbies = []
         self.__board_games = []
-        # self.__menu_list = MenuList()
+        self.__menu_list = MenuList()
         self.__managers = []
         self.__staffs = []
         self.__reservations = []
@@ -35,6 +52,7 @@ class PlayTable:
         self.__status = None
         self.__customers = []
         self.__board_game = []
+        self.__ordered_items = []
 
 
 class BoardGame:
