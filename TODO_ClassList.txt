@@ -19,19 +19,24 @@
 
 // ▶️ OnlineSystem
 
-▶️ Registration
+✅ Registration
 
-▶️ Reservation
-▶️ ReservationManager
+✅ Reservation
+✅ ReservationManager
 
-▶️ Payment
+✅ Payment
+    ✅ Cash
+    ✅ Card
+    ✅ OnlinePayment
 
-▶️ Transaction
-▶️ AuditLog
+✅ Transaction
+✅ AuditLog
 
-▶️ OrderSystem
+✅ OrderSystem
 
 ✅ MenuList
 ✅ MenuItem
     ✅ Food
     ✅ Drink
+
+Coupon  
