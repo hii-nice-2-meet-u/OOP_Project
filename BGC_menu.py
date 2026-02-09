@@ -21,9 +21,6 @@ class MenuItem:
     def get_price(self) -> float:
         return self.__price
 
-    def get_description(self) -> str:
-        return self.__description
-
     # --- Setters ---
     def set_price(self, new_price: float):
         if new_price > 0:
@@ -31,13 +28,9 @@ class MenuItem:
 
 class Food(MenuItem):
     """Subclass for Food items."""
-    def __init__(self, item_id: str, name: str, price: float, description: str, calories: int, allergens: List[str]):
+    def __init__(self, item_id: str, name: str, price: float, description: str,):
         super().__init__(item_id, name, price, description)
-        self.__calories = calories
-        self.__allergens = allergens
 
-    def get_details(self) -> str:
-        return f"[Food] {self.get_name()} ({self.__calories} kcal) - Allergens: {', '.join(self.__allergens)}"
 
 class Drink(MenuItem):
     """Subclass for Drink items."""
@@ -46,9 +39,6 @@ class Drink(MenuItem):
         self.__size = size
         self.__is_alcoholic = is_alcoholic
 
-    def get_details(self) -> str:
-        algo_tag = "(Alcoholic)" if self.__is_alcoholic else ""
-        return f"[Drink] {self.get_name()} [{self.__size}] {algo_tag}"
 
 class MenuList:
     """Manages the collection of all menu items."""

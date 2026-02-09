@@ -6,30 +6,35 @@ from typing import List, Optional
 # 1. ASSETS & STRUCTURE
 # ==========================================
 
+
 class BoardGame:
     """Represents a physical board game asset in the shop."""
+
     def __init__(self, game_id: str, name: str, category: str, difficulty: int):
         self.__game_id = game_id
         self.__name = name
         self.__category = category
-        self.__difficulty = difficulty # 1-5
-        self.__status = "Available" # Available, In_Use, Maintenance
+        self.__difficulty = difficulty  # 1-5
+        self.__status = "Available"  # Available, In_Use, Maintenance
 
     def set_status(self, status: str):
         self.__status = status
-    
+
     def get_name(self):
         return self.__name
 
+
 class PlayTable:
     """Represents a table where customers sit and play."""
+
     def __init__(self, table_id: str, capacity: int):
         self.__table_id = table_id
         self.__capacity = capacity
         self.__status = "Available"  # Available, Occupied, Reserved
-        self.__is_matching_enabled = False # For matching service
+        self.__is_matching_enabled = False  # For matching service
         self.__customers = []
-        self.__board_games: List[BoardGame] = [] # Games currently at the table
+        # Games currently at the table
+        self.__board_games: List[BoardGame] = []
         self.__current_order = None
 
     def assign_game(self, game: BoardGame):
@@ -57,8 +62,10 @@ class PlayTable:
         self.__board_games = []
         self.__current_order = None
 
+
 class Lobby(ABC):
     """Abstract Base Class for different lobby zones."""
+
     def __init__(self, lobby_id: str, floor: int):
         self.__lobby_id = lobby_id
         self.__floor = floor
@@ -74,9 +81,11 @@ class Lobby(ABC):
     def get_service_fee_rate(self) -> float:
         pass
 
+
 class NormalLobby(Lobby):
     def get_service_fee_rate(self) -> float:
-        return 1.0 # Standard rate
+        return 1.0  # Standard rate
+
 
 class VIPLobby(Lobby):
     def __init__(self, lobby_id: str, floor: int, room_service_fee: float):
@@ -84,14 +93,16 @@ class VIPLobby(Lobby):
         self.__room_service_fee = room_service_fee
 
     def get_service_fee_rate(self) -> float:
-        return 1.5 # 50% extra charge
+        return 1.5  # 50% extra charge
 
 # ==========================================
 # 2. ORDERING SYSTEM
 # ==========================================
 
+
 class OrderItem:
     """A snapshot of a menu item ordered with a specific quantity."""
+
     def __init__(self, menu_item, quantity: int):
         self.__menu_item = menu_item
         self.__quantity = quantity
@@ -102,17 +113,19 @@ class OrderItem:
     def get_item_total(self):
         return self.__price_at_order * self.__quantity
 
+
 class Order:
     """
     Represents an order. 
     Supports multiple tables (e.g., group booking) and incremental ordering.
     """
+
     def __init__(self, order_id: str, customer, tables: List[PlayTable]):
         self.__order_id = order_id
         self.__customer = customer
         self.__tables = tables
         self.__items: List[OrderItem] = []
-        self.__status = "Open" # Open = Can add items, Closed = Paid
+        self.__status = "Open"  # Open = Can add items, Closed = Paid
         self.__discount_rate = 0.0
 
     def add_item(self, menu_item, quantity: int) -> bool:
@@ -138,8 +151,10 @@ class Order:
 # 3. PAYMENT SYSTEM
 # ==========================================
 
+
 class Payment(ABC):
     """Abstract Base Class for Payments."""
+
     def __init__(self, payment_id: str, order: Order, method: str):
         self.__payment_id = payment_id
         self.__timestamp = datetime.now()
@@ -156,7 +171,8 @@ class Payment(ABC):
         self.__order.close_order()
         # Automatically clear all associated tables
         # In real implementation, we might access tables via getter
-        pass 
+        pass
+
 
 class Cash(Payment):
     def __init__(self, payment_id, order, amount_received: float):
@@ -164,11 +180,13 @@ class Cash(Payment):
         self.__amount_received = amount_received
         self.__change = amount_received - self.get_total_amount()
 
+
 class Card(Payment):
     def __init__(self, payment_id, order, card_no: str, bank_name: str):
         super().__init__(payment_id, order, "Card")
         self.__card_no = card_no
         self.__bank_name = bank_name
+
 
 class OnlinePayment(Payment):
     def __init__(self, payment_id, order, transaction_ref: str):
@@ -178,6 +196,7 @@ class OnlinePayment(Payment):
 # ==========================================
 # 4. RESERVATION SYSTEM
 # ==========================================
+
 
 class Reservation:
     def __init__(self, res_id: str, customer, table, date_str: str, start_time_str: str, end_time_str: str, guest_count: int):
@@ -216,9 +235,10 @@ class Reservation:
             return True
         return False
 
+
 class ReservationManager:
     def __init__(self):
-        self.__reservations: List[Reservation] = []
+        super().__init__()
 
     def check_availability(self, table, date_str: str, start_str: str, end_str: str) -> bool:
         """
@@ -232,7 +252,7 @@ class ReservationManager:
         for res in self.__reservations:
             # 1. Check Table match and status
             if res.get_table() == table and res.get_status() != "Cancelled":
-                
+
                 # 2. Check Date match
                 if res.get_date() != date_str:
                     continue
@@ -243,7 +263,7 @@ class ReservationManager:
 
                 if new_start < existing_end and new_end > existing_start:
                     return False  # Overlap detected
-        return True # Available
+        return True  # Available
 
     def make_reservation(self, customer, table, date_str: str, start_str: str, end_str: str, guest_count: int) -> Optional[Reservation]:
         # Validation: Start time must be before End time
@@ -253,12 +273,14 @@ class ReservationManager:
 
         # Validation: Availability
         if not self.check_availability(table, date_str, start_str, end_str):
-            print(f"Error: Table {table.get_table_id()} is booked for this time.")
+            print(
+                f"Error: Table {table.get_table_id()} is booked for this time.")
             return None
 
         # Create Reservation
         new_id = f"RES-{len(self.__reservations) + 1:04d}"
-        new_res = Reservation(new_id, customer, table, date_str, start_str, end_str, guest_count)
+        new_res = Reservation(new_id, customer, table,
+                              date_str, start_str, end_str, guest_count)
         self.__reservations.append(new_res)
         print(f"Success: Reservation {new_id} created.")
         return new_res
