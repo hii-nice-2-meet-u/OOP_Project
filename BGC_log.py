@@ -23,21 +23,6 @@ class Transaction:
         self.__total_amount = 0.0
 
 
-class ReservationManager:
-    def __init__(self):
-        self.__reservations = []
-
-
-class Reservation:
-    def __init__(self):
-        self.__reservation_id = None
-        self.__customer = None
-        self.__table = None
-        self.__date = None
-        self.__time = None
-        self.__status = None
-
-
 class BoardGame:
     def __init__(self, _name: str, _item_id: str):
         self.__user_name = None
