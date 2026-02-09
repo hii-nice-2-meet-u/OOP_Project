@@ -48,25 +48,25 @@ class MenuItem:
         return self.__name
 
     def set_name(self, _name):
-        if not isinstance(value, str):
+        if not isinstance(_name, str):
             raise ValueError("\t• ⚠️ \t- Name must be a string")
-        self._name = value
+        self._name = _name
 
     def get_item_id(self):
         return self.__item_id
 
     def set_item_id(self, _item_id):
-        if not isinstance(value, str):
+        if not isinstance(_item_id, str):
             raise ValueError("\t• ⚠️ \t- Item ID must be a string")
-        self._item_id = value
+        self.__item_id = _item_id
 
     def get_price(self):
         return self.__price
 
     def set_price(self, _price):
-        if not isinstance(value, float):
+        if not isinstance(_price, float):
             raise ValueError("\t• ⚠️ \t- Price must be a float")
-        self._price = value
+        self.__price = _price
 
 
 class Food(MenuItem):

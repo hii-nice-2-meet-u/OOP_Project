@@ -29,6 +29,7 @@
 
 ✅ Transaction
 ✅ AuditLog
+✅ Financial Log (NEW)
 
 ✅ OrderSystem
 
