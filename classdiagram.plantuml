@@ -1,6 +1,5 @@
 @startuml
 skinparam classAttributeIconSize 0
-skinparam linetype ortho
 
 ' ==========================================
 ' PART 1: CLASS DEFINITIONS
@@ -15,7 +14,7 @@ class MenuList {
     + get_all_items() : List<MenuItem>
 }
 
-class MenuItem {
+abstract class MenuItem {
     - item_id : str
     - name : str
     - price : float
@@ -26,23 +25,20 @@ class MenuItem {
 }
 
 class Food {
-    - calories : int
-    - is_vegetarian : bool
+    + get_price() : float
 }
 
 class Drink {
-    - volume_ml : int
-    - is_alcoholic : bool
+    + get_price() : float
 }
 
 ' --- PERSON DOMAIN ---
-class Person {
+abstract class Person {
     - user_id : str
     - name : str
     - email : str
-    - phone : str
+    - Birthdate : date
     + login() : bool
-    + update_profile(data : dict)
 }
 
 class Owner {
@@ -72,6 +68,7 @@ class Staff {
 class Reception {
     + assign_table()
     + verify_booking()
+    + apply_member_discount(order : Order, member : Member)
 }
 
 class Customer {
@@ -104,7 +101,6 @@ class MemberGold {
 
 class MemberPlatinum {
     - discount_rate : float = 0.15
-    + get_priority_booking()
 }
 
 ' --- ORDER & PAYMENT DOMAIN ---
@@ -116,14 +112,20 @@ class OrderSystem {
 
 class Order {
     - order_id : str
-    - timestamp : datetime
     - status : str
-    - items : List<MenuItem>
+    - items : List<OrderItem>
     - subtotal : float
-    - discount : float
+    - discount_amount : float
     - net_amount : float
-    + add_item(item : MenuItem, qty : int)
+    + add_item(menu_item : MenuItem, qty : int)
+    + apply_discount(rate : float)
     + calculate_total()
+}
+
+class OrderItem {
+    - quantity : int
+    - price_per_unit : float
+    + get_item_total() : float
 }
 
 class Payment {
@@ -214,7 +216,6 @@ class BoardGame {
 }
 
 ' --- LOG & REPORTING HIERARCHY ---
-' Parent Class
 abstract class SystemLog {
     - log_id : str
     - timestamp : datetime
@@ -224,7 +225,6 @@ abstract class SystemLog {
     + archive_log()
 }
 
-' Child: Financial & Sales (Replaces Transaction Class)
 class FinancialLog {
     - transaction_type : str
     - amount : float
@@ -233,7 +233,6 @@ class FinancialLog {
     + get_daily_total()
 }
 
-' Child: Reservation & Occupancy Stats
 class ReservationLog {
     - reservation_id : str
     - action : str
@@ -242,7 +241,6 @@ class ReservationLog {
     + get_occupancy_stats()
 }
 
-' Child: Inventory & Assets
 class InventoryLog {
     - item_id : str
     - item_type : str
@@ -251,7 +249,6 @@ class InventoryLog {
     + track_asset_movement()
 }
 
-' Child: Security & Admin Actions
 class AuditLog {
     - action_type : str
     - target_object : str
@@ -283,7 +280,6 @@ Payment <|-- Cash
 Payment <|-- Card
 Payment <|-- OnlinePayment
 
-' Log Inheritance
 SystemLog <|-- FinancialLog
 SystemLog <|-- ReservationLog
 SystemLog <|-- InventoryLog
@@ -299,21 +295,23 @@ BoardGameCafe "1" o--> "*" SystemLog
 
 ' --- Aggregation (Structure) ---
 Lobby "1" o--> "*" PlayTable
-PlayTable "1" o--> "*" BoardGame
 MenuList "1" o--> "*" MenuItem
 OrderSystem "1" o--> "*" Order
+Order "1" *--> "*" OrderItem
+OrderItem "1" --> "1" MenuItem
 
 ' --- Associations (Operational) ---
 Order "1" --> "1" Payment
 Order "*" --> "1" Customer
 Order "*" --> "1" PlayTable
+PlayTable "*" -- "*" BoardGame : used at
 
 ReservationManager "1" o--> "*" Reservation
 Reservation "*" --> "1" Customer
 Reservation "*" --> "1" Payment : deposit
 Reservation "*" --> "1" PlayTable
 
-' Log Associations (Logs track these entities)
+' Log Associations
 FinancialLog "*" ..> Payment : tracks
 ReservationLog "*" ..> Reservation : tracks
 InventoryLog "*" ..> BoardGame : tracks
