@@ -22,3 +22,17 @@ class Card(Payment):
 class OnlinePayment(Payment):
     def __init__(self):
         super().__init__()
+
+
+class Lobby:
+    def __init__(self):
+        self.__lobby_id = None
+        self.__play_tables = []
+
+
+class PlayTable:
+    def __init__(self):
+        self.__table_id = None
+        self.__status = None
+        self.__customers = []
+        self.__board_game = []
