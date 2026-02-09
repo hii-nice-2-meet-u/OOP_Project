@@ -26,5 +26,3 @@ class BoardGameCafe:
         self.__transactions = []
         self.__audit_logs = []
 
-
-
