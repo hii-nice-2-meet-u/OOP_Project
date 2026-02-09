@@ -2,7 +2,7 @@ import BGC_person
 import BGC_menu
 import BGC_log
 import BGC_operation
-
+from fastapi import FastAPI
 
 class BoardGameCafeSystem:
     def __init__(self):

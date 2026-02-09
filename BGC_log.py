@@ -1,49 +1,55 @@
-class SystemLog:
-    pass
+from datetime import datetime
+from enum import Enum
 
+class LogType(Enum):
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+    TRANSACTION = "TRANSACTION"
 
-class FinancialLog:
-    pass
+class Log:
+    """Base class for all logs."""
+    def __init__(self, log_id: str, level: LogType, message: str):
+        self.__log_id = log_id
+        self.__timestamp = datetime.now()
+        self.__level = level
+        self.__message = message
 
+    def get_log_entry(self) -> str:
+        return f"[{self.__timestamp}] [{self.__level.value}] ID:{self.__log_id} - {self.__message}"
 
-class AuditLog:
+class SystemLog(Log):
+    """Logs for system events (e.g., server start, errors)."""
+    def __init__(self, log_id: str, level: LogType, message: str, module_name: str):
+        super().__init__(log_id, level, message)
+        self.__module_name = module_name
+
+    def get_log_entry(self) -> str:
+        # Override to include module name
+        return f"{super().get_log_entry()} [Module: {self.__module_name}]"
+
+class FinancialLog(Log):
+    """Logs for monetary transactions."""
+    def __init__(self, log_id: str, amount: float, transaction_type: str, performed_by: str):
+        message = f"Transaction: {transaction_type} Amount: {amount} by {performed_by}"
+        super().__init__(log_id, LogType.TRANSACTION, message)
+        self.__amount = amount
+        self.__performed_by = performed_by
+
+class AuditLog(Log):
+    """Logs for user actions (e.g., Staff modifying an order)."""
+    def __init__(self, log_id: str, action: str, user_id: str, target_id: str):
+        message = f"User {user_id} performed {action} on {target_id}"
+        super().__init__(log_id, LogType.INFO, message)
+        self.__user_id = user_id
+        self.__action = action
+
+class LogManager:
+    """Singleton-like manager to store logs in memory (or db)."""
     def __init__(self):
-        self.__log_id = None
-        self.__timestamp = None
-        self.__action = None
-        self.__performed_by = None
+        self.__logs = []
 
-
-class Transaction:
-    def __init__(self):
-        self.__transaction_id = None
-        self.__timestamp = None
-        self.__customer = None
-        self.__items = []
-        self.__total_amount = 0.0
-
-
-class BoardGame:
-    def __init__(self, _name: str, _item_id: str):
-        self.__user_name = None
-        self.__user_password = None
-        self.__name = _name
-        self.__item_id = _item_id
-        self.__status = None
-        self.__description = None
-        self.__difficulty = None
-        self.__category = None
-
-
-class OrderSystem:
-    def __init__(self):
-        self.__orders = []
-
-
-class Order:
-    def __init__(self):
-        self.__order_id = None
-        self.__timestamp = None
-        self.__table = None
-        self.__customer = None
-        self.__menu = None
+    def add_log(self, log: Log):
+        self.__logs.append(log)
+        # In a real system, this would write to a file or database
+        print(f"LOG RECORDED: {log.get_log_entry()}")

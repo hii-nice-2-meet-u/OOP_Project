@@ -1,79 +1,72 @@
-class MenuList:
-    def __init__(self):
-        self.__items = []
-
-    def item_add(self, _menu_item):
-        self.__items.append(_menu_item)
-
-    def item_remove(self, _menu_item):
-        self.__items.remove(_menu_item)
-
-    def get_item_by_id(self, _item_id):
-        for item in self.__items:
-            if item.get_item_id() == _item_id:
-                return item
-        return None
-
-    def get_item_by_name(self, _name):
-        for item in self.__items:
-            if item.get_name() == _name:
-                return item
-        return None
-
-    def get_all_items(self):
-        return self.__items
-
-    def get_all_food(self):
-        item_list = []
-        for item in self.__items:
-            if item.__class__ is Food:
-                item_list.append(item)
-        return item_list
-
-    def get_all_drink(self):
-        item_list = []
-        for item in self.__items:
-            if item.__class__ is Drink:
-                item_list.append(item)
-        return item_list
-
+from typing import List, Optional
 
 class MenuItem:
-    def __init__(self, _name: str, _item_id: str, _price: float):
-        self.__name = _name
-        self.__item_id = _item_id
-        self.__price = _price
+    """
+    Represents a generic item on the menu (Food or Drink).
+    Uses strict private attributes.
+    """
+    def __init__(self, item_id: str, name: str, price: float, description: str = ""):
+        self.__item_id = item_id
+        self.__name = name
+        self.__price = price
+        self.__description = description
 
-    def get_name(self):
-        return self.__name
-
-    def set_name(self, _name):
-        if not isinstance(_name, str):
-            raise ValueError("\t• ⚠️ \t- Name must be a string")
-        self._name = _name
-
-    def get_item_id(self):
+    # --- Getters ---
+    def get_item_id(self) -> str:
         return self.__item_id
 
-    def set_item_id(self, _item_id):
-        if not isinstance(_item_id, str):
-            raise ValueError("\t• ⚠️ \t- Item ID must be a string")
-        self.__item_id = _item_id
+    def get_name(self) -> str:
+        return self.__name
 
-    def get_price(self):
+    def get_price(self) -> float:
         return self.__price
 
-    def set_price(self, _price):
-        if not isinstance(_price, float):
-            raise ValueError("\t• ⚠️ \t- Price must be a float")
-        self.__price = _price
+    def get_description(self) -> str:
+        return self.__description
 
+    # --- Setters ---
+    def set_price(self, new_price: float):
+        if new_price > 0:
+            self.__price = new_price
 
 class Food(MenuItem):
-    def __init__(self, _name: str, _item_id: str, _price: float):
-        super().__init__(_name, _item_id, _price)
+    """Subclass for Food items."""
+    def __init__(self, item_id: str, name: str, price: float, description: str, calories: int, allergens: List[str]):
+        super().__init__(item_id, name, price, description)
+        self.__calories = calories
+        self.__allergens = allergens
 
+    def get_details(self) -> str:
+        return f"[Food] {self.get_name()} ({self.__calories} kcal) - Allergens: {', '.join(self.__allergens)}"
 
 class Drink(MenuItem):
-    def __init__(self, _name: str, _item_id: str, _price: float):
-        super().__init__(_name, _item_id, _price)
+    """Subclass for Drink items."""
+    def __init__(self, item_id: str, name: str, price: float, description: str, size: str, is_alcoholic: bool):
+        super().__init__(item_id, name, price, description)
+        self.__size = size
+        self.__is_alcoholic = is_alcoholic
+
+    def get_details(self) -> str:
+        algo_tag = "(Alcoholic)" if self.__is_alcoholic else ""
+        return f"[Drink] {self.get_name()} [{self.__size}] {algo_tag}"
+
+class MenuList:
+    """Manages the collection of all menu items."""
+    def __init__(self):
+        self.__items: List[MenuItem] = []
+
+    def add_item(self, item: MenuItem):
+        self.__items.append(item)
+
+    def remove_item(self, item_id: str):
+        # Create a new list excluding the item with the given ID
+        self.__items = [item for item in self.__items if item.get_item_id() != item_id]
+
+    def get_item_by_id(self, item_id: str) -> Optional[MenuItem]:
+        for item in self.__items:
+            if item.get_item_id() == item_id:
+                return item
+        return None
+
+    def get_all_items(self) -> List[MenuItem]:
+        return self.__items
