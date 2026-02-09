@@ -10,43 +10,85 @@ class Registration:
 
 
 class Payment:
-    def __init__(self):
-        self.__payment_id = None
-        self.__timestamp = None
-        self.__customer = None
-        self.__total_amount = 0.0
-        self.__payment_method = None
-        self.__status = None
+    def __init__(self, amount):
+        self.__amount = amount
+        self.__status = "Pending"
+
+    def process_payment(self):
+        raise NotImplementedError
 
 
 class Cash(Payment):
-    def __init__(self):
-        super().__init__()
+    def process_payment(self):
+        self._Payment__status = "Success"
+        return True
 
 
 class Card(Payment):
-    def __init__(self):
-        super().__init__()
+    def process_payment(self):
+        self._Payment__status = "Success"
+        return True
 
 
 class OnlinePayment(Payment):
-    def __init__(self):
-        super().__init__()
+    def process_payment(self):
+        self._Payment__status = "Success"
+        return True
+
+from datetime import datetime, timedelta
 
 
 class Reservation:
-    def __init__(self):
-        self.__reservation_id = None
-        self.__customer = None
-        self.__table = None
-        self.__date = None
-        self.__time = None
-        self.__status = None
+    def __init__(self, reservation_id, customer, table, start_time, end_time, pax):
+        self.__reservation_id = reservation_id
+        self.__customer = customer
+        self.__table = table
+        self.__start_time = start_time
+        self.__end_time = end_time
+        self.__pax = pax
+        self.__deposit_amount = 0.0
+        self.__status = "Pending"
 
+    def pay_deposit(self, amount):
+        self.__deposit_amount = amount
+        self.__status = "Confirmed"
+
+    def check_in(self):
+        self.__status = "Checked-In"
+        self.__table.set_status("Occupied")
+
+    def cancel(self):
+        self.__status = "Cancelled"
+
+    def mark_no_show(self):
+        self.__status = "No-show"
+
+    # getters
+    def get_status(self):
+        return self.__status
+
+    def get_table(self):
+        return self.__table
 
 class ReservationManager:
     def __init__(self):
         self.__reservations = []
+
+    def create_reservation(self, reservation):
+        self.__reservations.append(reservation)
+        return reservation
+
+    def check_availability(self, table):
+        for r in self.__reservations:
+            if r.get_table() == table and r.get_status() in ["Confirmed", "Checked-In"]:
+                return False
+        return True
+
+    def cancel_reservation(self, reservation):
+        reservation.cancel()
+
+    def process_no_show(self, reservation):
+        reservation.mark_no_show()
 
 
 class Transaction:
@@ -59,25 +101,42 @@ class Transaction:
 
 
 class AuditLog:
-    def __init__(self):
-        self.__log_id = None
-        self.__timestamp = None
-        self.__action = None
-        self.__performed_by = None
+    def __init__(self, log_id, event_code, ref_id, actor):
+        self.__log_id = log_id
+        self.__event_code = event_code
+        self.__ref_id = ref_id
+        self.__actor = actor
+        self.__timestamp = datetime.now()
 
 
 class OrderSystem:
     def __init__(self):
         self.__orders = []
 
+    def create_order(self, customer, table):
+        order_id = f"ORD-{len(self.__orders)+1}"
+        order = Order(order_id, customer, table)
+        self.__orders.append(order)
+        return order
 
 class Order:
-    def __init__(self):
-        self.__order_id = None
-        self.__timestamp = None
-        self.__table = None
-        self.__customer = None
-        self.__menu = None
+    def __init__(self, order_id, customer, table):
+        self.__order_id = order_id
+        self.__customer = customer
+        self.__table = table
+        self.__items = []
+        self.__total_amount = 0.0
+
+    def add_item(self, item: MenuItem, qty: int):
+        for _ in range(qty):
+            self.__items.append(item)
+            self.__total_amount += item.get_price()
+
+    def calculate_total(self):
+        return self.__total_amount
+
+    def get_total(self):
+        return self.__total_amount
 
 
 class BoardGameCafeSystem:
@@ -108,26 +167,36 @@ class Lobby:
         self.__lobby_id = None
         self.__play_tables = []
 
-
 class PlayTable:
-    def __init__(self):
-        self.__table_id = None
-        self.__status = None
-        self.__customers = []
-        self.__board_game = []
+    def __init__(self, table_id, capacity):
+        self.__table_id = table_id
+        self.__capacity = capacity
+        self.__status = "Available"
+        self.__board_games = []
+
+    def set_status(self, status):
+        self.__status = status
+
+    def assign_board_game(self, game):
+        self.__board_games.append(game)
+        game.set_status("In-Play")
+
+    def clear_table(self):
+        self.__board_games.clear()
+        self.__status = "Available"
 
 
 class BoardGame:
-    def __init__(self, _name: str, _item_id: str):
-        self.__user_name = None
-        self.__user_password = None
-        self.__name = _name
-        self.__item_id = _item_id
-        self.__status = None
-        self.__description = None
-        self.__difficulty = None
-        self.__category = None
+    def __init__(self, name, item_id):
+        self.__name = name
+        self.__item_id = item_id
+        self.__status = "Available"
 
+    def set_status(self, status):
+        self.__status = status
+
+    def get_status(self):
+        return self.__status
 
 class Person:
     def __init__(self, _name: str, _id: str):
