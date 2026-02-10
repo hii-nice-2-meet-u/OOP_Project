@@ -1,274 +1,216 @@
 @startuml
 skinparam classAttributeIconSize 0
+' skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 70
+
+skinparam groupInheritance 2 
+
+title Board Game Cafe System Class Diagram 
 
 ' ==========================================
-' PART 1: CLASS DEFINITIONS
+' PACKAGES (GROUPING)
 ' ==========================================
 
-' --- MENU DOMAIN ---
-class MenuList {
-    - items : List<MenuItem>
-    + item_add(menu_item : MenuItem) : void
-    + item_remove(menu_item : MenuItem) : void
-    + get_item_by_id(item_id : str) : MenuItem
-    + get_all_items() : List<MenuItem>
+package "Management Core" {
+    class BoardGameCafeSystem {
+        - version : str
+        + add_branch(cafe : BoardGameCafe)
+        + aggregate_reports()
+    }
+
+    class BoardGameCafe {
+        - cafe_id : str
+        - name : str
+        - location : str
+        + generate_report(type : str)
+        + log_event(log : SystemLog)
+    }
+
+    class Lobby {
+        - lobby_id : str
+        - floor : int
+        + get_available_tables()
+    }
+
+    class PlayTable {
+        - table_id : str
+        - capacity : int
+        - status : str
+        + assign_customer()
+        + clear_table()
+    }
 }
 
-abstract class MenuItem {
-    - item_id : str
-    - name : str
-    - price : float
-    - description : str
-    - is_available : bool
-    + update_price(new_price : float)
-    + set_availability(status : bool)
+package "Person & Auth" {
+    abstract class Person {
+        - user_id : str
+        - name : str
+        - contact : str
+        + login()
+    }
+
+    class Owner {
+        + view_financial_summary()
+    }
+
+    class Manager {
+        + manage_staff_schedule()
+    }
+
+    class Staff {
+        - staff_id : str
+        - shift_start : datetime
+        + taking_orders()
+    }
+
+    class Reception {
+        + assign_table()
+    }
+
+    class Customer {
+        - customer_id : str
+        - total_spent : float
+        + make_reservation()
+    }
+
+    class Member {
+        - member_id : str
+        - points : int
+        + redeem_points()
+    }
+
+    class MemberSilver {
+        - discount : 5%
+    }
+    class MemberGold {
+        - discount : 10%
+    }
+    class MemberPlatinum {
+        - discount : 15%
+    }
+    
+    class NonMember {
+        + register()
+    }
 }
 
-class Food {
-    + get_price() : float
+package "Inventory & Menu" {
+    class MenuList {
+        - items : List<MenuItem>
+        + item_add()
+        + item_remove()
+    }
+
+    abstract class MenuItem {
+        - item_id : str
+        - name : str
+        - price : float
+        + get_price(): float
+    }
+
+    class Food {
+        + get_price(): float
+    }
+
+    class Drink {
+        + get_price(): float
+    }
+
+    class BoardGame {
+        - game_id : str
+        - status : str
+        + update_condition()
+    }
 }
 
-class Drink {
-    + get_price() : float
+package "Operations (Order & Resv)" {
+    class OrderSystem {
+        - orders : List<Order>
+        + create_order()
+    }
+
+    class Order {
+        - order_id : str
+        - status : str
+        - net_amount : float
+        - play_table : PlayTable
+        + calculate_total()
+        + check_all_served()
+    }
+
+    class Payment {
+        - payment_id : str
+        - amount : float
+        + process_payment()
+    }
+
+    class Cash {}
+    class Card {}
+    class OnlinePayment {}
+
+    class ReservationManager {
+        - reservations : List<Reservation>
+        + create_reservation()
+        + check_availability()
+        + cancel_reservation()
+    }
+
+    class Reservation {
+        - reservation_id : str
+        - customer : Customer
+        - date : date
+        - start_time : time
+        - end_time : time
+        - status : str
+        + check_in()
+    }
 }
 
-' --- PERSON DOMAIN ---
-abstract class Person {
-    - user_id : str
-    - name : str
-    - email : str
-    - Birthdate : date
-    + login() : bool
-}
+package "Reporting Module" {
+    abstract class SystemLog {
+        - log_id : str
+        - timestamp : datetime
+        - recorded_by : str
+    }
 
-class Owner {
-    + view_financial_summary()
-    + view_sales_report()
-    + view_customer_behavior_report()
-    + view_all_branch_summary()
-}
-
-class Manager {
-    + manage_staff_schedule()
-    + set_booking_limits()
-    + approve_refund_request()
-    + view_daily_reservation_report()
-}
-
-class Staff {
-    - staff_id : str
-    - position : str
-    - shift_start : datetime
-    - shift_end : datetime
-    + check_in_reservation()
-    + taking_orders()
-    + serve_orders()
-}
-
-class Reception {
-    + assign_table()
-    + verify_booking()
-    + apply_member_discount(order : Order, member : Member)
-}
-
-class Customer {
-    - customer_id : str
-    - total_spent : float
-    + make_reservation()
-    + request_cancel_reservation()
-    + request_refund_deposit()
-}
-
-class NonMember {
-    + register_membership()
-}
-
-class Member {
-    - member_id : str
-    - points : int
-    - tier : str
-    + redeem_points()
-    + get_discount_rate() : float
-}
-
-class MemberSilver {
-    - discount_rate : float = 0.05
-}
-
-class MemberGold {
-    - discount_rate : float = 0.10
-}
-
-class MemberPlatinum {
-    - discount_rate : float = 0.15
-}
-
-' --- ORDER & PAYMENT DOMAIN ---
-class OrderSystem {
-    - active_orders : List<Order>
-    + create_order(customer : Customer, table : PlayTable) : Order
-    + calculate_final_bill(order_id : str)
-}
-
-class Order {
-    - order_id : str
-    - status : str
-    - items : List<OrderItem>
-    - subtotal : float
-    - discount_amount : float
-    - net_amount : float
-    + add_item(menu_item : MenuItem, qty : int)
-    + apply_discount(rate : float)
-    + calculate_total()
-}
-
-class OrderItem {
-    - quantity : int
-    - price_per_unit : float
-    + get_item_total() : float
-}
-
-class Payment {
-    - payment_id : str
-    - ref_number : str
-    - amount : float
-    - type : str
-    - status : str
-    - timestamp : datetime
-    + process_payment() : bool
-    + refund_payment() : bool
-}
-
-class Cash {
-    - cash_received : float
-    - change : float
-}
-
-class Card {
-    - card_no : str
-    - bank_name : str
-}
-
-class OnlinePayment {
-    - transaction_token : str
-    - gateway : str
-}
-
-' --- RESERVATION DOMAIN ---
-class ReservationManager {
-    - reservations : List<Reservation>
-    - booking_limits : dict
-    + create_reservation()
-    + cancel_reservation()
-    + check_availability()
-    + process_deposit_refund()
-}
-
-class Reservation {
-    - reservation_id : str
-    - date : date
-    - time_slot : TimeInterval
-    - num_guests : int
-    - deposit_amount : float
-    - status : str 
-    - is_refund_requested : bool
-    + pay_deposit()
-    + check_in()
-}
-
-' --- CAFE STRUCTURE DOMAIN ---
-class BoardGameCafeSystem {
-    - version : str
-    + add_branch(cafe : BoardGameCafe)
-    + aggregate_reports()
-}
-
-class BoardGameCafe {
-    - cafe_id : str
-    - name : str
-    - location : str
-    - system_logs : List<SystemLog>
-    + generate_report(type : str)
-    + log_event(log : SystemLog)
-}
-
-class Lobby {
-    - lobby_id : str
-    - floor : int
-    + get_available_tables()
-}
-
-class PlayTable {
-    - table_id : str
-    - capacity : int
-    - status : str
-    + assign_customer()
-    + clear_table()
-}
-
-class BoardGame {
-    - game_id : str
-    - name : str
-    - difficulty : int
-    - category : str
-    - status : str
-    + update_condition()
-}
-
-' --- LOG & REPORTING HIERARCHY ---
-abstract class SystemLog {
-    - log_id : str
-    - timestamp : datetime
-    - details : str
-    - recorded_by : str
-    + get_log_details() : str
-    + archive_log()
-}
-
-class FinancialLog {
-    - transaction_type : str
-    - amount : float
-    - payment_method : str
-    - reference_order_id : str
-    + get_daily_total()
-}
-
-class ReservationLog {
-    - reservation_id : str
-    - action : str
-    - booking_date : date
-    - guest_count : int
-    + get_occupancy_stats()
-}
-
-class InventoryLog {
-    - item_id : str
-    - item_type : str
-    - condition_change : str
-    - action : str
-    + track_asset_movement()
-}
-
-class AuditLog {
-    - action_type : str
-    - target_object : str
-    - old_value : str
-    - new_value : str
-    + verify_action()
+    class FinancialLog {
+        - amount : float
+    }
+    class ReservationLog {
+        - action : str
+    }
+    class InventoryLog {
+        - item_id : str
+    }
+    class AuditLog {
+        - action_type : str
+    }
 }
 
 ' ==========================================
-' PART 2: RELATIONSHIPS
+' RELATIONSHIPS
 ' ==========================================
 
-' --- Inheritance (Is-A) ---
-MenuItem <|-- Food
-MenuItem <|-- Drink
+' --- 1. Main Structure Hierarchy ---
+BoardGameCafeSystem "1" *--> "*" BoardGameCafe
+BoardGameCafeSystem "1" *--> "*" Person
+BoardGameCafe "1" *--> "*" BoardGame
+BoardGameCafe "1" *--> "*" Lobby
+Lobby "1" *--> "*" PlayTable
+
+' --- 2. Sub-Systems Connections ---
+BoardGameCafe "1" --> "1" MenuList
+BoardGameCafe "1" --> "1" OrderSystem
+BoardGameCafe "1" --> "1" ReservationManager
+BoardGameCafe "1" -r-> "*" SystemLog : logs >
+
+' --- 3. Inheritance Grouping (Person) ---
 
 Person <|-- Owner
 Person <|-- Manager
 Person <|-- Staff
-Staff  <|-- Reception
+Staff <|-- Reception
 Person <|-- Customer
 Customer <|-- Member
 Customer <|-- NonMember
@@ -276,45 +218,27 @@ Member <|-- MemberSilver
 Member <|-- MemberGold
 Member <|-- MemberPlatinum
 
+' --- 4. Inheritance Grouping (Items) ---
+MenuItem <|-- Food
+MenuItem <|-- Drink
+MenuList "1" o--> "*" MenuItem
+
+' --- 5. Inheritance Grouping (Ops) ---
 Payment <|-- Cash
 Payment <|-- Card
 Payment <|-- OnlinePayment
 
+' --- 6. Inheritance Grouping (Logs) ---
 SystemLog <|-- FinancialLog
 SystemLog <|-- ReservationLog
 SystemLog <|-- InventoryLog
 SystemLog <|-- AuditLog
 
-' --- Composition (Main System) ---
-BoardGameCafeSystem "1" o--> "*" BoardGameCafe
-BoardGameCafe "1" o--> "*" Lobby
-BoardGameCafe "1" o--> "*" MenuList
-BoardGameCafe "1" o--> "*" OrderSystem
-BoardGameCafe "1" o--> "*" ReservationManager
-BoardGameCafe "1" o--> "*" SystemLog
-
-' --- Aggregation (Structure) ---
-Lobby "1" o--> "*" PlayTable
-MenuList "1" o--> "*" MenuItem
-OrderSystem "1" o--> "*" Order
-Order "1" *--> "*" OrderItem
-OrderItem "1" --> "1" MenuItem
-
-' --- Associations (Operational) ---
+' --- 7. Operational Flow (Minimal Arrows) ---
+OrderSystem "1" --> "*" Order
 Order "1" --> "1" Payment
-Order "*" --> "1" Customer
 Order "*" --> "1" PlayTable
-PlayTable "*" -- "*" BoardGame : used at
 
-ReservationManager "1" o--> "*" Reservation
-Reservation "*" --> "1" Customer
-Reservation "*" --> "1" Payment : deposit
-Reservation "*" --> "1" PlayTable
-
-' Log Associations
-FinancialLog "*" ..> Payment : tracks
-ReservationLog "*" ..> Reservation : tracks
-InventoryLog "*" ..> BoardGame : tracks
-AuditLog "*" --> "1" Person : performed_by
+ReservationManager "1" --> "*" Reservation
 
 @enduml
