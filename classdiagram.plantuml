@@ -15,36 +15,78 @@ title Board Game Cafe System Class Diagram
 package "Management Core" {
     class BoardGameCafeSystem {
         - version : str
+        - orders : List<Order>
+        - reservations : List<Reservation>
+        - branches : List<BoardGameCafeBranch>
         + add_branch(cafe : BoardGameCafe)
-        + aggregate_reports()
+        + remove_branch(cafe_id : str = None, name : str = None)
+
+        ' ==========================================
+        ' Registration & Login Methods
+        ' ==========================================
+        + register_new_member(): Member
+        + login_user(username : str, password : str) : bool
+
+        '===========================================
+        ' System Log Methods
+        '===========================================
+        + check_in_play_table()
+        + check_out_play_table(table_name : str)
+        + create_reservation()
+        + check_availability()
+        + confirm_reservation()
+        + cancel_reservation()
+        
+        '===========================================
+        ' Order & Payment Methods
+        '===========================================
+        + view_menu() : MenuList
+        + place_order(order : Order) : bool
+        + process_payment(payment : Payment) : bool
+
+        '===========================================
+        ' Report Generation Methods
+        '===========================================
+
+        + get_reservation_report(date : date)
+        + get_sales_report(date : date) 
     }
 
-    class BoardGameCafe {
+    class BoardGameCafeBranch {
         - cafe_id : str
         - name : str
         - location : str
         - BoardGames : List<BoardGame>
-        - Lobbies : List<Lobby>
-        + log_event(log : SystemLog)
+        - PlayTables : List<PlayTable>
+        - inventory : MenuList
+        + get_Reservation_schedule(date : date) : List<Reservation>
     }
 
-    abstract class Lobby {
-        - lobby_id : str
-        - play_tables : List<PlayTable>
-        - type : str
-        - fee: int
-        + get_available_tables()
+    abstract class PlayTable {
+        - price_per_hour : float
+        - table_id : str
+        - table_name : str /' e.g., V1, V2, S1, S2 '/
+        - capacity : int
+        - status : str
+        - active_orders : List<ItemOrder>
+        + assign_customer()
+        + clear_table()
+        + order_item(item : MenuItem, qty : int) : ItemOrder
+        + calculate_price(duration : float) : float
+        + get_menu_ordered() : List<MenuItem>
     }
 
-    class NormalLobby {
-        - fee : 0
+    class PlayTableStandard {
+        - price_per_hour : 50.00
+        - table_id : str
+        - capacity : int
+        - status : str
+        + assign_customer()
+        + clear_table()
     }
 
-    class VIPLobby {
-        - fee : 100
-    }
-
-    class PlayTable {
+    class PlayTableVIP {
+        - price_per_hour : 50.00
         - table_id : str
         - capacity : int
         - status : str
@@ -52,17 +94,11 @@ package "Management Core" {
         + clear_table()
     }
 }
-
 package "Person & Auth" {
     abstract class Person {
         - user_id : str
         - name : str
         - contact : str
-    }
-
-    class Owner {
-        + view_total_revenue_report(period : str) : Report
-        + access_audit_logs() : List<AuditLog>
     }
 
     class Manager {
@@ -78,10 +114,8 @@ package "Person & Auth" {
         - salary : float
         + take_order(order : Order) : void
         + serve_item(item : MenuItem) : void
-    }
-
-    class Reception {
         + assign_table()
+        + check_student_card()
         + check_booking_status(booking_id : str) : Reservation
         + assign_walk_in_customer(table : PlayTable) : bool
         + register_new_member(customer : Customer) : Member
@@ -89,16 +123,15 @@ package "Person & Auth" {
     }
 
     class Customer {
-        - customer_id : str
         - total_spent : float
-        - Birthdate : date
-        - StudentID : str
+        - birthdate : date
+
     }
 
     class Member {
         - member_id : str
-        - points : int
-        - discount : float
+        - panalty_points : int
+        - member_tier : str
         - max_booking_duration : int
         - max_active_booking_quota : int
         - max_advance_booking_days : int
@@ -108,39 +141,15 @@ package "Person & Auth" {
         + get_max_advance_booking_days() :int
     }
 
-    class MemberSilver {
-        - discount : 5%
-        + get_discount(): float
-    }
-    class MemberGold {
-        - discount : 10%
-        + get_discount(): float
-    }
-    class MemberPlatinum {
-        - discount : 15%
-        + get_discount(): float
+    class TempCustomer {
+        - temp_id : str
+        - queue_token : str
+        - pax_count : int
+        - arrival_time : datetime
+        - contact_number : str
+    
     }
     
-    class NonMember {
-    }
-
-    abstract class Authentication {
-        # session_token : str
-        # timeout_duration : int
-        + {abstract} validate_credentials() : bool
-        + encrypt_password(password : str) : str
-        + logout() : void
-        + validate_credentials(username : str, password : str) : bool
-    }
-
-    class Login{
-        + validate_credentials(username : str, password : str) : bool
-        + reset_password_request(email : str) : void
-    }
-    
-    class Register{
-        + create_new_account(data : dict) : Customer
-    }
 }
 package "Inventory & Menu" {
     class MenuList {
@@ -176,17 +185,14 @@ package "Inventory & Menu" {
 }
 
 package "Operations (Order & Resv)" {
-    class OrderSystem {
-        - orders : List<Order>
-        + create_order()
-        + check_out_order()
-    }
 
-    class Order {
+    class ItemOrder {
         - order_id : str
-        - status : str
-        - net_amount : float
+        - items : MenuItem
+        - quantity : int
         - play_table : PlayTable
+        - status : str
+
         + calculate_total()
         + check_all_served()
     }
@@ -194,20 +200,26 @@ package "Operations (Order & Resv)" {
     class Payment {
         - payment_id : str
         - amount : float
+        - payment_method : PaymentMethod
         + process_payment()
     }
 
-    class Cash {}
-    class Card {}
-    class OnlinePayment {}
-
-    class ReservationManager {
-        - reservations : List<Reservation>
-        + create_reservation()
-        + check_availability()
-        + confirm_reservation()
-        + cancel_reservation()
+    abstract class PaymentMethod {
+        - method_id : str
+        - method_name : str
+        + validate_method() : bool
     }
+
+    class Cash {
+        + validate_method() : bool
+    }
+    class Card {
+        + validate_method() : bool
+    }
+    class OnlinePayment {
+        + validate_method() : bool
+    }
+
 
     class Reservation {
         - reservation_id : str
@@ -217,89 +229,52 @@ package "Operations (Order & Resv)" {
         - end_time : time
         - play_table : PlayTable
         - pax: int
+        - branch : BoardGameCafeBranch
         - status : str
+        + get_details() : str
     }
 }
-
-package "Reporting Module" {
-    abstract class SystemLog {
-        - log_id : str
-        - timestamp : datetime
-        - recorded_by : str
-        + get_report(): str
-    }
-
-    class FinancialLog {
-        - amount : float
-    }
-    class ReservationLog {
-        - reservation : Reservation
-        - action : str
-    }
-    class InventoryLog {
-        - item_id : str
-    }
-    class AuditLog {
-        - action_type : str
-    }
-}
-
 ' ==========================================
 ' RELATIONSHIPS
 ' ==========================================
 
 ' --- 1. Main Structure Hierarchy ---
-BoardGameCafeSystem "1" *--> "*" BoardGameCafe
+BoardGameCafeSystem "1" *--> "*" BoardGameCafeBranch
 BoardGameCafeSystem "1" *--> "*" Person
-BoardGameCafeSystem "1" --> Authentication
-BoardGameCafe "1" *--> "*" BoardGame
-BoardGameCafe "1" *--> "*" Lobby
-Lobby "1" *--> "*" PlayTable
+BoardGameCafeBranch "1" *--> "*" BoardGame
 
 ' --- 2. Sub-Systems Connections ---
-BoardGameCafe "1" --> "1" MenuList
-BoardGameCafe "1" --> "1" OrderSystem
-BoardGameCafe "1" --> "1" ReservationManager
-BoardGameCafe "1" -r-> "*" SystemLog 
+BoardGameCafeBranch "1" --> "1" MenuList
 
 ' --- 3. Inheritance Grouping (Person) ---
 
-Person <|-- Owner
 Person <|-- Manager
 Person <|-- Staff
-Staff <|-- Reception
 Person <|-- Customer
 Customer <|-- Member
-Customer <|-- NonMember
-Member <|-- MemberSilver
-Member <|-- MemberGold
-Member <|-- MemberPlatinum
+Customer <|-- TempCustomer
+PlayTable <|-- PlayTableStandard
+PlayTable <|-- PlayTableVIP
 
 ' --- 4. Inheritance Grouping (Items) ---
 MenuItem <|-- Food
 MenuItem <|-- Drink
-Lobby <|-- NormalLobby
-Lobby <|-- VIPLobby
-Authentication <|-- Login
-Authentication <|-- Register
 MenuList "1" o--> "*" MenuItem
+PlayTable "1" o--> "*" ItemOrder
 
 ' --- 5. Inheritance Grouping (Ops) ---
-Payment <|-- Cash
-Payment <|-- Card
-Payment <|-- OnlinePayment
+PaymentMethod <|-- Cash
+PaymentMethod <|-- Card
+PaymentMethod <|-- OnlinePayment
 
-' --- 6. Inheritance Grouping (Logs) ---
-SystemLog <|-- FinancialLog
-SystemLog <|-- ReservationLog
-SystemLog <|-- InventoryLog
-SystemLog <|-- AuditLog
+' --- 6. Operational Flow (Minimal Arrows) ---
+Payment "1" --> "1" PaymentMethod
+Reservation "1" --> "*" Payment
+BoardGameCafeSystem "1" --> "1" Payment
+ItemOrder "*" <-- "1" PlayTable
+BoardGameCafeBranch "1" --> "*" PlayTable
 
-' --- 7. Operational Flow (Minimal Arrows) ---
-OrderSystem "1" --> "*" Order
-Order "1" --> "1" Payment
-Order "*" <--> "1" PlayTable
-
-ReservationManager "1" --> "*" Reservation
+BoardGameCafeBranch "1" --> "*" ItemOrder
+BoardGameCafeSystem "1" --> "*" Reservation
 
 @enduml
