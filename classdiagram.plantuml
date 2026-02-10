@@ -23,14 +23,25 @@ package "Management Core" {
         - cafe_id : str
         - name : str
         - location : str
-        + generate_report(type : str)
+        - BoardGames : List<BoardGame>
+        - Lobbies : List<Lobby>
         + log_event(log : SystemLog)
     }
 
-    class Lobby {
+    abstract class Lobby {
         - lobby_id : str
-        - floor : int
+        - play_tables : List<PlayTable>
+        - type : str
+        - fee: int
         + get_available_tables()
+    }
+
+    class NormalLobby {
+        - fee : 0
+    }
+
+    class VIPLobby {
+        - fee : 100
     }
 
     class PlayTable {
@@ -47,54 +58,90 @@ package "Person & Auth" {
         - user_id : str
         - name : str
         - contact : str
-        + login()
     }
 
     class Owner {
-        + view_financial_summary()
+        + view_total_revenue_report(period : str) : Report
+        + access_audit_logs() : List<AuditLog>
     }
 
     class Manager {
-        + manage_staff_schedule()
+        + approve_void_bill(order_id : str) : bool
+        + add_staff(staff : Staff) : void
+        + remove_staff(staff_id : str) : void
+        + override_inventory_stock(item_id : str, qty : int) : void
+        + view_daily_sales() : FinancialLog
     }
 
     class Staff {
         - staff_id : str
-        - shift_start : datetime
-        + taking_orders()
+        - salary : float
+        + take_order(order : Order) : void
+        + serve_item(item : MenuItem) : void
     }
 
     class Reception {
         + assign_table()
+        + check_booking_status(booking_id : str) : Reservation
+        + assign_walk_in_customer(table : PlayTable) : bool
+        + register_new_member(customer : Customer) : Member
+        + handle_check_in(reservation : Reservation) : void
     }
 
     class Customer {
         - customer_id : str
         - total_spent : float
-        + make_reservation()
+        - Birthdate : date
+        - StudentID : str
     }
 
     class Member {
         - member_id : str
         - points : int
-        + redeem_points()
+        - discount : float
+        - max_booking_duration : int
+        - max_active_booking_quota : int
+        - max_advance_booking_days : int
+        + get_discount(): float
+        + get_max_booking_duration() :int
+        + get_max_active_booking_quota() :int
+        + get_max_advance_booking_days() :int
     }
 
     class MemberSilver {
         - discount : 5%
+        + get_discount(): float
     }
     class MemberGold {
         - discount : 10%
+        + get_discount(): float
     }
     class MemberPlatinum {
         - discount : 15%
+        + get_discount(): float
     }
     
     class NonMember {
-        + register()
+    }
+
+    abstract class Authentication {
+        # session_token : str
+        # timeout_duration : int
+        + {abstract} validate_credentials() : bool
+        + encrypt_password(password : str) : str
+        + logout() : void
+        + validate_credentials(username : str, password : str) : bool
+    }
+
+    class Login{
+        + validate_credentials(username : str, password : str) : bool
+        + reset_password_request(email : str) : void
+    }
+    
+    class Register{
+        + create_new_account(data : dict) : Customer
     }
 }
-
 package "Inventory & Menu" {
     class MenuList {
         - items : List<MenuItem>
@@ -119,8 +166,12 @@ package "Inventory & Menu" {
 
     class BoardGame {
         - game_id : str
+        - game_name : str
+        - genre : str
         - status : str
+        - price : float
         + update_condition()
+        + get_price(): float
     }
 }
 
@@ -128,6 +179,7 @@ package "Operations (Order & Resv)" {
     class OrderSystem {
         - orders : List<Order>
         + create_order()
+        + check_out_order()
     }
 
     class Order {
@@ -153,6 +205,7 @@ package "Operations (Order & Resv)" {
         - reservations : List<Reservation>
         + create_reservation()
         + check_availability()
+        + confirm_reservation()
         + cancel_reservation()
     }
 
@@ -162,8 +215,9 @@ package "Operations (Order & Resv)" {
         - date : date
         - start_time : time
         - end_time : time
+        - play_table : PlayTable
+        - pax: int
         - status : str
-        + check_in()
     }
 }
 
@@ -172,12 +226,14 @@ package "Reporting Module" {
         - log_id : str
         - timestamp : datetime
         - recorded_by : str
+        + get_report(): str
     }
 
     class FinancialLog {
         - amount : float
     }
     class ReservationLog {
+        - reservation : Reservation
         - action : str
     }
     class InventoryLog {
@@ -195,6 +251,7 @@ package "Reporting Module" {
 ' --- 1. Main Structure Hierarchy ---
 BoardGameCafeSystem "1" *--> "*" BoardGameCafe
 BoardGameCafeSystem "1" *--> "*" Person
+BoardGameCafeSystem "1" --> Authentication
 BoardGameCafe "1" *--> "*" BoardGame
 BoardGameCafe "1" *--> "*" Lobby
 Lobby "1" *--> "*" PlayTable
@@ -203,7 +260,7 @@ Lobby "1" *--> "*" PlayTable
 BoardGameCafe "1" --> "1" MenuList
 BoardGameCafe "1" --> "1" OrderSystem
 BoardGameCafe "1" --> "1" ReservationManager
-BoardGameCafe "1" -r-> "*" SystemLog : logs >
+BoardGameCafe "1" -r-> "*" SystemLog 
 
 ' --- 3. Inheritance Grouping (Person) ---
 
@@ -221,6 +278,10 @@ Member <|-- MemberPlatinum
 ' --- 4. Inheritance Grouping (Items) ---
 MenuItem <|-- Food
 MenuItem <|-- Drink
+Lobby <|-- NormalLobby
+Lobby <|-- VIPLobby
+Authentication <|-- Login
+Authentication <|-- Register
 MenuList "1" o--> "*" MenuItem
 
 ' --- 5. Inheritance Grouping (Ops) ---
@@ -237,7 +298,7 @@ SystemLog <|-- AuditLog
 ' --- 7. Operational Flow (Minimal Arrows) ---
 OrderSystem "1" --> "*" Order
 Order "1" --> "1" Payment
-Order "*" --> "1" PlayTable
+Order "*" <--> "1" PlayTable
 
 ReservationManager "1" --> "*" Reservation
 
