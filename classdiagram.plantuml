@@ -166,10 +166,12 @@ package "Inventory & Menu" {
     }
 
     class Food {
+        - topping : list(str)
         + get_price(): float
     }
 
     class Drink {
+        - cup_size : str
         + get_price(): float
     }
 
