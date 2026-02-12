@@ -63,7 +63,6 @@ class Staff(Person):
     def take_order(self, order) -> bool:
         try:
             # Implementation would validate and process the order
-            print(f"Staff {self.name} is taking order: {order}")
             return True
         except Exception as e:
             print(f"Error taking order: {e}")
@@ -71,7 +70,6 @@ class Staff(Person):
 
     def serve_item(self, order) -> bool:
         try:
-            print(f"Staff {self.name} is serving order: {order}")
             return True
         except Exception as e:
             print(f"Error serving item: {e}")
@@ -79,7 +77,6 @@ class Staff(Person):
 
     def assign_table(self, table, customer) -> bool:
         try:
-            print(f"Staff {self.name} assigned table {table} to {customer}")
             return True
         except Exception as e:
             print(f"Error assigning table: {e}")
@@ -91,7 +88,6 @@ class Staff(Person):
     def assign_walk_in_customer(self, customer) -> bool:
         """Assign a walk-in customer to a table."""
         try:
-            print(f"Staff {self.name} is assigning walk-in customer: {customer}")
             return True
         except Exception as e:
             print(f"Error assigning walk-in: {e}")
@@ -99,7 +95,6 @@ class Staff(Person):
 
     def register_walk_in_customer(self, customer) -> bool:
         try:
-            print(f"Staff {self.name} is registering customer: {customer}")
             return True
         except Exception as e:
             print(f"Error registering customer: {e}")
@@ -107,26 +102,20 @@ class Staff(Person):
 
     def handle_check_in(self, reservation) -> bool:
         try:
-            print(f"Staff {self.name} is checking in reservation: {reservation}")
             return True
         except Exception as e:
             print(f"Error during check-in: {e}")
             return False
 
 
-class Manager(Staff):
+class Manager(Person):
     
-    def __init__(self, person_id: str, name: str, contact: str, salary: float, department: str):
-        super().__init__(person_id, name, contact, salary)
-        self.__department = department
-
-    @property
-    def department(self) -> str:
-        return self.__department
+    def __init__(self, person_id: str, name: str, contact: str, salary: float):
+        super().__init__(person_id, name, contact)
+        self.__salary = salary
 
     def approve_void_bill(self, transaction) -> bool:
         try:
-            print(f"Manager {self.name} approved void for transaction: {transaction}")
             return True
         except Exception as e:
             print(f"Error approving void: {e}")
@@ -134,7 +123,6 @@ class Manager(Staff):
 
     def add_staff(self, staff: Staff) -> bool:
         try:
-            print(f"Manager {self.name} added staff: {staff.name}")
             return True
         except Exception as e:
             print(f"Error adding staff: {e}")
@@ -142,7 +130,6 @@ class Manager(Staff):
 
     def remove_staff(self, staff_id: str) -> bool:
         try:
-            print(f"Manager {self.name} removed staff with ID: {staff_id}")
             return True
         except Exception as e:
             print(f"Error removing staff: {e}")
