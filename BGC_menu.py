@@ -17,8 +17,11 @@ DEFAULT_TAX_RATE = 0.07
 CURRENCY_SYMBOL = "฿"
 
 
-class MenuItem(ABC):
+# ==========================================
+# MENU ITEMS
+# ==========================================
 
+class MenuItem(ABC):
     def __init__(self, item_id: str, name: str, price: float, description: str = ""):
         if not item_id or not name:
             raise ValueError("Item ID and name cannot be empty")
@@ -160,7 +163,7 @@ class Drink(MenuItem):
                  size: str, is_alcoholic: bool = False, 
                  temperature_options: Optional[List[str]] = None):
         super().__init__(item_id, name, price, description)
-        self._size = size  # Small, Medium, Large, etc.
+        self._size = size
         self._is_alcoholic = is_alcoholic
         self._temperature_options = temperature_options or ["Cold", "Room Temperature"]
 
@@ -211,7 +214,7 @@ class Snack(MenuItem):
 class MenuList:
     def __init__(self, menu_name: str = "Main Menu"):
         self._menu_name = menu_name
-        self._items: Dict[str, MenuItem] = {}
+        self._items: List[MenuItem] = []
         self._created_at = datetime.now()
 
     @property
@@ -223,70 +226,69 @@ class MenuList:
         return len(self._items)
 
     def add_item(self, item: MenuItem) -> None:
-        if item.item_id in self._items:
-            raise ValueError(f"Item with ID {item.item_id} already exists")
+        for existing_item in self._items:
+            if existing_item.item_id == item.item_id:
+                raise ValueError(f"Item with ID {item.item_id} already exists")
         
-        self._items[item.item_id] = item
+        self._items.append(item)
 
     def remove_item(self, item_id: str) -> bool:
-        if item_id not in self._items:
-            return False
-        
-        del self._items[item_id]
-        return True
+        for item in self._items:
+            if item.item_id == item_id:
+                self._items.remove(item)
+                return True
+        return False
 
     def get_item_by_id(self, item_id: str) -> Optional[MenuItem]:
-        return self._items.get(item_id)
+        for item in self._items:
+            if item.item_id == item_id:
+                return item
+        return None
 
     def get_item_by_name(self, name: str) -> Optional[MenuItem]:
-        for item in self._items.values():
+        for item in self._items:
             if item.name.lower() == name.lower():
                 return item
         return None
 
     def get_all_items(self) -> List[MenuItem]:
-        return list(self._items.values())
+        return self._items.copy()
 
     def get_available_items(self) -> List[MenuItem]:
-        return [item for item in self._items.values() if item.is_available]
+        return [item for item in self._items if item.is_available]
 
     def get_items_by_category(self, category: str) -> List[MenuItem]:
-        return [item for item in self._items.values() 
+        return [item for item in self._items 
                 if item.get_category().lower() == category.lower()]
 
     def get_low_stock_items(self) -> List[MenuItem]:
-        return [item for item in self._items.values() if item.is_low_stock()]
+        return [item for item in self._items if item.is_low_stock()]
 
     def search_items(self, query: str) -> List[MenuItem]:
         query_lower = query.lower()
-        return [item for item in self._items.values()
+        return [item for item in self._items
                 if query_lower in item.name.lower() or 
                    query_lower in item.description.lower()]
 
     def get_menu_summary(self) -> Dict:
-        items = list(self._items.values())
-        available = [item for item in items if item.is_available]
+        available = [item for item in self._items if item.is_available]
         
         return {
-            'total_items': len(items),
+            'total_items': len(self._items),
             'available_items': len(available),
-            'food_items': len([i for i in items if i.get_category() == "Food"]),
-            'drink_items': len([i for i in items if i.get_category() == "Drink"]),
-            'snack_items': len([i for i in items if i.get_category() == "Snack"]),
+            'food_items': len([i for i in self._items if i.get_category() == "Food"]),
+            'drink_items': len([i for i in self._items if i.get_category() == "Drink"]),
+            'snack_items': len([i for i in self._items if i.get_category() == "Snack"]),
             'low_stock_items': len(self.get_low_stock_items()),
-            'average_price': sum(i.price for i in items) / len(items) if items else 0
+            'average_price': sum(i.price for i in self._items) / len(self._items) if self._items else 0
         }
 
 
 # ==========================================
 # ORDER SYSTEM
 # ==========================================
-class Order:
-    """
-    Represents a complete order.
-    Each order contains multiple items internally.
-    """
 
+class Order:
     def __init__(self, order_id: str, customer, table=None):
         if not order_id:
             raise ValueError("Order ID cannot be empty")
@@ -295,20 +297,34 @@ class Order:
         self._customer = customer
         self._table = table
         self._created_at = datetime.now()
-        self._status = "Open"   # Open, Closed, Cancelled
+        self._status = "Open"
 
-        # Internal items (merged OrderItem)
         self._items: List[Dict] = []
-
         self._discount_amount = 0.0
         self._tax_rate = DEFAULT_TAX_RATE
         self._notes = ""
 
-    # =======================
-    # ADD / REMOVE ITEMS
-    # =======================
+    @property
+    def order_id(self) -> str:
+        return self._order_id
 
-    def add_item(self, menu_item, quantity: int, instructions: str = ""):
+    @property
+    def customer(self):
+        return self._customer
+
+    @property
+    def table(self):
+        return self._table
+
+    @property
+    def status(self) -> str:
+        return self._status
+
+    @property
+    def items(self) -> List[Dict]:
+        return self._items.copy()
+
+    def add_item(self, menu_item, quantity: int, instructions: str = "") -> None:
         if self._status != "Open":
             raise ValueError("Cannot add items to a closed order")
 
@@ -324,35 +340,31 @@ class Order:
             "price": menu_item.price,
             "quantity": quantity,
             "instructions": instructions,
-            "status": "Pending",  # Pending, Preparing, Served, Cancelled
+            "status": "Pending",
             "timestamp": datetime.now()
         }
 
         self._items.append(item)
 
-    def remove_item(self, item_id: str):
+    def remove_item(self, item_id: str) -> None:
         if self._status != "Open":
-            raise ValueError("Cannot remove items")
+            raise ValueError("Cannot remove items from closed order")
 
         self._items = [i for i in self._items if i["item_id"] != item_id]
 
-    # =======================
-    # ITEM STATE
-    # =======================
-
-    def mark_preparing(self, item_id: str):
+    def mark_preparing(self, item_id: str) -> None:
         item = self._find_item(item_id)
         if item["status"] != "Pending":
             raise ValueError("Item not pending")
         item["status"] = "Preparing"
 
-    def mark_served(self, item_id: str):
+    def mark_served(self, item_id: str) -> None:
         item = self._find_item(item_id)
         if item["status"] != "Preparing":
             raise ValueError("Item not preparing")
         item["status"] = "Served"
 
-    def cancel_item(self, item_id: str):
+    def cancel_item(self, item_id: str) -> None:
         item = self._find_item(item_id)
         if item["status"] == "Served":
             raise ValueError("Cannot cancel served item")
@@ -362,11 +374,7 @@ class Order:
         for item in self._items:
             if item["item_id"] == item_id:
                 return item
-        raise ValueError("Item not found")
-
-    # =======================
-    # CALCULATIONS
-    # =======================
+        raise ValueError("Item not found in order")
 
     def calculate_subtotal(self) -> float:
         return sum(i["price"] * i["quantity"]
@@ -379,37 +387,30 @@ class Order:
     def calculate_total(self) -> float:
         return self.calculate_subtotal() - self._discount_amount + self.calculate_tax()
 
-    # =======================
-    # DISCOUNT & STATUS
-    # =======================
-
-    def apply_discount(self, amount: float):
+    def apply_discount(self, amount: float) -> None:
         if amount < 0:
             raise ValueError("Discount cannot be negative")
         if amount > self.calculate_subtotal():
-            raise ValueError("Discount too large")
+            raise ValueError("Discount cannot exceed subtotal")
         self._discount_amount = amount
 
-    def close_order(self):
+    def close_order(self) -> None:
         self._status = "Closed"
 
-    def cancel_order(self):
+    def cancel_order(self) -> None:
         for item in self._items:
             item["status"] = "Cancelled"
         self._status = "Cancelled"
 
-    # =======================
-    # SUMMARY
-    # =======================
-
     def all_items_served(self) -> bool:
-        return all(i["status"] == "Served" for i in self._items)
+        active_items = [i for i in self._items if i["status"] != "Cancelled"]
+        return all(i["status"] == "Served" for i in active_items)
 
     def get_order_summary(self) -> Dict:
         return {
             "order_id": self._order_id,
             "customer": self._customer.name if self._customer else "Unknown",
-            "table": self._table.get_table_id() if self._table else None,
+            "table": self._table.table_id if self._table else None,
             "item_count": len(self._items),
             "subtotal": self.calculate_subtotal(),
             "discount": self._discount_amount,

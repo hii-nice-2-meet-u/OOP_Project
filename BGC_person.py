@@ -1,764 +1,484 @@
 """
-Board Game Cafe - System Module (Refactored)
-Two-tier architecture: System (Corporate) -> Branch (Operations)
+Board Game Cafe - Person Module
+Handles all person-related classes: Staff, Manager, Customer, Member, TempCustomer
 """
 
-from datetime import datetime, timedelta
-from typing import List, Optional, Dict
-import logging
-
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+from abc import ABC, abstractmethod
+from datetime import datetime
+from enum import Enum
+from typing import Optional, List, Dict
+import hashlib
+import secrets
 
 
 # ==========================================
-# BRANCH-LEVEL MANAGERS (inside Branch)
+# CONSTANTS
 # ==========================================
 
-class AuthenticationManager:
-    """Manages user authentication within a branch."""
-    
-    def __init__(self, branch_name: str):
-        self._branch_name = branch_name
-        self._authenticated_users: Dict[str, dict] = {}
-        self._logger = logging.getLogger(f'{branch_name}.AuthenticationManager')
-
-    def login_user(self, username: str, password: str, user_repository) -> Optional[object]:
-        """Authenticate a user with username and password."""
-        try:
-            user = user_repository.find_by_username(username)
-            
-            if user and hasattr(user, 'verify_password'):
-                if user.verify_password(password):
-                    user.record_login()
-                    
-                    session_id = f"SESSION-{username}-{int(datetime.now().timestamp())}"
-                    self._authenticated_users[session_id] = {
-                        'user': user,
-                        'login_time': datetime.now(),
-                        'username': username
-                    }
-                    
-                    self._logger.info(f"User {username} logged in successfully")
-                    return user
-            
-            self._logger.warning(f"Failed login attempt for username: {username}")
-            return None
-            
-        except Exception as e:
-            self._logger.error(f"Login error: {e}")
-            return None
-
-    def logout_user(self, session_id: str) -> bool:
-        """Logout a user by session ID."""
-        if session_id in self._authenticated_users:
-            username = self._authenticated_users[session_id]['username']
-            del self._authenticated_users[session_id]
-            self._logger.info(f"User {username} logged out")
-            return True
-        return False
+class TierEnum(Enum):
+    SILVER = "Silver"
+    GOLD = "Gold"
+    PLATINUM = "Platinum"
 
 
-class MembershipManager:
-    """Manages customers and members within a branch."""
-    
-    def __init__(self, branch_name: str):
-        self._branch_name = branch_name
-        self._customers: Dict[str, object] = {}
-        self._members: Dict[str, object] = {}
-        self._logger = logging.getLogger(f'{branch_name}.MembershipManager')
+# Silver tier constants
+SILVER_DISCOUNT_RATE = 0.05
+SILVER_POINTS_MULTIPLIER = 1.0
+SILVER_MAX_BOOKINGS = 2
+SILVER_MAX_DURATION_HOURS = 2
+SILVER_MAX_ADVANCE_DAYS = 7
 
-    def register_customer(self, customer) -> bool:
-        """Register a new customer."""
-        try:
-            if customer.person_id in self._customers:
-                raise ValueError(f"Customer {customer.person_id} already exists")
-            
-            self._customers[customer.person_id] = customer
-            self._logger.info(f"Registered customer: {customer.name}")
-            return True
-            
-        except Exception as e:
-            self._logger.error(f"Customer registration failed: {e}")
-            raise
+# Gold tier constants
+GOLD_DISCOUNT_RATE = 0.10
+GOLD_POINTS_MULTIPLIER = 1.5
+GOLD_MAX_BOOKINGS = 4
+GOLD_MAX_DURATION_HOURS = 3
+GOLD_MAX_ADVANCE_DAYS = 14
 
-    def register_member(self, member) -> bool:
-        """Register a new member with membership benefits."""
-        try:
-            if member.member_id in self._members:
-                raise ValueError(f"Member {member.member_id} already exists")
-            
-            self._members[member.member_id] = member
-            self._customers[member.person_id] = member
-            self._logger.info(f"Registered member: {member.name} (Tier: {member.tier.value})")
-            return True
-            
-        except Exception as e:
-            self._logger.error(f"Member registration failed: {e}")
-            raise
+# Platinum tier constants
+PLATINUM_DISCOUNT_RATE = 0.15
+PLATINUM_POINTS_MULTIPLIER = 2.0
+PLATINUM_MAX_BOOKINGS = 6
+PLATINUM_MAX_DURATION_HOURS = 4
+PLATINUM_MAX_ADVANCE_DAYS = 30
 
-    def get_customer(self, customer_id: str) -> Optional[object]:
-        """Retrieve a customer by ID."""
-        return self._customers.get(customer_id)
-
-    def get_member(self, member_id: str) -> Optional[object]:
-        """Retrieve a member by member ID."""
-        return self._members.get(member_id)
-
-    def find_by_username(self, username: str) -> Optional[object]:
-        """Find a member by username."""
-        for member in self._members.values():
-            if hasattr(member, 'username') and member.username == username:
-                return member
-        return None
-
-    def deactivate_member(self, member_id: str, reason: str) -> bool:
-        """Deactivate a member account."""
-        member = self._members.get(member_id)
-        if member:
-            member.deactivate()
-            self._logger.info(f"Deactivated member {member_id}: {reason}")
-            return True
-        return False
-
-
-class ReservationManager:
-    """Manages table reservations within a branch."""
-    
-    def __init__(self, branch_name: str):
-        self._branch_name = branch_name
-        self._reservations: Dict[str, object] = {}
-        self._logger = logging.getLogger(f'{branch_name}.ReservationManager')
-
-    def create_reservation(self, reservation) -> bool:
-        """Create a new reservation with conflict checking."""
-        try:
-            if self._has_conflict(reservation):
-                raise ValueError("Reservation conflicts with existing booking")
-            
-            if hasattr(reservation.customer, 'get_max_active_bookings'):
-                active_count = self._count_active_reservations(reservation.customer)
-                max_allowed = reservation.customer.get_max_active_bookings()
-                
-                if active_count >= max_allowed:
-                    raise ValueError(f"Customer has reached maximum active bookings ({max_allowed})")
-            
-            self._reservations[reservation.reservation_id] = reservation
-            self._logger.info(f"Created reservation {reservation.reservation_id}")
-            return True
-            
-        except Exception as e:
-            self._logger.error(f"Reservation creation failed: {e}")
-            raise
-
-    def _has_conflict(self, new_reservation) -> bool:
-        """Check if reservation conflicts with existing ones."""
-        for existing in self._reservations.values():
-            if existing.status.value in ['Cancelled', 'Completed', 'No Show']:
-                continue
-            
-            if existing.table.table_id != new_reservation.table.table_id:
-                continue
-            
-            if (new_reservation.start_datetime < existing.end_datetime and
-                new_reservation.end_datetime > existing.start_datetime):
-                return True
-        
-        return False
-
-    def _count_active_reservations(self, customer) -> int:
-        """Count active reservations for a customer."""
-        count = 0
-        for reservation in self._reservations.values():
-            if (reservation.customer.person_id == customer.person_id and
-                reservation.status.value in ['Pending', 'Confirmed', 'Checked In']):
-                count += 1
-        return count
-
-    def confirm_reservation(self, reservation_id: str) -> bool:
-        """Confirm a pending reservation."""
-        reservation = self._reservations.get(reservation_id)
-        if reservation:
-            try:
-                reservation.confirm_booking()
-                self._logger.info(f"Confirmed reservation {reservation_id}")
-                return True
-            except ValueError as e:
-                self._logger.error(f"Failed to confirm reservation: {e}")
-                raise
-        return False
-
-    def cancel_reservation(self, reservation_id: str, reason: str = "") -> bool:
-        """Cancel a reservation."""
-        reservation = self._reservations.get(reservation_id)
-        if reservation:
-            try:
-                reservation.cancel_booking(reason)
-                self._logger.info(f"Cancelled reservation {reservation_id}: {reason}")
-                return True
-            except ValueError as e:
-                self._logger.error(f"Failed to cancel reservation: {e}")
-                raise
-        return False
-
-    def get_reservation(self, reservation_id: str) -> Optional[object]:
-        """Retrieve a reservation by ID."""
-        return self._reservations.get(reservation_id)
-
-    def get_reservations_for_date(self, date: datetime) -> List[object]:
-        """Get all reservations for a specific date."""
-        date_str = date.strftime("%Y-%m-%d")
-        return [
-            res for res in self._reservations.values()
-            if res.get_date() == date_str
-        ]
-
-    def get_reservation_schedule(self, date: datetime) -> List[object]:
-        """Get reservation schedule for a specific date."""
-        return self.get_reservations_for_date(date)
-
-
-class OrderManager:
-    """Manages orders within a branch."""
-    
-    def __init__(self, branch_name: str):
-        self._branch_name = branch_name
-        self._orders: Dict[str, object] = {}
-        self._order_counter = 0
-        self._logger = logging.getLogger(f'{branch_name}.OrderManager')
-
-    def create_order(self, customer, table=None) -> object:
-        """Create a new order."""
-        from BGC_menu import Order
-        
-        self._order_counter += 1
-        order_id = f"ORD-{datetime.now().strftime('%Y%m%d')}-{self._order_counter:04d}"
-        
-        order = Order(order_id, customer, table)
-        self._orders[order_id] = order
-        
-        self._logger.info(f"Created order {order_id}")
-        return order
-
-    def place_order(self, order) -> bool:
-        """Place an order (make it active)."""
-        try:
-            if order.order_id not in self._orders:
-                self._orders[order.order_id] = order
-            
-            self._logger.info(f"Placed order {order.order_id}")
-            return True
-            
-        except Exception as e:
-            self._logger.error(f"Failed to place order: {e}")
-            raise
-
-    def get_order(self, order_id: str) -> Optional[object]:
-        """Retrieve an order by ID."""
-        return self._orders.get(order_id)
-
-    def get_active_orders(self) -> List[object]:
-        """Get all active orders."""
-        return [order for order in self._orders.values() if order.status == "Open"]
-
-
-class PaymentManager:
-    """Manages payment processing within a branch."""
-    
-    def __init__(self, branch_name: str):
-        self._branch_name = branch_name
-        self._payments: Dict[str, object] = {}
-        self._payment_counter = 0
-        self._logger = logging.getLogger(f'{branch_name}.PaymentManager')
-
-    def process_payment(self, order, payment_method: str, **kwargs) -> object:
-        """Process a payment for an order."""
-        from BGC_operation import Cash, Card, OnlinePayment
-        
-        try:
-            self._payment_counter += 1
-            payment_id = f"PAY-{datetime.now().strftime('%Y%m%d')}-{self._payment_counter:04d}"
-            
-            if payment_method.lower() == "cash":
-                payment = Cash(payment_id, order, kwargs.get('amount_received'))
-            elif payment_method.lower() == "card":
-                payment = Card(payment_id, order, 
-                             kwargs.get('last_four_digits'),
-                             kwargs.get('bank_name'))
-            elif payment_method.lower() == "online":
-                payment = OnlinePayment(payment_id, order,
-                                      kwargs.get('transaction_ref'),
-                                      kwargs.get('platform'))
-            else:
-                raise ValueError(f"Unknown payment method: {payment_method}")
-            
-            payment.complete_payment()
-            self._payments[payment_id] = payment
-            
-            self._logger.info(f"Processed payment {payment_id} for order {order.order_id}")
-            return payment
-            
-        except Exception as e:
-            self._logger.error(f"Payment processing failed: {e}")
-            raise
-
-    def get_payment(self, payment_id: str) -> Optional[object]:
-        """Retrieve a payment by ID."""
-        return self._payments.get(payment_id)
-
-    def get_daily_revenue(self, date: Optional[datetime] = None) -> float:
-        """Calculate total revenue for a specific date."""
-        target_date = (date or datetime.now()).date()
-        total = 0.0
-        
-        for payment in self._payments.values():
-            if payment.timestamp.date() == target_date and payment.status.value == "Completed":
-                total += payment.total_amount
-        
-        return total
-
-
-class StaffManager:
-    """Manages staff and managers within a branch."""
-    
-    def __init__(self, branch_name: str):
-        self._branch_name = branch_name
-        self._staff: Dict[str, object] = {}
-        self._managers: Dict[str, object] = {}
-        self._logger = logging.getLogger(f'{branch_name}.StaffManager')
-
-    def register_staff(self, staff) -> bool:
-        """Register a new staff member."""
-        try:
-            if staff.staff_id in self._staff:
-                raise ValueError(f"Staff {staff.staff_id} already exists")
-            
-            self._staff[staff.staff_id] = staff
-            self._logger.info(f"Registered staff: {staff.name}")
-            return True
-            
-        except Exception as e:
-            self._logger.error(f"Staff registration failed: {e}")
-            raise
-
-    def register_manager(self, manager) -> bool:
-        """Register a new manager."""
-        try:
-            if manager.person_id in self._managers:
-                raise ValueError(f"Manager {manager.person_id} already exists")
-            
-            self._managers[manager.person_id] = manager
-            self._logger.info(f"Registered manager: {manager.name}")
-            return True
-            
-        except Exception as e:
-            self._logger.error(f"Manager registration failed: {e}")
-            raise
-
-    def deactivate_staff(self, staff_id: str, reason: str) -> bool:
-        """Deactivate a staff member."""
-        staff = self._staff.get(staff_id)
-        if staff:
-            staff.deactivate()
-            self._logger.info(f"Deactivated staff {staff_id}: {reason}")
-            return True
-        return False
-
-    def get_staff(self, staff_id: str) -> Optional[object]:
-        """Retrieve a staff member by ID."""
-        return self._staff.get(staff_id)
-
-
-class ReportingManager:
-    """Generates reports and analytics for a branch."""
-    
-    def __init__(self, branch_name: str, order_manager, payment_manager, reservation_manager):
-        self._branch_name = branch_name
-        self._order_manager = order_manager
-        self._payment_manager = payment_manager
-        self._reservation_manager = reservation_manager
-        self._logger = logging.getLogger(f'{branch_name}.ReportingManager')
-
-    def get_sales_report(self, date: Optional[datetime] = None) -> Dict:
-        """Generate sales report for a specific date."""
-        target_date = date or datetime.now()
-        daily_revenue = self._payment_manager.get_daily_revenue(target_date)
-        
-        orders = [
-            order for order in self._order_manager.get_active_orders()
-            if order.created_at.date() == target_date.date()
-        ]
-        
-        return {
-            'branch': self._branch_name,
-            'date': target_date.strftime('%Y-%m-%d'),
-            'total_revenue': daily_revenue,
-            'order_count': len(orders),
-            'average_order_value': daily_revenue / len(orders) if orders else 0
-        }
-
+# Penalty thresholds
+PENALTY_THRESHOLD_FOR_SUSPENSION = 10.0
+NO_SHOW_PENALTY_POINTS = 2.0
 
 # ==========================================
-# BRANCH CLASS
+# BASE PERSON HIERARCHY
 # ==========================================
 
-class BoardGameCafeBranch:
-    """
-    Represents a physical branch location.
-    Contains all operational managers and resources for the branch.
-    """
-    
-    def __init__(self, cafe_id: str, name: str, location: str):
-        if not cafe_id or not name or not location:
-            raise ValueError("Cafe ID, name, and location cannot be empty")
+class Person(ABC):
+    def __init__(self, person_id: str, name: str, contact: str):
+        if not person_id or not name:
+            raise ValueError("Person ID and name cannot be empty")
         
-        self._cafe_id = cafe_id
+        self._person_id = person_id
         self._name = name
-        self._location = location
-        self._board_games: List[object] = []
-        self._play_tables: List[object] = []
-        self._inventory = None  # MenuList
-        
-        # Initialize all branch-level managers
-        self._auth_manager = AuthenticationManager(name)
-        self._membership_manager = MembershipManager(name)
-        self._reservation_manager = ReservationManager(name)
-        self._order_manager = OrderManager(name)
-        self._payment_manager = PaymentManager(name)
-        self._staff_manager = StaffManager(name)
-        self._reporting_manager = ReportingManager(
-            name, 
-            self._order_manager,
-            self._payment_manager,
-            self._reservation_manager
-        )
-        
-        self._logger = logging.getLogger(f'Branch.{name}')
-        self._logger.info(f"Initialized branch: {name}")
+        self._contact = contact
+        self._created_at = datetime.now()
+        self._username = None
+        self._password_hash = None
 
-    # ==========================================
-    # PROPERTIES
-    # ==========================================
+    def set_credentials(self, username: str, password: str) -> None:
+        if not username or not password:
+            raise ValueError("Username and password cannot be empty")
+        
+        self._username = username
+        salt = secrets.token_hex(16)
+        self._password_hash = hashlib.sha256((salt + password).encode('utf-8')).hexdigest() + ':' + salt
 
     @property
-    def cafe_id(self) -> str:
-        """Unique branch identifier."""
-        return self._cafe_id
+    def username(self) -> Optional[str]:
+        return self._username
+
+    def verify_password(self, password: str) -> bool:
+        if not self._password_hash:
+            return False
+        
+        hash_part, salt = self._password_hash.split(':')
+        return hash_part == hashlib.sha256((salt + password).encode('utf-8')).hexdigest()
+
+    def record_login(self) -> None:
+        pass
+
+    @property
+    def person_id(self) -> str:
+        return self._person_id
 
     @property
     def name(self) -> str:
-        """Branch name."""
         return self._name
 
     @property
-    def location(self) -> str:
-        """Branch address/location."""
-        return self._location
+    def contact(self) -> str:
+        return self._contact
 
     @property
-    def board_games(self) -> List[object]:
-        """Board games available at this branch."""
-        return self._board_games.copy()
+    def created_at(self) -> datetime:
+        return self._created_at
+
+    def update_contact(self, new_contact: str) -> None:
+        if not new_contact:
+            raise ValueError("Contact information cannot be empty")
+        self._contact = new_contact
+
+    def update_name(self, new_name: str) -> None:
+        if not new_name:
+            raise ValueError("Name cannot be empty")
+        self._name = new_name
+
+
+# ==========================================
+# STAFF HIERARCHY
+# ==========================================
+
+class Staff(Person):
+    def __init__(self, person_id: str, name: str, contact: str, 
+                 username: str, password: str, salary: float):
+        if salary < 0:
+            raise ValueError("Salary cannot be negative")
+        
+        super().__init__(person_id, name, contact)
+        self.set_credentials(username, password)
+        
+        self._salary = salary
+        self._staff_id = person_id
+        self._is_active = True
 
     @property
-    def play_tables(self) -> List[object]:
-        """Play tables available at this branch."""
-        return self._play_tables.copy()
+    def salary(self) -> float:
+        return self._salary
 
-    # ==========================================
-    # INVENTORY MANAGEMENT
-    # ==========================================
+    @property
+    def staff_id(self) -> str:
+        return self._staff_id
 
-    def add_board_game(self, board_game) -> None:
-        """Add a board game to branch inventory."""
-        self._board_games.append(board_game)
-        self._logger.info(f"Added board game: {board_game.name}")
+    @property
+    def is_active(self) -> bool:
+        return self._is_active
 
-    def remove_board_game(self, board_game) -> None:
-        """Remove a board game from branch inventory."""
-        if board_game in self._board_games:
-            self._board_games.remove(board_game)
-            self._logger.info(f"Removed board game: {board_game.name}")
+    def update_salary(self, new_salary: float) -> None:
+        if new_salary < 0:
+            raise ValueError("Salary cannot be negative")
+        self._salary = new_salary
 
-    def add_play_table(self, play_table) -> None:
-        """Add a play table to the branch."""
-        self._play_tables.append(play_table)
-        self._logger.info(f"Added table: {play_table.table_name}")
+    def deactivate(self) -> None:
+        self._is_active = False
 
-    def remove_play_table(self, play_table) -> None:
-        """Remove a play table from the branch."""
-        if play_table in self._play_tables:
-            self._play_tables.remove(play_table)
-            self._logger.info(f"Removed table: {play_table.table_name}")
+    def reactivate(self) -> None:
+        self._is_active = True
 
-    def get_available_tables(self) -> List[object]:
-        """Get all currently available tables."""
-        return [table for table in self._play_tables if table.is_available]
-
-    def get_available_games(self) -> List[object]:
-        """Get all currently available games."""
-        return [game for game in self._board_games if game.is_available]
-
-    # ==========================================
-    # MENU MANAGEMENT
-    # ==========================================
-
-    def view_menu(self) -> object:
-        """Get the branch menu."""
-        return self._inventory
-
-    def get_menu(self) -> object:
-        """Get the branch menu (alias for view_menu)."""
-        return self._inventory
-
-    # ==========================================
-    # MEMBER MANAGEMENT
-    # ==========================================
-
-    def register_new_member(self, member) -> bool:
-        """Register a new member at this branch."""
-        return self._membership_manager.register_member(member)
-
-    def login_user(self, username: str, password: str) -> Optional[object]:
-        """Authenticate a user at this branch."""
-        return self._auth_manager.login_user(username, password, self._membership_manager)
-
-    # ==========================================
-    # RESERVATION MANAGEMENT
-    # ==========================================
-
-    def check_availability(self, table_id: str, date: datetime) -> bool:
-        """Check if a table is available on a specific date."""
-        reservations = self._reservation_manager.get_reservations_for_date(date)
-        for res in reservations:
-            if res.table.table_id == table_id and res.status.value in ['Confirmed', 'Checked In']:
-                return False
-        return True
-
-    def create_reservation(self, reservation) -> bool:
-        """Create a reservation at this branch."""
-        return self._reservation_manager.create_reservation(reservation)
-
-    def confirm_reservation(self, reservation_id: str) -> bool:
-        """Confirm a reservation."""
-        return self._reservation_manager.confirm_reservation(reservation_id)
-
-    def cancel_reservation(self, reservation_id: str) -> bool:
-        """Cancel a reservation."""
-        return self._reservation_manager.cancel_reservation(reservation_id)
-
-    def check_in_play_table(self, table_id: str) -> Optional[object]:
-        """Check in a customer to a play table."""
-        for table in self._play_tables:
-            if table.table_id == table_id and table.is_available:
-                return table
-        return None
-
-    def check_out_play_table(self, table_id: str) -> Optional[object]:
-        """Check out a customer from a play table."""
-        for table in self._play_tables:
-            if table.table_id == table_id and not table.is_available:
-                table.clear_table()
-                return table
-        return None
-
-    def get_reservation_schedule(self, date: datetime) -> List[object]:
-        """Get reservation schedule for a specific date."""
-        return self._reservation_manager.get_reservation_schedule(date)
-
-    # ==========================================
-    # ORDER MANAGEMENT
-    # ==========================================
-
-    def place_order(self, order) -> bool:
-        """Place an order at this branch."""
-        return self._order_manager.place_order(order)
-
-    # ==========================================
-    # PAYMENT MANAGEMENT
-    # ==========================================
-
-    def process_payment(self, payment) -> bool:
-        """Process a payment at this branch."""
+    def take_order(self, cafe_system, branch, order) -> bool:
+        if not self._is_active:
+            raise PermissionError("Inactive staff cannot take orders")
+        
         try:
-            # Payment is already created, just record it
+            cafe_system.place_order(branch, order)
             return True
         except Exception as e:
-            self._logger.error(f"Payment processing failed: {e}")
+            raise RuntimeError(f"Failed to take order: {e}")
+
+    def serve_item(self, order, item_id: str) -> bool:
+        if not self._is_active:
+            raise PermissionError("Inactive staff cannot serve items")
+        
+        try:
+            order.mark_served(item_id)
+            return True
+        except Exception as e:
+            raise RuntimeError(f"Failed to serve item: {e}")
+
+    def assign_table(self, table, customer) -> bool:
+        if not self._is_active:
+            raise PermissionError("Inactive staff cannot assign tables")
+        
+        try:
+            if not table.is_available:
+                raise ValueError("Table is not available")
+            table.assign_customer(customer)
+            return True
+        except AttributeError:
+            raise RuntimeError("Invalid table or customer object")
+
+    def handle_check_in(self, reservation) -> bool:
+        if not self._is_active:
+            raise PermissionError("Inactive staff cannot handle check-ins")
+        
+        try:
+            reservation.check_in()
+            return True
+        except Exception as e:
+            raise RuntimeError(f"Check-in failed: {e}")
+
+
+class Manager(Person):
+    def __init__(self, person_id: str, name: str, contact: str,
+                 username: str, password: str, salary: float):
+        if salary < 0:
+            raise ValueError("Salary cannot be negative")
+        
+        super().__init__(person_id, name, contact)
+        self.set_credentials(username, password)
+        
+        self._salary = salary
+        self._is_active = True
+        self._managed_staff: List[str] = []
+
+    @property
+    def salary(self) -> float:
+        return self._salary
+
+    @property
+    def is_active(self) -> bool:
+        return self._is_active
+
+    @property
+    def managed_staff(self) -> List[str]:
+        return self._managed_staff.copy()
+
+    def approve_void_bill(self, payment, reason: str) -> bool:
+        if not self._is_active:
+            raise PermissionError("Inactive manager cannot approve voids")
+        
+        if not reason or len(reason) < 10:
+            raise ValueError("Void reason must be at least 10 characters")
+        
+        try:
+            payment.refund(reason)
+            return True
+        except Exception as e:
+            raise RuntimeError(f"Void approval failed: {e}")
+
+    def add_staff(self, cafe_system, branch, staff: Staff) -> bool:
+        if not self._is_active:
+            raise PermissionError("Inactive manager cannot add staff")
+        
+        try:
+            branch.staff.append(staff)
+            self._managed_staff.append(staff.staff_id)
+            return True
+        except Exception as e:
+            raise RuntimeError(f"Failed to add staff: {e}")
+
+    def remove_staff(self, branch, staff_id: str, reason: str) -> bool:
+        if not self._is_active:
+            raise PermissionError("Inactive manager cannot remove staff")
+        
+        if not reason or len(reason) < 10:
+            raise ValueError("Removal reason must be at least 10 characters")
+        
+        try:
+            for staff in branch.staff:
+                if staff.staff_id == staff_id:
+                    staff.deactivate()
+                    if staff_id in self._managed_staff:
+                        self._managed_staff.remove(staff_id)
+                    return True
             return False
+        except Exception as e:
+            raise RuntimeError(f"Failed to remove staff: {e}")
 
-    # ==========================================
-    # REPORTING
-    # ==========================================
+    def override_inventory_stock(self, menu_item, new_quantity: int, reason: str) -> bool:
+        if not self._is_active:
+            raise PermissionError("Inactive manager cannot override inventory")
+        
+        if new_quantity < 0:
+            raise ValueError("Inventory quantity cannot be negative")
+        
+        if not reason or len(reason) < 10:
+            raise ValueError("Override reason must be at least 10 characters")
+        
+        try:
+            menu_item.set_stock_level(new_quantity, approved_by=self._person_id)
+            return True
+        except AttributeError:
+            raise RuntimeError("Invalid menu item object")
 
-    def get_sales_report(self, date: Optional[datetime] = None) -> Dict:
-        """Get sales report for this branch."""
-        return self._reporting_manager.get_sales_report(date)
+    def view_daily_sales(self, cafe_system, branch, date: Optional[datetime] = None) -> Dict:
+        if not self._is_active:
+            raise PermissionError("Inactive manager cannot view reports")
+        
+        return cafe_system.get_branch_report(branch)
 
 
 # ==========================================
-# SYSTEM CLASS (Corporate Level)
+# CUSTOMER & MEMBER HIERARCHY
 # ==========================================
 
-class BoardGameCafeSystem:
-    """
-    Corporate-level system managing multiple branches.
-    Coordinates high-level operations across the organization.
-    """
-    
-    def __init__(self, version: str = "2.0"):
-        self._version = version
-        self._orders: List[object] = []
-        self._reservations: List[object] = []
-        self._branches: List[BoardGameCafeBranch] = []
-        self._logger = logging.getLogger('BoardGameCafeSystem')
-        self._logger.info(f"Initialized BoardGameCafeSystem v{self._version}")
+class Customer(Person):
+    def __init__(self, person_id: str, name: str, contact: str, 
+                 birthdate: Optional[datetime] = None):
+        super().__init__(person_id, name, contact)
+        self._total_spend = 0.0
+        self._birthdate = birthdate
+        self._visit_history: List[Dict] = []
 
     @property
-    def version(self) -> str:
-        """System version."""
-        return self._version
+    def total_spend(self) -> float:
+        return self._total_spend
 
     @property
-    def orders(self) -> List[object]:
-        """All orders across all branches."""
-        return self._orders.copy()
+    def birthdate(self) -> Optional[datetime]:
+        return self._birthdate
 
     @property
-    def reservations(self) -> List[object]:
-        """All reservations across all branches."""
-        return self._reservations.copy()
+    def visit_history(self) -> List[Dict]:
+        return self._visit_history.copy()
 
     @property
-    def branches(self) -> List[BoardGameCafeBranch]:
-        """All branches in the system."""
-        return self._branches.copy()
+    def visit_count(self) -> int:
+        return len(self._visit_history)
 
-    # ==========================================
-    # BRANCH MANAGEMENT
-    # ==========================================
-
-    def add_branch(self, branch: BoardGameCafeBranch) -> None:
-        """Add a new branch to the system."""
-        self._branches.append(branch)
-        self._logger.info(f"Added branch: {branch.name}")
-
-    def remove_branch(self, cafe_id: str = None, name: str = None) -> bool:
-        """Remove a branch from the system."""
-        for branch in self._branches:
-            if (cafe_id and branch.cafe_id == cafe_id) or (name and branch.name == name):
-                self._branches.remove(branch)
-                self._logger.info(f"Removed branch: {branch.name}")
-                return True
-        return False
-
-    def get_branch(self, cafe_id: str) -> Optional[BoardGameCafeBranch]:
-        """Get a branch by ID."""
-        for branch in self._branches:
-            if branch.cafe_id == cafe_id:
-                return branch
-        return None
-
-    # ==========================================
-    # CORPORATE-LEVEL OPERATIONS
-    # ==========================================
-
-    def register_new_member(self, member, branch: BoardGameCafeBranch) -> bool:
-        """Register a member at a specific branch."""
-        return branch.register_new_member(member)
-
-    def login_user(self, username: str, password: str, branch: BoardGameCafeBranch) -> Optional[object]:
-        """Login user at a specific branch."""
-        return branch.login_user(username, password)
-
-    def check_in_play_table(self, table_id: str, branch: BoardGameCafeBranch) -> Optional[object]:
-        """Check in to a play table at a specific branch."""
-        return branch.check_in_play_table(table_id)
-
-    def check_out_play_table(self, table_id: str, branch: BoardGameCafeBranch) -> Optional[object]:
-        """Check out from a play table at a specific branch."""
-        return branch.check_out_play_table(table_id)
-
-    def create_reservation(self, reservation, branch: BoardGameCafeBranch) -> bool:
-        """Create a reservation at a specific branch."""
-        success = branch.create_reservation(reservation)
-        if success:
-            self._reservations.append(reservation)
-        return success
-
-    def check_availability(self, table_id: str, reservation_time: datetime, 
-                          branch: BoardGameCafeBranch) -> bool:
-        """Check table availability at a specific branch."""
-        return branch.check_availability(table_id, reservation_time)
-
-    def confirm_reservation(self, reservation_id: str, branch: BoardGameCafeBranch) -> bool:
-        """Confirm a reservation at a specific branch."""
-        return branch.confirm_reservation(reservation_id)
-
-    def cancel_reservation(self, reservation_id: str, branch: BoardGameCafeBranch) -> bool:
-        """Cancel a reservation at a specific branch."""
-        return branch.cancel_reservation(reservation_id)
-
-    def view_menu(self, branch: BoardGameCafeBranch) -> object:
-        """View menu of a specific branch."""
-        return branch.view_menu()
-
-    def place_order(self, order, branch: BoardGameCafeBranch) -> bool:
-        """Place an order at a specific branch."""
-        success = branch.place_order(order)
-        if success:
-            self._orders.append(order)
-        return success
-
-    def process_payment(self, payment, branch: BoardGameCafeBranch) -> bool:
-        """Process payment at a specific branch."""
-        return branch.process_payment(payment)
-
-    # ==========================================
-    # CORPORATE REPORTING
-    # ==========================================
-
-    def get_reservation_report(self) -> List[object]:
-        """Get all reservations across all branches."""
-        return self._reservations.copy()
-
-    def get_sales_report(self, date: Optional[datetime] = None) -> Dict:
-        """Get consolidated sales report across all branches."""
-        total_revenue = 0.0
-        total_orders = 0
-        branch_reports = []
+    def increment_spend(self, amount: float) -> None:
+        if amount <= 0:
+            raise ValueError("Spend amount must be positive")
         
-        for branch in self._branches:
-            report = branch.get_sales_report(date)
-            total_revenue += report['total_revenue']
-            total_orders += report['order_count']
-            branch_reports.append(report)
+        self._total_spend += amount
+        self._visit_history.append({
+            "date": datetime.now(),
+            "amount": amount
+        })
+
+    def is_birthday_today(self) -> bool:
+        if not self._birthdate:
+            return False
         
-        return {
-            'date': (date or datetime.now()).strftime('%Y-%m-%d'),
-            'total_revenue': total_revenue,
-            'total_orders': total_orders,
-            'branch_count': len(self._branches),
-            'average_revenue_per_branch': total_revenue / len(self._branches) if self._branches else 0,
-            'branch_reports': branch_reports
-        }
+        today = datetime.now()
+        return (today.month == self._birthdate.month and 
+                today.day == self._birthdate.day)
 
-    def add_board_game_to_inventory(self, branch: BoardGameCafeBranch, board_game) -> None:
-        """Add a board game to a branch's inventory."""
-        branch.add_board_game(board_game)
 
-    def remove_board_game_from_inventory(self, branch: BoardGameCafeBranch, board_game) -> None:
-        """Remove a board game from a branch's inventory."""
-        branch.remove_board_game(board_game)
+class Member(Customer):
+    def __init__(self, person_id: str, name: str, contact: str, member_id: str,
+                 username: str, password: str, birthdate: Optional[datetime] = None):
+        super().__init__(person_id, name, contact, birthdate)
+        self.set_credentials(username, password)
+        
+        self._member_id = member_id
+        self._points = 0
+        self._join_date = datetime.now()
+        self._is_active = True
+        self._tier = None
+    def determine_tier(self) -> None:
+        if self.total_spend >= 20000:
+            self._tier = TierEnum.PLATINUM
+        elif self.total_spend >= 7500:
+            self._tier = TierEnum.GOLD
+        elif self.total_spend >= 2000:
+            self._tier = TierEnum.SILVER
+        else:
+            self._tier = None
+    def get_tier(self) -> Optional[TierEnum]:
+        self.determine_tier()
+        return self._tier
+    def get_discount_rate(self) -> float:
+        tier = self.get_tier()
+        if tier == TierEnum.PLATINUM:
+            return PLATINUM_DISCOUNT_RATE
+        elif tier == TierEnum.GOLD:
+            return GOLD_DISCOUNT_RATE
+        elif tier == TierEnum.SILVER:
+            return SILVER_DISCOUNT_RATE
+        else:
+            return 0.0
+    def get_points_multiplier(self) -> float:
+        tier = self.get_tier()
+        if tier == TierEnum.PLATINUM:
+            return PLATINUM_POINTS_MULTIPLIER
+        elif tier == TierEnum.GOLD:
+            return GOLD_POINTS_MULTIPLIER
+        elif tier == TierEnum.SILVER:
+            return SILVER_POINTS_MULTIPLIER
+        else:
+            return 1.0
+    def get_booking_limits(self) -> Dict:
+        tier = self.get_tier()
+        if tier == TierEnum.PLATINUM:
+            return {
+                "max_bookings": PLATINUM_MAX_BOOKINGS,
+                "max_duration_hours": PLATINUM_MAX_DURATION_HOURS,
+                "max_advance_days": PLATINUM_MAX_ADVANCE_DAYS
+            }
+        elif tier == TierEnum.GOLD:
+            return {
+                "max_bookings": GOLD_MAX_BOOKINGS,
+                "max_duration_hours": GOLD_MAX_DURATION_HOURS,
+                "max_advance_days": GOLD_MAX_ADVANCE_DAYS
+            }
+        elif tier == TierEnum.SILVER:
+            return {
+                "max_bookings": SILVER_MAX_BOOKINGS,
+                "max_duration_hours": SILVER_MAX_DURATION_HOURS,
+                "max_advance_days": SILVER_MAX_ADVANCE_DAYS
+            }
+        else:
+            return {
+                "max_bookings": 0,
+                "max_duration_hours": 0,
+                "max_advance_days": 0
+            }
+    def can_book(self, requested_date: datetime, duration_hours: int) -> bool:
+        limits = self.get_booking_limits()
+        if limits["max_bookings"] == 0:
+            return False
+        
+        if duration_hours > limits["max_duration_hours"]:
+            return False
+        
+        if (requested_date - datetime.now()).days > limits["max_advance_days"]:
+            return False
+        
+        return True
+    @property
+    def member_id(self) -> str:
+        return self._member_id
 
-    def add_play_table_to_branch(self, branch: BoardGameCafeBranch, play_table) -> None:
-        """Add a play table to a branch."""
-        branch.add_play_table(play_table)
+    @property
+    def points(self) -> int:
+        return self._points
 
-    def remove_play_table_from_branch(self, branch: BoardGameCafeBranch, play_table) -> None:
-        """Remove a play table from a branch."""
-        branch.remove_play_table(play_table)
+    @property
+    def join_date(self) -> datetime:
+        return self._join_date
+
+    @property
+    def is_active(self) -> bool:
+        return self._is_active
+
+    def add_points(self, amount: int) -> None:
+        if amount <= 0:
+            raise ValueError("Points amount must be positive")
+        self._points += amount
+
+    def redeem_points(self, amount: int) -> bool:
+        if amount <= 0:
+            raise ValueError("Redemption amount must be positive")
+        
+        if amount > self._points:
+            raise ValueError(f"Insufficient points. Balance: {self._points}")
+        
+        self._points -= amount
+        return True
+
+    def deactivate(self) -> None:
+        self._is_active = False
+
+    def reactivate(self) -> None:
+        self._is_active = True
+
+
+class TempCustomer(Customer):
+    def __init__(self, name: str):
+        if not name:
+            raise ValueError("Name cannot be empty")
+        
+        visit_date = datetime.now()
+        temporary_id = f"TEMP-{int(visit_date.timestamp())}"
+        super().__init__(person_id=temporary_id, name=name, contact="N/A")
+        
+        self._visit_date = visit_date
+        self._temporary_id = temporary_id
+        self._queue_token: Optional[str] = None
+
+    @property
+    def temporary_id(self) -> str:
+        return self._temporary_id
+
+    @property
+    def queue_token(self) -> Optional[str]:
+        return self._queue_token
+
+    @property
+    def visit_date(self) -> datetime:
+        return self._visit_date
+
+    def set_queue_token(self, token: str) -> None:
+        if not token:
+            raise ValueError("Queue token cannot be empty")
+        self._queue_token = token
+
+    def update_contact(self, new_contact: str) -> None:
+        raise NotImplementedError("Temporary customers cannot update contact information")
