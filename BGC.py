@@ -44,21 +44,8 @@ class BoardGameCafeSystem:
     # BRANCH MANAGEMENT
     # ------------------
 
-class BoardGameCafe:
-    def __init__(self):
-        self.__cafe_name = None
-        self.__cafe_id = None
-        self.__cafe_status = None
-        self.__location = None
-        self.__lobbies = []
-        self.__board_games = []
-        # self.__menu_list = BGC_menu.MenuList()
-        # self.__order_system = BGC_log.OrderSystem()
-        # self.__reservation_manager = BGC_log.ReservationManager()
-        self.__managers = []
-        self.__staffs = []
-        self.__transactions = []
-        self.__audit_logs = []
+    def add_branch(self, branch: BoardGameCafeBranch) -> None:
+        self.branches.append(branch)
 
     def get_branch(self, cafe_id: str) -> Optional[BoardGameCafeBranch]:
         for branch in self.branches:

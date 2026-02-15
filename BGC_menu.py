@@ -27,7 +27,7 @@ class MenuItem(ABC):
             raise ValueError("Item ID and name cannot be empty")
         if price < 0:
             raise ValueError("Price cannot be negative")
-
+        
         self._item_id = item_id
         self._name = name
         self._price = price
@@ -72,7 +72,7 @@ class MenuItem(ABC):
     def set_price(self, new_price: float, approved_by: Optional[str] = None) -> None:
         if new_price < 0:
             raise ValueError("Price cannot be negative")
-
+        
         self._price = new_price
         self._last_updated = datetime.now()
 
@@ -83,25 +83,24 @@ class MenuItem(ABC):
     def set_stock_level(self, quantity: int, approved_by: Optional[str] = None) -> None:
         if quantity < 0:
             raise ValueError("Stock level cannot be negative")
-
+        
         self._stock_level = quantity
         self._last_updated = datetime.now()
 
     def add_stock(self, quantity: int) -> None:
         if quantity <= 0:
             raise ValueError("Quantity to add must be positive")
-
+        
         self._stock_level += quantity
         self._last_updated = datetime.now()
 
     def reduce_stock(self, quantity: int) -> None:
         if quantity <= 0:
             raise ValueError("Quantity to reduce must be positive")
-
+        
         if quantity > self._stock_level:
-            raise ValueError(
-                f"Insufficient stock. Available: {self._stock_level}")
-
+            raise ValueError(f"Insufficient stock. Available: {self._stock_level}")
+        
         self._stock_level -= quantity
         self._last_updated = datetime.now()
 
@@ -161,13 +160,12 @@ class Food(MenuItem):
 
 class Drink(MenuItem):
     def __init__(self, item_id: str, name: str, price: float, description: str,
-                 size: str, is_alcoholic: bool = False,
+                 size: str, is_alcoholic: bool = False, 
                  temperature_options: Optional[List[str]] = None):
         super().__init__(item_id, name, price, description)
         self._size = size
         self._is_alcoholic = is_alcoholic
-        self._temperature_options = temperature_options or [
-            "Cold", "Room Temperature"]
+        self._temperature_options = temperature_options or ["Cold", "Room Temperature"]
 
     @property
     def size(self) -> str:
@@ -231,7 +229,7 @@ class MenuList:
         for existing_item in self._items:
             if existing_item.item_id == item.item_id:
                 raise ValueError(f"Item with ID {item.item_id} already exists")
-
+        
         self._items.append(item)
 
     def remove_item(self, item_id: str) -> bool:
@@ -260,7 +258,7 @@ class MenuList:
         return [item for item in self._items if item.is_available]
 
     def get_items_by_category(self, category: str) -> List[MenuItem]:
-        return [item for item in self._items
+        return [item for item in self._items 
                 if item.get_category().lower() == category.lower()]
 
     def get_low_stock_items(self) -> List[MenuItem]:
@@ -269,12 +267,12 @@ class MenuList:
     def search_items(self, query: str) -> List[MenuItem]:
         query_lower = query.lower()
         return [item for item in self._items
-                if query_lower in item.name.lower() or
-                query_lower in item.description.lower()]
+                if query_lower in item.name.lower() or 
+                   query_lower in item.description.lower()]
 
     def get_menu_summary(self) -> Dict:
         available = [item for item in self._items if item.is_available]
-
+        
         return {
             'total_items': len(self._items),
             'available_items': len(available),
