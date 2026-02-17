@@ -1,10 +1,8 @@
 @startuml
 skinparam classAttributeIconSize 0
-skinparam linetype ortho
-skinparam nodesep 120
+' skinparam linetype ortho
+skinparam nodesep 60
 skinparam ranksep 70
-
-skinparam padding 2.5
 
 skinparam groupInheritance 2 
 
@@ -17,6 +15,7 @@ title Board Game Cafe System Class Diagram
 package "Management Core" {
     class BoardGameCafeSystem {
         - version : str
+        - orders : List<Order>
         - reservations : List<Reservation>
         - branches : List<BoardGameCafeBranch>
         + add_branch(cafe : BoardGameCafe)
@@ -31,6 +30,8 @@ package "Management Core" {
         '===========================================
         ' System Log Methods
         '===========================================
+        + check_in_play_table()
+        + check_out_play_table(table_name : str)
         + create_reservation()
         + check_availability()
         + confirm_reservation()
@@ -39,6 +40,8 @@ package "Management Core" {
         '===========================================
         ' Order & Payment Methods
         '===========================================
+        + view_menu() : MenuList
+        + place_order(order : Order) : bool
         + process_payment(payment : Payment) : bool
 
         '===========================================
@@ -57,20 +60,6 @@ package "Management Core" {
         - PlayTables : List<PlayTable>
         - inventory : MenuList
         + get_Reservation_schedule(date : date) : List<Reservation>
-        + get_available_play_tables() : List<PlayTable>
-
-        ' Inventory Management Methods
-        + add_board_game(game : BoardGame) : void
-        + remove_board_game(game_id : str) : void
-        + add_play_table(table : PlayTable) : void
-        + remove_play_table(table_id : str) : void
-
-        ' Play Table Management Methods
-        + check_out_play_table(table_id : str) : void
-        + check_in_play_table()
-        + check_out_play_table(table_name : str)
-        + walk_in_customer_assign_table(pax : int) : PlayTable
-
     }
 
     abstract class PlayTable {
@@ -78,8 +67,8 @@ package "Management Core" {
         - table_id : str
         - table_name : str /' e.g., V1, V2, S1, S2 '/
         - capacity : int
-        - active_orders : List<ItemOrder>
         - status : str
+        - active_orders : List<ItemOrder>
         + assign_customer()
         + clear_table()
         + order_item(item : MenuItem, qty : int) : ItemOrder
@@ -88,7 +77,7 @@ package "Management Core" {
     }
 
     class PlayTableStandard {
-        - price_per_hour : 30.00
+        - price_per_hour : 50.00
         - table_id : str
         - capacity : int
         - status : str
@@ -109,6 +98,7 @@ package "Person & Auth" {
     abstract class Person {
         - user_id : str
         - name : str
+        - contact : str
     }
 
     class Manager {
@@ -195,18 +185,11 @@ package "Inventory & Menu" {
 }
 
 package "Operations (Order & Resv)" {
-
-    class ItemOrder {
-        - order_id : str
-        - items : MenuItem
-        - quantity : int
-        - play_table : PlayTable
-        - status : str
-
-        + view_menu_items() : List<MenuItem>
-        + place_order() : bool
-        + calculate_total()
-        + check_all_served()
+    class Transaction {
+        - transaction_id : str
+        - amount : float
+        - date_time : datetime
+        + get_transaction_details() : str
     }
 
     class Payment {
@@ -253,7 +236,7 @@ package "Operations (Order & Resv)" {
 ' --- 1. Main Structure Hierarchy ---
 BoardGameCafeSystem "1" *--> "*" BoardGameCafeBranch
 BoardGameCafeSystem "1" *--> "*" Person
-BoardGameCafeBranch "1" *--> "1..*" BoardGame
+BoardGameCafeBranch "1" *--> "*" BoardGame
 
 ' --- 2. Sub-Systems Connections ---
 BoardGameCafeBranch "1" --> "1" MenuList
@@ -265,10 +248,10 @@ Person <|-- Staff
 Person <|-- Customer
 Customer <|-- Member
 Customer <|-- TempCustomer
-
-' --- 4. Inheritance Grouping (Items) ---
 PlayTable <|-- PlayTableStandard
 PlayTable <|-- PlayTableVIP
+
+' --- 4. Inheritance Grouping (Items) ---
 MenuItem <|-- Food
 MenuItem <|-- Drink
 MenuList "1" o--> "*" MenuItem
@@ -286,5 +269,7 @@ BoardGameCafeSystem "1" --> "1" Payment
 ItemOrder "*" <-- "1" PlayTable
 BoardGameCafeBranch "1" --> "*" PlayTable
 
+BoardGameCafeBranch "1" --> "*" ItemOrder
 BoardGameCafeSystem "1" --> "*" Reservation
+
 @enduml
