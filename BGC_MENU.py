@@ -112,14 +112,6 @@ class Order:
     @property
     def menu_items(self):
         return self.__menu_items
-<<<<<<< HEAD
-    @property
-    def status(self):
-        return self.__status
-    @status.setter
-    def status(self, status):
-        self.__status = status
-=======
 
     @menu_items.setter
     def menu_items(self, menu_items):
@@ -129,7 +121,6 @@ class Order:
     def get_price(self):
         return self.__menu_items.price
 
->>>>>>> 0e85dc83b55b0635377900c110b612b47f5b0449
     @property
     def status(self):
         return self.__status
