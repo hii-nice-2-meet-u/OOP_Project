@@ -126,15 +126,8 @@ package "Person & Auth" {
         - birthdate : date
         - member_tier : str
         - is_student : bool             
-        - student_card_expiry : date    
-        - max_booking_duration : int
-        - max_active_booking_quota : int
-        - max_advance_booking_days : int
         
         + get_discount(): float
-        + get_max_booking_duration() :int
-        + get_max_active_booking_quota() :int
-        + get_max_advance_booking_days() :int
     }
 }
 
