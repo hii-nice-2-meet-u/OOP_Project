@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 import ENUM_STATUS
 
 

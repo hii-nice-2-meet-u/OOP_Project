@@ -1,4 +1,5 @@
-import ENUM_STATUS
+from abc import ABC, abstractmethod
+from ENUM_STATUS import MemberTier
 
 
 class Person(ABC):
@@ -10,17 +11,25 @@ class Person(ABC):
     def name(self):
         return self.__name
 
+    @name.setter
+    def name(self, value):
+        self.__name = value
+
     @property
     def user_id(self):
         return self.__user_id
+
+    @user_id.setter
+    def user_id(self, value):
+        self.__user_id = value
 
 
 class Customer(Person):
     def __init__(self, name, user_id):
         super().__init__(name, user_id)
         self.__total_spent = 0
-        self.__birth_date = None
-        self.__member_tier = "Bronze"
+        self.__birth_date = ""
+        self.__member_tier = MemberTier.NONE_TIER
         self.__is_student = False
 
     @property
@@ -44,24 +53,32 @@ class Customer(Person):
     def member_tier(self):
         return self.__member_tier
 
+    @member_tier.setter
+    def member_tier(self, tier):
+        self.__member_tier = tier
+
     def __update_member_tier(self):  # ! แก้เลขด้วย
-        if self.__total_spent >= 1000:
-            self.__member_tier = "Gold"
+        if self.__total_spent >= 2000:
+            self.__member_tier = MemberTier.PLATINUM
+        elif self.__total_spent >= 1000:
+            self.__member_tier = MemberTier.GOLD
         elif self.__total_spent >= 500:
-            self.__member_tier = "Silver"
-        elif self.__total_spent > 69:
-            self.__member_tier = "Bronze"
+            self.__member_tier = MemberTier.SILVER
+        elif self.__total_spent > 250:
+            self.__member_tier = MemberTier.BRONZE
         else:
-            self.__member_tier = "None"
+            self.__member_tier = MemberTier.NONE_TIER
 
     def get_discount(self):
-        if self.__member_tier == "Gold":
+        if self.__member_tier == MemberTier.PLATINUM:
+            return 0.25
+        if self.__member_tier == MemberTier.GOLD:
             return 0.20
         if self.__is_student:
             return 0.15
-        elif self.__member_tier == "Silver":
+        elif self.__member_tier == MemberTier.SILVER:
             return 0.10
-        elif self.__member_tier == "Bronze":
+        elif self.__member_tier == MemberTier.BRONZE:
             return 0.05
         else:
             return 0.0

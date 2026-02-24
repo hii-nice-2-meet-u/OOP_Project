@@ -1,4 +1,5 @@
-import ENUM_STATUS
+from abc import ABC, abstractmethod
+from ENUM_STATUS import OrderStatus
 
 
 class MenuItem(ABC):
@@ -12,10 +13,6 @@ class MenuItem(ABC):
     @property
     def item_id(self):
         return self.__item_id
-
-    @item_id.setter
-    def item_id(self, item_id):
-        self.__item_id = item_id
 
     @property
     def name(self):
@@ -51,15 +48,21 @@ class MenuItem(ABC):
 
 
 class Food(MenuItem):
-    def __init__(self, item_id, name, price, description="", is_available=None):
-        super().__init__(item_id, name, price, is_available, description)
+    __counter = 0
+
+    def __init__(self, name, price, description="", is_available=None):
+        temp_id = "FOOD-" + str(Food.__counter).zfill(5)
+        Food.__counter += 1
+        super().__init__(temp_id, name, price, is_available, description)
 
 
 class Drink(MenuItem):
-    def __init__(
-        self, item_id, name, price, description="", is_available=None, cup_size="S"
-    ):
-        super().__init__(item_id, name, price, is_available, description)
+    __counter = 0
+
+    def __init__(self, name, price, description="", is_available=None, cup_size="S"):
+        temp_id = "DRNK-" + str(Drink.__counter).zfill(5)
+        Drink.__counter += 1
+        super().__init__(temp_id, name, price, is_available, description)
         self.__cup_size = cup_size
 
     @property
@@ -100,25 +103,33 @@ class Order:
         self.__order_id = "ODR-" + str(Order.__counter).zfill(5)
         Order.__counter += 1
         self.__menu_items = menu_items
-        self.__status = "Pending"
+        self.__status = OrderStatus.PENDING
 
     @property
     def order_id(self):
         return self.__order_id
 
-    @order_id.setter
-    def order_id(self, order_id):
-        self.__order_id = order_id
-
     @property
     def menu_items(self):
         return self.__menu_items
+<<<<<<< HEAD
     @property
     def status(self):
         return self.__status
     @status.setter
     def status(self, status):
         self.__status = status
+=======
+
+    @menu_items.setter
+    def menu_items(self, menu_items):
+        self.__menu_items = menu_items
+
+    @property
+    def get_price(self):
+        return self.__menu_items.price
+
+>>>>>>> 0e85dc83b55b0635377900c110b612b47f5b0449
     @property
     def status(self):
         return self.__status
