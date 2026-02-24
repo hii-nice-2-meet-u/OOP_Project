@@ -97,8 +97,8 @@ class Order:
     __counter = 0
 
     def __init__(self, menu_items):
-        self.__order_id = "ODR-" + str(__Counter).zfill(5)
-        Order.__Counter += 1
+        self.__order_id = "ODR-" + str(Order.__counter).zfill(5)
+        Order.__counter += 1
         self.__menu_items = menu_items
         self.__status = "Pending"
 
@@ -113,11 +113,12 @@ class Order:
     @property
     def menu_items(self):
         return self.__menu_items
-
     @property
-    def get_price(self):
-        return self.__menu_items
-
+    def status(self):
+        return self.__status
+    @status.setter
+    def status(self, status):
+        self.__status = status
     @property
     def status(self):
         return self.__status
