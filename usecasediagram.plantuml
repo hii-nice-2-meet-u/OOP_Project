@@ -1,0 +1,207 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam nodesep 15
+skinparam ranksep 60
+
+' Visual styling
+skinparam usecase {
+    BackgroundColor White
+    BorderColor Black
+}
+skinparam actor {
+    BackgroundColor White
+    BorderColor Black
+}
+
+' ==========================================
+' ACTOR BLOCKS (Left Side)
+' ==========================================
+rectangle "Staffs & Management" {
+    actor "Owner" as O
+    actor "Manager" as M
+    actor "Front Store Staff" as S
+    actor "Kitchen & Bar" as K
+}
+
+rectangle "Customers (Generalization)" {
+    actor "Customer" as C
+    actor "Walk-in Guest" as CG
+    actor "Member" as CM
+    
+    ' ลูกศรสืบทอด (Inheritance/Generalization) ตามเกณฑ์ข้อ A1
+    C <|-- CG
+    C <|-- CM
+}
+
+rectangle "External Systems" {
+    actor "Payment Gateway" as Bank
+}
+
+' ==========================================
+' SYSTEM BOUNDARIES (Right Side - FINAL)
+' ==========================================
+rectangle "Board Game Cafe System" {
+
+    rectangle "Booking & Member System" {
+        usecase "View Menu & Game Catalog" as UC_ViewMenu
+        usecase "Register Member" as UC_Reg
+        usecase "Input Account Data" as UC_InputData
+        usecase "Check Duplicate User" as UC_CheckDup
+        
+        UC_Reg ..> UC_InputData : <<include>>
+        UC_InputData ..> UC_CheckDup : <<include>>
+
+        usecase "User Login / Auth" as UC_Login
+        usecase "Make Reservation" as UC_MakeRes
+        usecase "Select Date, Time, Pax" as UC_SelectDT
+        usecase "Check Availability" as UC_CheckAvail
+        usecase "Pay Booking Deposit" as UC_PayDeposit
+        usecase "Generate Booking Ref." as UC_GenRef
+        
+        UC_MakeRes ..> UC_Login : <<include>>
+        UC_MakeRes ..> UC_SelectDT : <<include>>
+        UC_SelectDT ..> UC_CheckAvail : <<include>>
+        UC_CheckAvail ..> UC_PayDeposit : <<include>>
+        UC_PayDeposit ..> UC_GenRef : <<include>>
+
+        usecase "Cancel Reservation" as UC_CancelRes
+        usecase "Check Cancel Policy" as UC_CheckPolicy
+        usecase "Request Refund Deposit" as UC_ReqRefund
+        usecase "Process Refund via Bank" as UC_ProcessRefund
+        
+        UC_CancelRes ..> UC_Login : <<include>>
+        UC_CancelRes ..> UC_CheckPolicy : <<include>>
+        UC_CancelRes <.. UC_ReqRefund : <<extend>>
+        UC_ReqRefund ..> UC_ProcessRefund : <<include>>
+    }
+
+    rectangle "Table Management System" {
+        usecase "Walk-in Request" as UC_WalkIn
+        usecase "Check Available GameTables" as UC_CheckTable
+        usecase "Assign Table & Zone" as UC_Assign
+        usecase "Open Table Session" as UC_OpenSession
+        
+        UC_WalkIn ..> UC_CheckTable : <<include>>
+        UC_CheckTable ..> UC_Assign : <<include>>
+        UC_Assign ..> UC_OpenSession : <<include>>
+
+        usecase "Check-in Reservation" as UC_CheckInRes
+        usecase "Verify Booking Ref." as UC_VerifyRes
+        
+        UC_CheckInRes ..> UC_VerifyRes : <<include>>
+        UC_VerifyRes ..> UC_Assign : <<include>>
+
+        usecase "Borrow Board Game" as UC_Borrow
+        usecase "Update Game to IN-USE" as UC_UpdateGame
+        usecase "Return Board Game" as UC_Return
+        usecase "Check Game Condition" as UC_CheckCond
+        usecase "Assess Damage Fine" as UC_Fine
+        
+        UC_Borrow ..> UC_UpdateGame : <<include>>
+        UC_Return ..> UC_CheckCond : <<include>>
+        UC_CheckCond <.. UC_Fine : <<extend>>
+    }
+
+    rectangle "F&B Order System" {
+        usecase "Place F&B Order" as UC_Order
+        usecase "Customize Details (Sweetness)" as UC_Customize
+        usecase "Update Live Inventory" as UC_Stock
+        usecase "Send to Kitchen Display" as UC_SendKitchen
+        usecase "Prepare & Serve" as UC_Cook
+        
+        UC_Order <.. UC_Customize : <<extend>>
+        UC_Order ..> UC_Stock : <<include>>
+        UC_Stock ..> UC_SendKitchen : <<include>>
+        UC_SendKitchen ..> UC_Cook : <<include>>
+    }
+
+    rectangle "Payment System" {
+        usecase "Checkout / Request Bill" as UC_Pay
+        usecase "Apply Coupon/Discount" as UC_Discount
+        usecase "Verify Student/Member ID" as UC_VerifyID
+        usecase "Process Payment" as UC_ProcessPay
+        usecase "Print Receipt & Clear Table" as UC_Receipt
+        usecase "Approve Void Bill" as UC_Void
+        
+        UC_Pay <.. UC_Discount : <<extend>>
+        UC_Discount ..> UC_VerifyID : <<include>>
+        UC_Pay ..> UC_ProcessPay : <<include>>
+        UC_ProcessPay ..> UC_Receipt : <<include>>
+        UC_Pay <.. UC_Void : <<extend>>
+    }
+
+    rectangle "Backoffice System" {
+        usecase "Generate Analytics Report" as UC_GenReport
+        usecase "Filter by Date/Branch" as UC_Filter
+        usecase "View Sales & Financial Data" as UC_Report
+        usecase "Export to PDF/Excel" as UC_Export
+        
+        UC_GenReport ..> UC_Filter : <<include>>
+        UC_Filter ..> UC_Report : <<include>>
+        UC_Report <.. UC_Export : <<extend>>
+
+        usecase "Manage Inventory" as UC_Inv
+        usecase "Perform Stock Count" as UC_StockCount
+        usecase "Identify Shortage Item" as UC_Shortage
+        usecase "Create Purchase Order" as UC_CreatePO
+        
+        UC_Inv ..> UC_StockCount : <<include>>
+        UC_StockCount ..> UC_Shortage : <<include>>
+        UC_Shortage <.. UC_CreatePO : <<extend>>
+        
+        usecase "Manage Branch Staff" as UC_ManageStaff
+        usecase "Assign Branch Managers" as UC_AssignMgr
+        usecase "Configure Global Policies" as UC_Policy
+    }
+}
+
+' ==========================================
+' RELATIONSHIPS
+' ==========================================
+
+' --- 1. Customer (สิ่งที่ Walk-in และ Member ทำได้เหมือนกัน) ---
+C -[#black]-> UC_ViewMenu : "View Catalog"
+C -[#black]-> UC_Borrow : "Borrow Games"
+C -[#black]-> UC_Order : "Order F&B"
+C -[#black]-> UC_Return : "Finish Playing"
+C -[#black]-> UC_Pay : "Settle Bill"
+
+' --- 2. Walk-in Guest (ทำได้เฉพาะหน้าร้าน) ---
+CG -[#blue]-> UC_WalkIn : "Request Table"
+
+' --- 3. Member (ทำออนไลน์ได้) ---
+CM -[#purple]-> UC_Reg : "Sign Up"
+CM -[#purple]-> UC_Login : "Access Account"
+CM -[#purple]-> UC_MakeRes : "Book Online"
+CM -[#purple]-> UC_CancelRes : "Cancel Booking"
+CM -[#purple]-> UC_CheckInRes : "Check-in at Store"
+
+' --- Staffs ---
+S -[#green]-> UC_WalkIn : "Process Walk-in"
+S -[#green]-> UC_CheckInRes : "Confirm Booking"
+S -[#green]-> UC_Borrow : "Scan Game Out"
+S -[#green]-> UC_Order : "Take Order"
+S -[#green]-> UC_Return : "Inspect Game"
+S -[#green]-> UC_VerifyID : "Check ID Card"
+S -[#green]-> UC_Pay : "Process Billing"
+
+K -[#orange]-> UC_SendKitchen : "Receive Order"
+K -[#orange]-> UC_Cook : "Prepare & Serve"
+
+M -[#red]-> UC_Void : "Approve Void"
+M -[#red]-> UC_Fine : "Approve Fine"
+M -[#red]-> UC_GenReport : "Analyze Sales"
+M -[#red]-> UC_Inv : "Control Stock"
+M -[#red]-> UC_ManageStaff : "Manage Cashiers"
+
+O -[#black]-> UC_GenReport : "View All Branches"
+O -[#black]-> UC_Policy : "Set Prices/Discounts"
+O -[#black]-> UC_AssignMgr : "Appoint Managers"
+
+' --- External Systems ---
+Bank -[#gray]-> UC_PayDeposit : "Hold Deposit"
+Bank -[#gray]-> UC_ProcessRefund : "Return Deposit"
+Bank -[#gray]-> UC_ProcessPay : "Process Checkout"
+
+@enduml

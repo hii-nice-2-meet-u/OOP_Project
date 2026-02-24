@@ -1,13 +1,8 @@
 @startuml
 skinparam classAttributeIconSize 0
-skinparam nodesep 60
-skinparam ranksep 70
-skinparam groupInheritance 2 
 
-title Board Game Cafe System Class Diagram 
+title Board Game Cafe System Class Diagram
 
-' ==========================================
-' PACKAGES (GROUPING)
 ' ==========================================
 
 package "Management Core" {
@@ -15,13 +10,22 @@ package "Management Core" {
         - personnel : List<Person>
         - orders : List<Order>
         - reservations : List<Reservation>
+        - transactions : List<Transaction>
         - branches : List<BoardGameCafeBranch>
         + add_branch(cafe : BoardGameCafeBranch)
         + remove_branch(cafe_id : str = None, name : str = None)
+        + add_menu_item(item : MenuItem)
 
-        '===========================================
-        ' System Log Methods
-        '===========================================
+        + register_new_staff(staff_info, branch_id)
+        + terminate_staff(staff_id)
+        + update_table_pricing(table_type, new_price)
+        
+        + assign_table_to_customer(customer_id, table_id)
+        + process_check_in(reservation_id)
+        + process_check_out(table_id)
+        + check_student_status(customer_id) : bool
+        + handle_payment(transaction_id, payment_details)
+
         + check_in_play_table()
         + check_out_play_table(table_name : str)
         + create_reservation()
@@ -29,18 +33,11 @@ package "Management Core" {
         + confirm_reservation()
         + cancel_reservation()
         
-        '===========================================
-        ' Order & Payment Methods
-        '===========================================
         + view_menu() : MenuList
         + place_order(order : Order) : bool
         + process_payment(payment : Payment) : bool
 
-        '===========================================
-        ' Report Generation Methods
-        '===========================================
-        + get_reservation_report(date : date)
-        + get_sales_report(date : date) 
+        + get_transaction_history(datetime) : List<Transaction>
     }
 
     class BoardGameCafeBranch {
@@ -53,6 +50,13 @@ package "Management Core" {
         + get_Reservation_schedule(date : date) : List<Reservation>
     }
 
+    enum TableStatus {
+        AVAILABLE
+        OCCUPIED
+        RESERVED
+        MAINTENANCE
+    }
+
     abstract class PlayTable {
         - current_customer : List<Customer>
         - price_per_hour : float
@@ -60,8 +64,12 @@ package "Management Core" {
         - table_name : str
         - status : str
         - active_orders : List<Order>
+        - borrowed_games : List<BoardGame>
+        
         + clear_table()
         + order_item(item : MenuItem, qty : int) : Order
+        + borrow_game(game : BoardGame) : bool
+        + return_game(game : BoardGame, is_damaged : bool) : void
         + calculate_price(duration : float) : float
         + get_menu_ordered() : List<MenuItem>
     }
@@ -71,7 +79,6 @@ package "Management Core" {
         - table_id : str
         - capacity : int
         - status : str
-        + assign_customer()
         + clear_table()
     }
 
@@ -80,7 +87,6 @@ package "Management Core" {
         - table_id : str
         - capacity : int
         - status : str
-        + assign_customer()
         + clear_table()
     }
 }
@@ -92,33 +98,39 @@ package "Person & Auth" {
     }
 
     class Manager {
-        + approve_void_bill(order_id : str) : bool
-        + add_staff(staff : Staff) : void
-        + remove_staff(staff_id : str) : void
+        - managed_branch : BoardGameCafeBranch
     }
 
-    class Employee {
+    class NonCustomer {
+        - phone : str
+        - email : str
+        - hire_date : date
         - salary : float
-        + take_order(order : Order) : void
-        + serve_item(item : MenuItem) : void
-        + assign_table()
-        + check_student_card()
-        + check_booking_status(booking_id : str) : Reservation
-        + assign_walk_in_customer(table : PlayTable) : bool
-        + handle_check_in(reservation : Reservation) : void
     }
+    
     class Owner {
+        - branch_owned : List[BoardGameCafeBranch]
     }
+    
     class Staff {
+        - shift_start_time : time
+        - shift_end_time : time
+        - assigned_branch : BoardGameCafeBranch
+        - overtime_hours : float
+        - performance_score : float
+        - is_on_duty : bool
     }
 
     class Customer {
         - total_spent : float
         - birthdate : date
         - member_tier : str
+        - is_student : bool             
+        - student_card_expiry : date    
         - max_booking_duration : int
         - max_active_booking_quota : int
         - max_advance_booking_days : int
+        
         + get_discount(): float
         + get_max_booking_duration() :int
         + get_max_active_booking_quota() :int
@@ -127,11 +139,25 @@ package "Person & Auth" {
 }
 
 package "Inventory & Menu" {
+
+    enum OrderStatus {
+        PENDING
+        SERVED
+        CANCELLED
+    }
+
+    enum BoardGameStatus {
+        AVAILABLE
+        IN-USE
+        MAINTENANCE
+        UNAVAILABLE
+    } 
+
     class Order {
         - order_id : str
         - items : List<MenuItem>
         - quantity : int
-        - status : str
+        - status : OrderStatus
 
         + calculate_total()
         + check_all_served()
@@ -147,7 +173,11 @@ package "Inventory & Menu" {
         - item_id : str
         - name : str
         - price : float
+        - stock_quantity : int   
+        - is_available : bool    
+        
         + get_price(): float
+        + update_stock(qty : int) : void 
     }
 
     class Food {
@@ -170,16 +200,30 @@ package "Inventory & Menu" {
 }
 
 package "Operations (Order & Resv)" {
+
+    enum ReservationStatus {
+        PENDING
+        CONFIRMED
+        CANCELLED
+        NO-SHOW
+    }
+
+    enum TransactionStatus {
+        ACTIVE
+        COMPLETED
+        VOIDED
+    }
+
     class Payment {
         - payment_id : str
         - amount : float
-        - payment_method : PaymentMethod
+        - payment_method : PaymentMethod   
+        - payment_time : datetime    
         + process_payment()
     }
 
     abstract class PaymentMethod {
         - method_id : str
-        - method_name : str
         + validate_method() : bool
     }
 
@@ -193,6 +237,12 @@ package "Operations (Order & Resv)" {
         + validate_method() : bool
     }
 
+    interface PaymentGateway <<External API>> {
+        + verify_transaction(amount : float, method_details : str) : bool
+        + refund_transaction(transaction_id : str) : bool
+    }
+
+    ' === อัปเดต Methods ตามเกณฑ์ OOP ===
     class Reservation {
         - reservation_id : str
         - customer : Customer
@@ -202,19 +252,45 @@ package "Operations (Order & Resv)" {
         - play_table : PlayTable
         - branch : BoardGameCafeBranch
         - status : str
-        + get_details() : str
+        
+        + update_status(new_status : str) : void
+
+    }
+
+    ' === อัปเดต Methods ตามเกณฑ์ OOP ===
+    class Transaction {
+        - transaction_id : str
+        - customer : Customer
+        - reservation : Reservation
+        - play_table : PlayTable
+        - orders : List<Order>
+        - played_games : List<BoardGame>
+        - check_in_time : datetime
+        - check_out_time : datetime
+        - total_boardgame_fee : float
+        - total_fnb_price : float
+        - damage_fine : float
+        - applied_discount_type : str   
+        - discount_amount : float       
+        - grand_total : float
+        - payment : Payment
+        - status : TransactionStatus
+        
+        + apply_damage_fine(amount : float, reason : str) : void
+        + apply_discount_code(code : str) : bool
+        + calculate_grand_total() : float
+        + complete_transaction(payment : Payment) : bool
+        + generate_receipt() : str
     }
 }
 
 ' ==========================================
-' RELATIONSHIPS (FIXED WIRING)
-' ==========================================
 
-' --- Inheritance (meets A2: 2+ levels with A→B→C chain) ---
-Person <|-- Employee
-Employee <|-- Manager
-Employee <|-- Staff
-Employee <|-- Owner
+' --- Inheritance ---
+Person <|-- NonCustomer
+NonCustomer <|-- Manager
+NonCustomer <|-- Staff
+NonCustomer <|-- Owner
 Person <|-- Customer
 
 PlayTable <|-- PlayTableStandard
@@ -227,26 +303,40 @@ PaymentMethod <|-- Cash
 PaymentMethod <|-- Card
 PaymentMethod <|-- OnlinePayment
 
-' --- Composition (meets A2: ≥1 Composition + all multiplicities) ---
+' --- Composition ---
 BoardGameCafeSystem "1" *--> "*" BoardGameCafeBranch
 BoardGameCafeSystem "1" *--> "*" Person
 BoardGameCafeSystem "1" *--> "*" Order
 BoardGameCafeSystem "1" *--> "*" Reservation
+BoardGameCafeSystem "1" *--> "*" Transaction
 BoardGameCafeBranch "1" *--> "*" BoardGame
 BoardGameCafeBranch "1" *--> "*" PlayTable
 BoardGameCafeBranch "1" *--> "1" MenuList
 
-' --- Aggregation (meets A2: ≥3 Aggregation/Association) ---
+' --- Aggregation ---
 MenuList "1" o--> "*" MenuItem
 PlayTable "1" o--> "*" Order
+Transaction "1" o--> "*" Order
 
-' --- Association (meets A2: all relationships have multiplicity + extra for completeness) ---
+' --- Association ---
 PlayTable "1" --> "0..*" Customer
+PlayTable "1" --> "0..*" BoardGame
 Reservation "1" --> "1" Customer
 Reservation "1" --> "1" PlayTable
 Reservation "1" --> "1" BoardGameCafeBranch
+
 Payment "1" --> "1" PaymentMethod
-Reservation "1" --> "0..*" Payment
 Order "1" --> "*" MenuItem
+
+' --- Transaction Associations ---
+Transaction "1" --> "0..1" Reservation
+Transaction "1" --> "1" PlayTable
+Transaction "1" --> "1" Customer
+Transaction "1" --> "0..*" Payment
+Transaction "1" --> "0..*" BoardGame
+
+' --- External Associations ---
+Card "1" --> "1" PaymentGateway : <<uses>>
+OnlinePayment "1" --> "1" PaymentGateway : <<uses>>
 
 @enduml
