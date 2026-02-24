@@ -1,4 +1,4 @@
-import ENUM_STATUS
+from ENUM_STATUS import ReservationStatus
 
 
 class Reservation:
@@ -9,7 +9,7 @@ class Reservation:
         self.__start_time = start_time
         self.__end_time = end_time
         self.__branch_id = branch_id
-        self.__status = None
+        self.__status = ReservationStatus.PENDING
 
     @property
     def customer_id(self):
