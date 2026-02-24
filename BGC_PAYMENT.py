@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 import ENUM_STATUS
 
 
@@ -11,10 +12,6 @@ class Payment:
     @property
     def payment_id(self):
         return self.__payment_id
-
-    @payment_id.setter
-    def payment_id(self, value):
-        self.__payment_id = value
 
     @property
     def amount(self):

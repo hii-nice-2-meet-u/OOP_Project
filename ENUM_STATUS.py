@@ -2,10 +2,11 @@ from enum import Enum
 
 
 class MemberTier(Enum):
+    NONE_TIER = "None"
     BRONZE = "Bronze"
     SILVER = "Silver"
     GOLD = "Gold"
-    NONE = "None"
+    PLATINUM = "Platinum"
 
 
 class ReservationStatus(Enum):
