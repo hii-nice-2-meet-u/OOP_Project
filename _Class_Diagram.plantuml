@@ -53,27 +53,26 @@ package "Management Core" {
     enum TableStatus {
         AVAILABLE
         OCCUPIED
-        RESERVED
         MAINTENANCE
     }
+    class PlayTableManager {
+    - managed_tables : List<PlayTable>
 
+    + assign_customer(table : PlayTable, customer : Customer)
+    + release_table(table : PlayTable)
+    + create_order(table : PlayTable, item : MenuItem, qty : int) : Order
+    + borrow_boardgame(table : PlayTable, game : BoardGame) : bool
+    + return_boardgame(table : PlayTable, game : BoardGame, damaged : bool)
+    + calculate_table_fee(table : PlayTable, duration : float) : float
+    + get_active_orders(table : PlayTable) : List<Order>
+    + change_table_status(table : PlayTable, status : TableStatus)
+}
     abstract class PlayTable {
-        - current_customer : List<Customer>
         - price_per_hour : float
         - table_id : str
         - table_name : str
         - status : str
-        - active_orders : List<Order>
-        - borrowed_games : List<BoardGame>
-        
-        + clear_table()
-        + order_item(item : MenuItem, qty : int) : Order
-        + borrow_game(game : BoardGame) : bool
-        + return_game(game : BoardGame, is_damaged : bool) : void
-        + calculate_price(duration : float) : float
-        + get_menu_ordered() : List<MenuItem>
     }
-
     class PlayTableStandard {
         - price_per_hour : 50.00
         - table_id : str
@@ -328,6 +327,11 @@ Transaction "1" --> "1" Customer
 Transaction "1" --> "0..*" Payment
 Transaction "1" --> "0..*" BoardGame
 
+BoardGameCafeBranch "1" *--> "1" PlayTableManager
+PlayTableManager "1" --> "*" PlayTable
+PlayTableManager ..> Order
+PlayTableManager ..> Customer
+PlayTableManager ..> BoardGame
 ' --- External Associations ---
 Card "1" --> "1" PaymentGateway : <<uses>>
 OnlinePayment "1" --> "1" PaymentGateway : <<uses>>
