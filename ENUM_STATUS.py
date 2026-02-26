@@ -2,7 +2,6 @@ from enum import Enum
 
 
 class MemberTier(Enum):
-    WALK_IN = "Walk-In"
     NONE_TIER = "None"
     BRONZE = "Bronze"
     SILVER = "Silver"
