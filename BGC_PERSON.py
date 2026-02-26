@@ -7,57 +7,115 @@ class Person(ABC):
         self.__name = name
         self.__user_id = user_id
 
+    # / ================================================================
+    # - Getters
+    # / ================================================================
+
     @property
     def name(self):
         return self.__name
-
-    @name.setter
-    def name(self, value):
-        self.__name = value
 
     @property
     def user_id(self):
         return self.__user_id
 
+    # / ================================================================
+    # - Setters
+    # / ================================================================
+
+    @name.setter
+    def name(self, value):
+        self.__name = value
+
     @user_id.setter
     def user_id(self, value):
         self.__user_id = value
+
+    # / ================================================================
+    # - Methods
+    # / ================================================================
+
+    # / ================================================================
 
 
 class Customer(Person):
     def __init__(self, name, user_id):
         super().__init__(name, user_id)
+
+    # / ================================================================
+    # - Getters
+    # / ================================================================
+
+    # / ================================================================
+    # - Setters
+    # / ================================================================
+
+    # / ================================================================
+    # - Methods
+    # / ================================================================
+
+    # / ================================================================
+
+
+class Member(Customer):
+    __counter = 0
+
+    def __init__(self, name):
+        temp_id = "MEMBER-" + str(Member.__counter).zfill(5)
+        Member.__counter += 1
+        super().__init__(name, temp_id)
+
         self.__total_spent = 0
-        self.__birth_date = ""
         self.__member_tier = MemberTier.NONE_TIER
-        self.__is_student = False
+        self.__birth_date = ""
+        # self.__is_student = False
+
+    # / ================================================================
+    # - Getters
+    # / ================================================================
 
     @property
     def total_spent(self):
         return self.__total_spent
+
+    @property
+    def member_tier(self):
+        return self.__member_tier
+
+    @property
+    def birth_date(self):
+        return self.__birth_date
+
+    @property
+    def is_student(self):
+        return self.__is_student
+
+    # / ================================================================
+    # - Setters
+    # / ================================================================
 
     @total_spent.setter
     def total_spent(self, amount):
         self.__total_spent += amount
         self.__update_member_tier()
 
-    @property
-    def birth_date(self):
-        return self.__birth_date
+    @member_tier.setter
+    def member_tier(self, tier):
+        self.__member_tier = tier
 
     @birth_date.setter
     def birth_date(self, date):
         self.__birth_date = date
 
-    @property
-    def member_tier(self):
-        return self.__member_tier
+    @is_student.setter
+    def is_student(self, value):
+        self.__is_student = value
 
-    @member_tier.setter
-    def member_tier(self, tier):
-        self.__member_tier = tier
+    # / ================================================================
+    # - Methods
+    # / ================================================================
 
-    def __update_member_tier(self):  # ! แก้เลขด้วย
+    def __update_member_tier(self):
         if self.__total_spent >= 2000:
             self.__member_tier = MemberTier.PLATINUM
         elif self.__total_spent >= 1000:
@@ -76,20 +134,36 @@ class Customer(Person):
             return 0.20
         if self.__is_student:
             return 0.15
-        elif self.__member_tier == MemberTier.SILVER:
+        if self.__member_tier == MemberTier.SILVER:
             return 0.10
-        elif self.__member_tier == MemberTier.BRONZE:
+        if self.__member_tier == MemberTier.BRONZE:
             return 0.05
-        else:
-            return 0.0
+        return 0.0
 
-    @property
-    def is_student(self):
-        return self.__is_student
+    # / ================================================================
 
-    @is_student.setter
-    def is_student(self, value):
-        self.__is_student = value
+
+class WalkInCustomer(Customer):
+    __counter = 0
+
+    def __init__(self):
+        temp_id = "WALK-" + str(WalkInCustomer.__counter).zfill(5)
+        WalkInCustomer.__counter += 1
+        super().__init__("J-doe", temp_id)
+
+    # / ================================================================
+    # - Getters
+    # / ================================================================
+
+    # / ================================================================
+    # - Setters
+    # / ================================================================
+
+    # / ================================================================
+    # - Methods
+    # / ================================================================
+
+    # / ================================================================
 
 
 class NonCustomer(Person):
@@ -97,44 +171,120 @@ class NonCustomer(Person):
         super().__init__(name, user_id)
         self.__salary = 0
 
+    # / ================================================================
+    # - Getters
+    # / ================================================================
+
     @property
     def salary(self):
         return self.__salary
+
+    # / ================================================================
+    # - Setters
+    # / ================================================================
 
     @salary.setter
     def salary(self, amount):
         self.__salary = amount
 
+    # / ================================================================
+    # - Methods
+    # / ================================================================
+
+    # / ================================================================
+
 
 class Manager(NonCustomer):
-    def __init__(self, name, user_id):
-        super().__init__(name, user_id)
-        self.__managed_branches = []
+    __counter = 0
+
+    def __init__(self, name):
+        temp_id = "MANAGER-" + str(Manager.__counter).zfill(5)
+        Manager.__counter += 1
+        super().__init__(name, temp_id)
+        self.__managed_branches = None
+
+    # / ================================================================
+    # - Getters
+    # / ================================================================
 
     @property
     def managed_branches(self):
         return self.__managed_branches
 
+    # / ================================================================
+    # - Setters
+    # / ================================================================
+
+    @managed_branches.setter
+    def managed_branches(self, branches):
+        self.__managed_branches = branches
+
+    # / ================================================================
+    # - Methods
+    # / ================================================================
+
+    # / ================================================================
+
 
 class Owner(NonCustomer):
-    def __init__(self, name, user_id):
-        super().__init__(name, user_id)
+    __counter = 0
+
+    def __init__(self, name):
+        temp_id = "OWNER-" + str(Owner.__counter).zfill(5)
+        Owner.__counter += 1
+        super().__init__(name, temp_id)
         self.__owned_branches = []
+
+    # / ================================================================
+    # - Getters
+    # / ================================================================
 
     @property
     def owned_branches(self):
-        return self.__owned_branches
+        return self.__owned_branches.copy()
+
+    # / ================================================================
+    # - Setters
+    # / ================================================================
+
+    @owned_branches.setter
+    def owned_branches(self, branches):
+        self.__owned_branches = branches
+
+    # / ================================================================
+    # - Methods
+    # / ================================================================
+
+    # / ================================================================
 
 
 class Staff(NonCustomer):
+    __counter = 0
+
     def __init__(self, name, user_id):
+        temp_id = "STAFF-" + str(Staff.__counter).zfill(5)
+        Staff.__counter += 1
         super().__init__(name, user_id)
         self.__assigned_branch = None
+
+    # / ================================================================
+    # - Getters
+    # / ================================================================
 
     @property
     def assigned_branch(self):
         return self.__assigned_branch
 
+    # / ================================================================
+    # - Setters
+    # / ================================================================
+
     @assigned_branch.setter
     def assigned_branch(self, branch):
         self.__assigned_branch = branch
+
+    # / ================================================================
+    # - Methods
+    # / ================================================================
+
+    # / ================================================================

@@ -10,6 +10,10 @@ class MenuItem(ABC):
         self.__is_available = is_available
         self.__description = description
 
+    # / ================================================================
+    # - Getters
+    # / ================================================================
+
     @property
     def item_id(self):
         return self.__item_id
@@ -18,33 +22,43 @@ class MenuItem(ABC):
     def name(self):
         return self.__name
 
-    @name.setter
-    def name(self, name):
-        self.__name = name
-
     @property
     def price(self):
         return self.__price
-
-    @price.setter
-    def price(self, price):
-        self.__price = price
 
     @property
     def is_available(self):
         return self.__is_available
 
-    @is_available.setter
-    def availability(self, is_available):
-        self.__is_available = is_available
-
     @property
     def description(self):
         return self.__description
 
+    # / ================================================================
+    # - Setters
+    # / ================================================================
+
+    @name.setter
+    def name(self, name):
+        self.__name = name
+
+    @price.setter
+    def price(self, price):
+        self.__price = price
+
+    @is_available.setter
+    def availability(self, is_available):
+        self.__is_available = is_available
+
     @description.setter
     def description(self, description):
         self.__description = description
+
+    # / ================================================================
+    # - Methods
+    # / ================================================================
+
+    # / ================================================================
 
 
 class Food(MenuItem):
@@ -54,6 +68,20 @@ class Food(MenuItem):
         temp_id = "FOOD-" + str(Food.__counter).zfill(5)
         Food.__counter += 1
         super().__init__(temp_id, name, price, is_available, description)
+
+    # / ================================================================
+    # - Getters
+    # / ================================================================
+
+    # / ================================================================
+    # - Setters
+    # / ================================================================
+
+    # / ================================================================
+    # - Methods
+    # / ================================================================
+
+    # / ================================================================
 
 
 class Drink(MenuItem):
@@ -65,18 +93,48 @@ class Drink(MenuItem):
         super().__init__(temp_id, name, price, is_available, description)
         self.__cup_size = cup_size
 
+    # / ================================================================
+    # - Getters
+    # / ================================================================
+
     @property
     def cup_size(self):
         return self.__cup_size
+
+    # / ================================================================
+    # - Setters
+    # / ================================================================
 
     @cup_size.setter
     def cup_size(self, cup_size):
         self.__cup_size = cup_size
 
+    # / ================================================================
+    # - Methods
+    # / ================================================================
+
+    # / ================================================================
+
 
 class MenuList:
     def __init__(self):
         self.__menu_items = []
+
+    # / ================================================================
+    # - Getters
+    # / ================================================================
+
+    @property
+    def menu_items(self):
+        return self.__menu_items
+
+    # / ================================================================
+    # - Setters
+    # / ================================================================
+
+    # / ================================================================
+    # - Methods
+    # / ================================================================
 
     def add_menu_item(self, menu_item):
         self.__menu_items.append(menu_item)
@@ -92,8 +150,10 @@ class MenuList:
                 return item
         return None
 
-    def list_menu_items(self):
+    def get_menu_item_list(self):
         return self.__menu_items.copy()
+
+    # / ================================================================
 
 
 class Order:
@@ -105,6 +165,10 @@ class Order:
         self.__menu_items = menu_items
         self.__status = OrderStatus.PENDING
 
+    # / ================================================================
+    # - Getters
+    # / ================================================================
+
     @property
     def order_id(self):
         return self.__order_id
@@ -113,18 +177,28 @@ class Order:
     def menu_items(self):
         return self.__menu_items
 
-    @menu_items.setter
-    def menu_items(self, menu_items):
-        self.__menu_items = menu_items
+    @property
+    def status(self):
+        return self.__status
 
     @property
     def get_price(self):
         return self.__menu_items.price
 
-    @property
-    def status(self):
-        return self.__status
+    # / ================================================================
+    # - Setters
+    # / ================================================================
+
+    @menu_items.setter
+    def menu_items(self, menu_items):
+        self.__menu_items = menu_items
 
     @status.setter
     def status(self, status):
         self.__status = status
+
+    # / ================================================================
+    # - Methods
+    # / ================================================================
+
+    # / ================================================================
