@@ -1,6 +1,12 @@
 from abc import ABC, abstractmethod
 from ENUM_STATUS import TableStatus
 
+import datetime
+from BGC_MENU import *
+from BGC_PAYMENT import *
+from BGC_PERSON import *
+from BGC_RESERVATION import *
+
 
 class BoardGame:
     __counter = 0
@@ -117,9 +123,69 @@ class PlaySession:
     # - Getters
     # / ================================================================
 
+    @property
+    def session_id(self):
+        return self.__session_id
+
+    @property
+    def table_id(self):
+        return self.__table_id
+
+    @property
+    def start_time(self):
+        return self.__start_time
+
+    @property
+    def end_time(self):
+        return self.__end_time
+
+    @property
+    def current_players_id(self):
+        return self.__current_players_id.copy()
+
+    @property
+    def current_board_games_id(self):
+        return self.__current_board_games_id.copy()
+
+    @property
+    def current_order(self):
+        return self.__current_order.copy()
+
+    @property
+    def payment(self):
+        return self.__payment
+
     # / ================================================================
     # - Setters
     # / ================================================================
+
+    @table_id.setter
+    def table_id(self, table_id):
+        self.__table_id = table_id
+
+    @start_time.setter
+    def start_time(self, start_time):
+        self.__start_time = start_time
+
+    @end_time.setter
+    def end_time(self, end_time):
+        self.__end_time = end_time
+
+    @current_players_id.setter
+    def current_players_id(self, players_id):
+        self.__current_players_id = players_id
+
+    @current_board_games_id.setter
+    def current_board_games_id(self, board_games_id):
+        self.__current_board_games_id = board_games_id
+
+    @current_order.setter
+    def current_order(self, order):
+        self.__current_order = order
+
+    @payment.setter
+    def payment(self, payment):
+        self.__payment = payment
 
     # / ================================================================
     # - Methods
@@ -182,6 +248,18 @@ class CafeSystem:
     # - Getters
     # / ================================================================
 
+    @property
+    def person(self):
+        return self.__person.copy()
+
+    @property
+    def cafe_branches(self):
+        return self.__cafe_branches.copy()
+
+    @property
+    def reservations(self):
+        return self.__reservations.copy()
+
     # / ================================================================
     # - Setters
     # / ================================================================
@@ -190,13 +268,53 @@ class CafeSystem:
     # - Methods
     # / ================================================================
 
+    def add_owner(self, name):
+        new_owner = Owner(name)
+        self.__person.append(new_owner)
+        return new_owner
+
+    def add_manager(self, name):
+        new_manager = Manager(name)
+        self.__person.append(new_manager)
+        return new_manager
+
+    def add_staff(self, name):
+        new_staff = Staff(name)
+        self.__person.append(new_staff)
+        return new_staff
+
+    def add_customer_member(self, name):
+        new_customer = Member(name)
+        self.__person.append(new_customer)
+        return new_customer
+
+    def add_customer_walk_in(self):
+        new_walk_in = WalkInCustomer()
+        self.__person.append(new_walk_in)
+        return new_walk_in
+
+    # / ================================================================
+
+    def add_cafe_branch(self, cafe_branch_name, cafe_branch_location=""):
+        new_cafe_branch = CafeBranch(cafe_branch_name, cafe_branch_location)
+        self.__cafe_branches.append(new_cafe_branch)
+        return new_cafe_branch
+
+    # / ================================================================
+
+    def add_reservation(self, reservation):
+        if isinstance(reservation, Reservation):
+            self.__reservations.append(reservation)
+        else:
+            raise TypeError("Type Error : must be an instance of Reservation")
+
     # / ================================================================
 
 
 class CafeBranch:
     __counter = 0
 
-    def __init__(self, branch_id, name, location=""):
+    def __init__(self, name, location=""):
         self.__branch_id = "BRCH-" + str(CafeBranch.__counter).zfill(5)
         CafeBranch.__counter += 1
         self.__name = name
@@ -204,6 +322,10 @@ class CafeBranch:
         self.__tables = []
         self.__board_games = []
         self.__menu_list = None
+        self.__play_sessions = []
+        self.__staff_id = []
+        self.__manager_id = None
+        self.__owner_id = None
 
     # / ================================================================
     # - Getters
@@ -232,6 +354,8 @@ class CafeBranch:
     @property
     def menu_list(self):
         return self.__menu_list
+
+    # / ================================================================
 
     @property
     def total_tables(self):
