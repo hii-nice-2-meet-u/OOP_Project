@@ -20,6 +20,7 @@ class TableStatus(Enum):
     AVAILABLE = "Available"
     RESERVED = "Reserved"
     OCCUPIED = "Occupied"
+    MAINTENANCE = "Maintenance"
 
 
 class OrderStatus(Enum):
