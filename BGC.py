@@ -7,6 +7,8 @@ from BGC_PAYMENT import *
 from BGC_PERSON import *
 from BGC_RESERVATION import *
 
+# | ================================================================================================================================
+
 
 class BoardGame:
     __counter = 0
@@ -106,6 +108,9 @@ class BoardGame:
     # / ================================================================
 
 
+# | ================================================================================================================================
+
+
 class PlaySession:
     __counter = 0
 
@@ -194,10 +199,13 @@ class PlaySession:
     # / ================================================================
 
 
+# | ================================================================================================================================
+
+
 class Table:
     __counter = 0
 
-    def __init__(self, table_id, capacity):
+    def __init__(self, capacity):
         self.__table_id = "TABLE-" + str(Table.__counter).zfill(5)
         Table.__counter += 1
         self.__capacity = capacity
@@ -238,6 +246,9 @@ class Table:
     # / ================================================================
 
 
+# | ================================================================================================================================
+
+
 class CafeSystem:
     def __init__(self):
         self.__person = []
@@ -268,39 +279,16 @@ class CafeSystem:
     # - Methods
     # / ================================================================
 
-    def add_owner(self, name):
-        new_owner = Owner(name)
-        self.__person.append(new_owner)
-        return new_owner
-
-    def add_manager(self, name):
-        new_manager = Manager(name)
-        self.__person.append(new_manager)
-        return new_manager
-
-    def add_staff(self, name):
-        new_staff = Staff(name)
-        self.__person.append(new_staff)
-        return new_staff
-
-    def add_customer_member(self, name):
-        new_customer = Member(name)
-        self.__person.append(new_customer)
-        return new_customer
-
-    def add_customer_walk_in(self):
-        new_walk_in = WalkInCustomer()
-        self.__person.append(new_walk_in)
-        return new_walk_in
-
-    # / ================================================================
-
     def add_cafe_branch(self, cafe_branch_name, cafe_branch_location=""):
         new_cafe_branch = CafeBranch(cafe_branch_name, cafe_branch_location)
         self.__cafe_branches.append(new_cafe_branch)
         return new_cafe_branch
 
-    # / ================================================================
+    def add_person(self, person):
+        if isinstance(person, Person):
+            self.__person.append(person)
+        else:
+            raise TypeError("Type Error : must be an instance of Person")
 
     def add_reservation(self, reservation):
         if isinstance(reservation, Reservation):
@@ -309,6 +297,97 @@ class CafeSystem:
             raise TypeError("Type Error : must be an instance of Reservation")
 
     # / ================================================================
+
+    def add_owner(self, name):
+        new_owner = Owner(name)
+        self.add_person(new_owner)
+        return new_owner
+
+    def add_manager(self, name):
+        new_manager = Manager(name)
+        self.add_person(new_manager)
+        return new_manager
+
+    def add_staff(self, name):
+        new_staff = Staff(name)
+        self.add_person(new_staff)
+        return new_staff
+
+    def add_customer_member(self, name):
+        new_customer = Member(name)
+        self.add_person(new_customer)
+        return new_customer
+
+    def add_customer_walk_in(self):
+        new_walk_in = WalkInCustomer()
+        self.add_person(new_walk_in)
+        return new_walk_in
+
+    # / ================================================================
+
+    def find_person_by_id(self, user_id):
+        for person in self.__person:
+            if person.user_id == user_id:
+                return person
+        return None
+
+    def find_cafe_branch_by_id(self, branch_id):
+        for cafe_branch in self.__cafe_branches:
+            if cafe_branch.branch_id == branch_id:
+                return cafe_branch
+        return None
+
+    # / ================================================================
+
+    def add_table_to_branch(self, branch_id, capacity):
+        cafe_branch = self.find_cafe_branch_by_id(branch_id)
+        if cafe_branch:
+            return cafe_branch.add_table(capacity)
+        else:
+            raise ValueError("Cafe Branch not found")
+
+    def add_board_game_to_branch(
+        self,
+        branch_id,
+        name,
+        genre,
+        price,
+        status,
+        min_players,
+        max_players,
+        description="",
+    ):
+        cafe_branch = self.find_cafe_branch_by_id(branch_id)
+        if cafe_branch:
+            return cafe_branch.add_board_game(
+                name, genre, price, status, min_players, max_players, description
+            )
+        else:
+            raise ValueError("Cafe Branch not found")
+
+    def add_menu_item_to_branch(self, branch_id, name, price, description=""):
+
+
+    # / ================================================================
+
+    def get_branch_tables(self, branch_id):
+        cafe_branch = self.find_cafe_branch_by_id(branch_id)
+        if cafe_branch:
+            return cafe_branch.tables
+        else:
+            raise ValueError("Cafe Branch not found")
+
+    def get_branch_board_games(self, branch_id):
+        cafe_branch = self.find_cafe_branch_by_id(branch_id)
+        if cafe_branch:
+            return cafe_branch.board_games
+        else:
+            raise ValueError("Cafe Branch not found")
+
+    # / ================================================================
+
+
+# | ================================================================================================================================
 
 
 class CafeBranch:
@@ -381,20 +460,39 @@ class CafeBranch:
     def location(self, location):
         self.__location = location
 
-    @tables.setter
-    def tables(self, tables):
-        self.__tables = tables
-
-    @board_games.setter
-    def board_games(self, board_games):
-        self.__board_games = board_games
-
-    @menu_list.setter
-    def menu_list(self, menu_list):
-        self.__menu_list = menu_list
-
     # / ================================================================
     # - Methods
     # / ================================================================
 
+    def add_table(self, capacity):
+        new_table = Table(capacity)
+        self.__tables.append(new_table)
+        return new_table
+
+    def add_board_game(
+        self, name, genre, price, status, min_players, max_players, description=""
+    ):
+        new_board_game = BoardGame(
+            name, genre, price, status, min_players, max_players, description
+        )
+        self.__board_games.append(new_board_game)
+        return new_board_game
+
+    def add_menu(self, menu):
+        if isinstance(menu, Menu):
+            self.__menu_list = menu
+        else:
+            raise TypeError("Type Error : must be an instance of Menu")
+
+    def add_menu_item(self, name, price, description=""):
+        if self.__menu_list is not None:
+            new_menu_item = MenuItem(name, price, description)
+            self.__menu_list.add_menu_item(new_menu_item)
+            return new_menu_item
+        else:
+            raise ValueError("Menu not found")
+
     # / ================================================================
+
+
+# | ================================================================================================================================

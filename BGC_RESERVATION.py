@@ -1,16 +1,29 @@
 from ENUM_STATUS import ReservationStatus
+import datetime
+
+# | ================================================================================================================================
 
 
 class Reservation:
     __counter = 0
 
-    def __init__(self, customer_id, branch_id, table_id, start_time, end_time):
+    def __init__(
+        self,
+        customer_id,
+        branch_id,
+        table_id,
+        reservation_date,
+        reservation_time,
+        duration,
+    ):
         self.__reservation_id = "RESV-" + str(Drink.__counter).zfill(5)
+        self.__current_reservation_date = datetime.now().date()
         self.__customer_id = customer_id
         self.__branch_id = branch_id
         self.__table_id = table_id
-        self.__start_time = start_time
-        self.__end_time = end_time
+        self.__reservation_date = reservation_date
+        self.__reservation_time = reservation_time
+        self.__duration = duration
         self.__status = ReservationStatus.PENDING
 
     # / ================================================================
@@ -34,12 +47,16 @@ class Reservation:
         return self.__table_id
 
     @property
-    def start_time(self):
-        return self.__start_time
+    def reservation_date(self):
+        return self.__reservation_date
 
     @property
-    def end_time(self):
-        return self.__end_time
+    def reservation_time(self):
+        return self.__reservation_time
+
+    @property
+    def duration(self):
+        return self.__duration
 
     @property
     def status(self):
@@ -61,13 +78,17 @@ class Reservation:
     def table_id(self, value):
         self.__table_id = value
 
-    @start_time.setter
-    def start_time(self, value):
-        self.__start_time = value
+    @reservation_date.setter
+    def reservation_date(self, value):
+        self.__reservation_date = value
 
-    @end_time.setter
-    def end_time(self, value):
-        self.__end_time = value
+    @reservation_time.setter
+    def reservation_time(self, value):
+        self.__reservation_time = value
+
+    @duration.setter
+    def duration(self, value):
+        self.__duration = value
 
     @status.setter
     def status(self, value):
@@ -81,3 +102,6 @@ class Reservation:
     # / ================================================================
 
     # / ================================================================
+
+
+# | ================================================================================================================================
