@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from ENUM_STATUS import TableStatus
+from ENUM_STATUS import TableStatus, BoardGameStatus
 
 import datetime
 from BGC_MENU import *
@@ -18,7 +18,6 @@ class BoardGame:
         name,
         genre,
         price,
-        status,
         min_players,
         max_players,
         description="",
@@ -28,7 +27,7 @@ class BoardGame:
         self.__name = name
         self.__genre = genre
         self.__price = price
-        self.__status = status
+        self.__status = BoardGameStatus.AVAILABLE
         self.__min_players = min_players
         self.__max_players = max_players
         self.__description = description
@@ -337,6 +336,12 @@ class CafeSystem:
                 return cafe_branch
         return None
 
+    def find_reservation_by_id(self, reservation_id):
+        for reservation in self.__reservations:
+            if reservation.reservation_id == reservation_id:
+                return reservation
+        return None
+
     # / ================================================================
 
     def add_table_to_branch(self, branch_id, capacity):
@@ -346,30 +351,6 @@ class CafeSystem:
         else:
             raise ValueError("Cafe Branch not found")
 
-    def add_board_game_to_branch(
-        self,
-        branch_id,
-        name,
-        genre,
-        price,
-        status,
-        min_players,
-        max_players,
-        description="",
-    ):
-        cafe_branch = self.find_cafe_branch_by_id(branch_id)
-        if cafe_branch:
-            return cafe_branch.add_board_game(
-                name, genre, price, status, min_players, max_players, description
-            )
-        else:
-            raise ValueError("Cafe Branch not found")
-
-    def add_menu_item_to_branch(self, branch_id, name, price, description=""):
-
-
-    # / ================================================================
-
     def get_branch_tables(self, branch_id):
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
         if cafe_branch:
@@ -377,10 +358,65 @@ class CafeSystem:
         else:
             raise ValueError("Cafe Branch not found")
 
+    # / ================================================================
+
+    def add_board_game_to_branch(
+        self,
+        branch_id,
+        name,
+        genre,
+        price,
+        min_players,
+        max_players,
+        description="",
+    ):
+        cafe_branch = self.find_cafe_branch_by_id(branch_id)
+        if cafe_branch:
+            return cafe_branch.add_board_game(
+                name, genre, price, min_players, max_players, description
+            )
+        else:
+            raise ValueError("Cafe Branch not found")
+
     def get_branch_board_games(self, branch_id):
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
         if cafe_branch:
             return cafe_branch.board_games
+        else:
+            raise ValueError("Cafe Branch not found")
+
+    # / ================================================================
+
+    def add_menu_to_branch(self, branch_id):
+        cafe_branch = self.find_cafe_branch_by_id(branch_id)
+        if cafe_branch:
+            new_menu = MenuList()
+            cafe_branch.add_menu(new_menu)
+            return new_menu
+        else:
+            raise ValueError("Cafe Branch not found")
+
+    def add_menu_item_food_to_branch(self, branch_id, name, price, description=""):
+        cafe_branch = self.find_cafe_branch_by_id(branch_id)
+        if cafe_branch:
+            return cafe_branch.add_menu_item_food(name, price, description)
+
+    def get_branch_menu(self, branch_id):
+        cafe_branch = self.find_cafe_branch_by_id(branch_id)
+        if cafe_branch:
+            return cafe_branch.get_menu()
+        else:
+            raise ValueError("Cafe Branch not found")
+
+    def add_menu_item_drink_to_branch(self, branch_id, name, price, description=""):
+        cafe_branch = self.find_cafe_branch_by_id(branch_id)
+        if cafe_branch:
+            return cafe_branch.add_menu_item_drink(name, price, description)
+
+    def get_branch_menu_items(self, branch_id):
+        cafe_branch = self.find_cafe_branch_by_id(branch_id)
+        if cafe_branch:
+            return cafe_branch.get_menu_items()
         else:
             raise ValueError("Cafe Branch not found")
 
@@ -470,25 +506,63 @@ class CafeBranch:
         return new_table
 
     def add_board_game(
-        self, name, genre, price, status, min_players, max_players, description=""
+        self, name, genre, price, min_players, max_players, description=""
     ):
         new_board_game = BoardGame(
-            name, genre, price, status, min_players, max_players, description
+            name, genre, price, min_players, max_players, description
         )
         self.__board_games.append(new_board_game)
         return new_board_game
 
+    # / ================================================================
+
     def add_menu(self, menu):
-        if isinstance(menu, Menu):
+        if isinstance(menu, MenuList):
             self.__menu_list = menu
         else:
             raise TypeError("Type Error : must be an instance of Menu")
 
-    def add_menu_item(self, name, price, description=""):
+    def add_menu_item_food(self, name, price, description=""):
         if self.__menu_list is not None:
-            new_menu_item = MenuItem(name, price, description)
+            new_menu_item = Food(name, price, description)
             self.__menu_list.add_menu_item(new_menu_item)
             return new_menu_item
+        else:
+            raise ValueError("Menu not found")
+
+    def add_menu_item_drink(self, name, price, description=""):
+        if self.__menu_list is not None:
+            new_menu_item = Drink(name, price, description)
+            self.__menu_list.add_menu_item(new_menu_item)
+            return new_menu_item
+        else:
+            raise ValueError("Menu not found")
+
+    def get_menu(self):
+        if self.__menu_list is not None:
+            return self.__menu_list
+        else:
+            raise ValueError("Menu not found")
+
+    def get_menu_items(self):
+        if self.__menu_list is not None:
+            return self.__menu_list.menu_items
+        else:
+            raise ValueError("Menu not found")
+
+    def get_menu_item_foods(self):
+        if self.__menu_list is not None:
+            return [
+                item for item in self.__menu_list.menu_items if isinstance(item, Food)
+            ]
+        else:
+            raise ValueError("Menu not found")
+
+    def get_menu_item_drinks(self):
+        if self.__menu_list is not None:
+            return [
+                item for item in self.__menu_list.menu_items if isinstance(item, Drink)
+            ]
         else:
             raise ValueError("Menu not found")
 

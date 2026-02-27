@@ -28,17 +28,66 @@ if __name__ == "__main__":
         print(o)
     print(" ")
 
-    for i in range(4):
-        sys.add_table_to_branch("BRCH-0000" + str(i), 2)
-        sys.add_table_to_branch("BRCH-0000" + str(i), 4)
-        sys.add_table_to_branch("BRCH-0000" + str(i), 6)
-        sys.add_table_to_branch("BRCH-0000" + str(i), 8)
+    for iii in range(4):
+        sys.add_table_to_branch("BRCH-0000" + str(iii), 2)
+        sys.add_table_to_branch("BRCH-0000" + str(iii), 4)
+        sys.add_table_to_branch("BRCH-0000" + str(iii), 6)
+        sys.add_table_to_branch("BRCH-0000" + str(iii), 8)
 
-    for p in range(4):
-        branch_id = "BRCH-0000" + str(p)
+    for iii in range(4):
+        branch_id = "BRCH-0000" + str(iii)
         for o in [
             f"{a.table_id} - {a.capacity} - {a.status}"
             for a in sys.get_branch_tables(branch_id)
+        ]:
+            print(o)
+        print(" ")
+
+    for iii in range(4):
+        branch_id = "BRCH-0000" + str(iii)
+        sys.add_board_game_to_branch(
+            branch_id,
+            "Uno",
+            "classic card game",
+            100.00,
+            2,
+            10,
+            "A card game where players take turns matching a card in their hand with the current card shown on top of the deck either by color or number.",
+        )
+        sys.add_board_game_to_branch(
+            branch_id,
+            "Monopoly",
+            "classic board game",
+            200.00,
+            2,
+            6,
+            "A board game where players buy and sell properties, collect rent, and try to bankrupt other players by landing on their properties.",
+        )
+
+    for iii in range(4):
+        branch_id = "BRCH-0000" + str(iii)
+        print(f"Board Games for {branch_id}:")
+        for o in [
+            f"{a.name:<15}- {a.genre:20} | {a.price} ฿ | {a.min_players}-{a.max_players} players"
+            for a in sys.get_branch_board_games(branch_id)
+        ]:
+            print(o)
+        print(" ")
+
+    for iii in range(4):
+        branch_id = "BRCH-0000" + str(iii)
+        sys.add_menu_to_branch(branch_id)
+        sys.add_menu_item_food_to_branch(branch_id, "ITEM_F1", 11.11)
+        sys.add_menu_item_food_to_branch(branch_id, "ITEM_F2", 22.22)
+        sys.add_menu_item_drink_to_branch(branch_id, "ITEM_D1", 33.33)
+        sys.add_menu_item_drink_to_branch(branch_id, "ITEM_D2", 44.44)
+
+    for iii in range(4):
+        branch_id = "BRCH-0000" + str(iii)
+        print(f"Menu for {branch_id}:")
+        for o in [
+            f"{a.name:<10} - {a.price} ฿ | {a.item_id} "
+            for a in sys.get_branch_menu_items(branch_id)
         ]:
             print(o)
         print(" ")

@@ -137,7 +137,7 @@ class MenuList:
 
     @property
     def menu_items(self):
-        return self.__menu_items
+        return self.__menu_items.copy()
 
     # / ================================================================
     # - Setters
@@ -148,6 +148,8 @@ class MenuList:
     # / ================================================================
 
     def add_menu_item(self, menu_item):
+        if not isinstance(menu_item, MenuItem):
+            raise ValueError("Invalid menu item")
         self.__menu_items.append(menu_item)
 
     def remove_menu_item(self, item_id):
