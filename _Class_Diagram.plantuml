@@ -19,7 +19,14 @@ package "Management Core" {
         + register_new_staff(staff_info, branch_id)
         + terminate_staff(staff_id)
         + update_table_pricing(table_type, new_price)
-        
+        + assign_customer(table : PlayTable, customer : Customer)
+        + release_table(table : PlayTable)
+        + create_order(table : PlayTable, item : MenuItem, qty : int) : Order
+        + borrow_boardgame(table : PlayTable, game : BoardGame) : bool
+        + return_boardgame(table : PlayTable, game : BoardGame, damaged : bool)
+        + calculate_table_fee(table : PlayTable, duration : float) : float
+        + get_active_orders(table : PlayTable) : List<Order>
+        + change_table_status(table : PlayTable, status : TableStatus)
         + assign_table_to_customer(customer_id, table_id)
         + process_check_in(reservation_id)
         + process_check_out(table_id)
@@ -55,18 +62,6 @@ package "Management Core" {
         OCCUPIED
         MAINTENANCE
     }
-    class PlayTableManager {
-    - managed_tables : List<PlayTable>
-
-    + assign_customer(table : PlayTable, customer : Customer)
-    + release_table(table : PlayTable)
-    + create_order(table : PlayTable, item : MenuItem, qty : int) : Order
-    + borrow_boardgame(table : PlayTable, game : BoardGame) : bool
-    + return_boardgame(table : PlayTable, game : BoardGame, damaged : bool)
-    + calculate_table_fee(table : PlayTable, duration : float) : float
-    + get_active_orders(table : PlayTable) : List<Order>
-    + change_table_status(table : PlayTable, status : TableStatus)
-}
     abstract class PlayTable {
         - price_per_hour : float
         - table_id : str
@@ -328,10 +323,6 @@ Transaction "1" --> "0..*" Payment
 Transaction "1" --> "0..*" BoardGame
 
 BoardGameCafeBranch "1" *--> "1" PlayTableManager
-PlayTableManager "1" --> "*" PlayTable
-PlayTableManager ..> Order
-PlayTableManager ..> Customer
-PlayTableManager ..> BoardGame
 ' --- External Associations ---
 Card "1" --> "1" PaymentGateway : <<uses>>
 OnlinePayment "1" --> "1" PaymentGateway : <<uses>>
