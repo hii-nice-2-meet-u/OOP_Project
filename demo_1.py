@@ -19,6 +19,8 @@ if __name__ == "__main__":
         print(o)
     print(" ")
 
+    # / ================================================================
+
     sys.add_cafe_branch("Cafe - A", "A 123/456")
     sys.add_cafe_branch("Cafe - B", "B 123/456")
     sys.add_cafe_branch("Cafe - C", "C 123/456")
@@ -27,6 +29,8 @@ if __name__ == "__main__":
     for o in [f"{a.name} | {a.branch_id}" for a in sys.cafe_branches]:
         print(o)
     print(" ")
+
+    # / ================================================================
 
     for iii in range(4):
         sys.add_table_to_branch("BRCH-0000" + str(iii), 2)
@@ -42,6 +46,8 @@ if __name__ == "__main__":
         ]:
             print(o)
         print(" ")
+
+    # / ================================================================
 
     for iii in range(4):
         branch_id = "BRCH-0000" + str(iii)
@@ -63,6 +69,15 @@ if __name__ == "__main__":
             6,
             "A board game where players buy and sell properties, collect rent, and try to bankrupt other players by landing on their properties.",
         )
+        sys.add_board_game_to_branch(
+            branch_id,
+            "Scrabble",
+            "classic word game",
+            100.00,
+            2,
+            4,
+            "A word game where players take turns to form words from a set of letters.",
+        )
 
     for iii in range(4):
         branch_id = "BRCH-0000" + str(iii)
@@ -73,6 +88,8 @@ if __name__ == "__main__":
         ]:
             print(o)
         print(" ")
+
+    # / ================================================================
 
     for iii in range(4):
         branch_id = "BRCH-0000" + str(iii)
@@ -91,3 +108,5 @@ if __name__ == "__main__":
         ]:
             print(o)
         print(" ")
+
+    # / ================================================================
