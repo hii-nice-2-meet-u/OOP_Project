@@ -3,7 +3,7 @@ import datetime
 from BGC_MENU import *
 from BGC_PAYMENT import *
 
-from ENUM_STATUS import TableStatus, BoardGameStatusx
+from ENUM_STATUS import TableStatus, BoardGameStatus
 
 # | ================================================================================================================================
 # | #EFFF11
