@@ -212,32 +212,14 @@ class PlaySession:
     # - Setters
     # / ================================================================
 
-    @table_id.setter
-    def table_id(self, table_id):
-        self.__table_id = table_id
-
-    @start_time.setter
-    def start_time(self, start_time):
-        self.__start_time = start_time
-
     @end_time.setter
     def end_time(self, end_time):
         self.__end_time = end_time
 
-    @current_players_id.setter
-    def current_players_id(self, player_id):
-        self.__current_players_id = player_id
-
-    @current_board_games_id.setter
-    def current_board_games_id(self, board_game_id):
-        self.__current_board_games_id = board_game_id
-
-    @current_order.setter
-    def current_order(self, order):
-        self.__current_order = order
-
     @payment.setter
     def payment(self, payment):
+        if not isinstance(payment, Payment):
+            raise ValueError("Invalid payment")
         self.__payment = payment
 
     # / ================================================================
@@ -249,6 +231,11 @@ class PlaySession:
 
     def add_board_games_id(self, board_game_id):
         self.__current_board_games_id.append(board_game_id)
+
+    def add_order(self, order):
+        if not isinstance(order, Order):
+            raise ValueError("Invalid order")
+        self.__current_order.append(order)
 
     # / ================================================================
 

@@ -239,7 +239,6 @@ class CafeSystem:
                 raise ValueError("No available table")
             table = min(tables, key=lambda t: t.capacity)
 
-            # print(f"Table {table.table_id} is available")
         else:
             table = branch.get_table_by_id(table_id)
             if table is None:
@@ -254,11 +253,40 @@ class CafeSystem:
         table.status = TableStatus.OCCUPIED
 
         session = PlaySession(table.table_id, datetime.datetime.now())
+        session.add_players_id(self.add_customer_walk_in().user_id)
         branch.add_play_session(session)
         return session
 
     def check_in_member(self, branch_id, player_amount, member_id, table_id="auto"):
-        pass
+        self.update_reserved_tables()
+
+        branch = self.find_cafe_branch_by_id(branch_id)
+        if branch is None:
+            raise ValueError("Cafe Branch not found")
+
+        if table_id == "auto":
+            tables = self.search_available_table(branch_id, player_amount)
+            if tables is None:
+                raise ValueError("No available table")
+            table = min(tables, key=lambda t: t.capacity)
+
+        else:
+            table = branch.get_table_by_id(table_id)
+            if table is None:
+                raise ValueError("Table not found")
+
+            if table.status != TableStatus.AVAILABLE:
+                raise ValueError("Table is not available")
+
+            if table.capacity < player_amount:
+                raise ValueError("Table capacity not enough")
+
+        table.status = TableStatus.OCCUPIED
+
+        session = PlaySession(table.table_id, datetime.datetime.now())
+        session.add_players_id(member_id)
+        branch.add_play_session(session)
+        return session
 
     # / ================================================================
     # \ BOARD GAME
