@@ -245,7 +245,7 @@ class CafeSystem:
             raise ValueError("Cafe Branch not found")
 
     def update_reserved_tables(self):
-        now = datetime.datetime.now()
+        now = datetime.now()
 
         for reservation in self.__reservations:
             reservation_time = reservation.reservation_time
@@ -512,7 +512,7 @@ class CafeSystem:
 
         table.status = TableStatus.OCCUPIED
 
-        session = PlaySession(table.table_id, datetime.datetime.now())
+        session = PlaySession(table.table_id, datetime.now())
         session.add_players_id(self.add_customer_walk_in().user_id)
         branch.add_play_session(session)
         return session
