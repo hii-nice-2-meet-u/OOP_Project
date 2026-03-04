@@ -104,9 +104,24 @@ if __name__ == "__main__":
         print(f"Menu for {branch_id}:")
         for o in [
             f"{a.name:<10} - {a.price} ฿ | {a.item_id} "
-            for a in sys.get_branch_menu_items(branch_id)
+            for a in sys.get_branch_menu_item(branch_id)
         ]:
             print(o)
+
+        print(" ")
+
+        for o in [
+            f"{a.name:<10} - {a.price} ฿ | {a.item_id} "
+            for a in sys.get_branch_menu_item_food(branch_id)
+        ]:
+            print(o)
+
+        for o in [
+            f"{a.name:<10} - {a.price} ฿ | {a.item_id} "
+            for a in sys.get_branch_menu_item_drink(branch_id)
+        ]:
+            print(o)
+
         print(" ")
 
     # / ================================================================

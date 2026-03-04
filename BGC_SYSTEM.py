@@ -200,24 +200,24 @@ class CafeSystem:
         else:
             raise ValueError("Cafe Branch not found")
 
-    def get_branch_menu_items(self, branch_id):
+    def get_branch_menu_item(self, branch_id):
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
         if cafe_branch:
-            return cafe_branch.get_menu_items()
+            return cafe_branch.get_menu_item()
         else:
             raise ValueError("Cafe Branch not found")
 
-    def get_branch_menu_items_food(self, branch_id):
+    def get_branch_menu_item_food(self, branch_id):
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
         if cafe_branch:
-            return cafe_branch.get_menu_items_food()
+            return cafe_branch.get_menu_item_food()
         else:
             raise ValueError("Cafe Branch not found")
 
-    def get_branch_menu_items_drink(self, branch_id):
+    def get_branch_menu_item_drink(self, branch_id):
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
         if cafe_branch:
-            return cafe_branch.get_menu_items_drink()
+            return cafe_branch.get_menu_item_drink()
         else:
             raise ValueError("Cafe Branch not found")
 
@@ -369,13 +369,13 @@ class CafeBranch:
         else:
             raise ValueError("Menu not found")
 
-    def get_menu_items(self):
+    def get_menu_item(self):
         if self.__menu_list is not None:
             return self.__menu_list.menu_items
         else:
             raise ValueError("Menu not found")
 
-    def get_menu_item_foods(self):
+    def get_menu_item_food(self):
         if self.__menu_list is not None:
             return [
                 item for item in self.__menu_list.menu_items if isinstance(item, Food)
@@ -383,7 +383,7 @@ class CafeBranch:
         else:
             raise ValueError("Menu not found")
 
-    def get_menu_item_drinks(self):
+    def get_menu_item_drink(self):
         if self.__menu_list is not None:
             return [
                 item for item in self.__menu_list.menu_items if isinstance(item, Drink)
