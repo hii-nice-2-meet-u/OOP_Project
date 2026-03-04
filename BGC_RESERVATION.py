@@ -69,7 +69,7 @@ class Reservation:
     # / ================================================================
 
     @customer_id.setter
-    def customer_id(self):
+    def customer_id(self, customer_id):
         self.__customer_id = customer_id
 
     @branch_id.setter
@@ -94,7 +94,7 @@ class Reservation:
 
     @status.setter
     def status(self, value):
-        if isinstance(value, ENUM_STATUS.ReservationStatus):
+        if isinstance(value, ReservationStatus):
             self.__status = value
         else:
             raise ValueError("Invalid reservation status")
