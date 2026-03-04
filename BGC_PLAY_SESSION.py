@@ -161,7 +161,7 @@ class Table:
 class PlaySession:
     __counter = 0
 
-    def __init__(self, session_id, table_id, start_time):
+    def __init__(self, table_id, start_time):
         self.__session_id = "PS-" + str(PlaySession.__counter).zfill(5)
         PlaySession.__counter += 1
         self.__table_id = table_id
@@ -243,9 +243,10 @@ class PlaySession:
     # / ================================================================
     # - Methods
     # / ================================================================
+
     def add_players_id(self, player_id):
         self.__current_players_id.append(player_id)
-    
+
     def add_board_games_id(self, board_game_id):
         self.__current_board_games_id.append(board_game_id)
 
