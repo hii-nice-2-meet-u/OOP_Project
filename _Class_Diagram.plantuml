@@ -229,7 +229,7 @@ class BoardGame{
 package "Operations (Order & Resv)" {
     class Reservation {
         - reservation_id : str
-        - customer : Customer
+        - customer_id : int
         - date : date
         - start_time : time
         - end_time : time
@@ -287,14 +287,14 @@ package "Operations (Order & Resv)" {
 
     ' === อัปเดต Methods ตามเกณฑ์ OOP ===
     class PlaySession{
-        - __session_id : str
-        - __table_id : str
-        - __start_time : datetime
-        - __end_time : datetime
-        - __current_players_id : List[str]
-        - __current_board_games_id : List[str]
-        - __current_order : List
-        - __payment : Payment
+        - session_id : str
+        - table_id : str
+        - start_time : datetime
+        - end_time : datetime
+        - current_players_id : List[str]
+        - current_board_games_id : List[str]
+        - current_order : List
+        - payment : Payment
 
         + session_id
         + table_id

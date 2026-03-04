@@ -543,7 +543,7 @@ class CafeBranch:
     # - Methods
     # / ================================================================
     # \ TABLE
-
+    
     def add_table(self, capacity):
         new_table = Table(capacity)
         self.__tables.append(new_table)
@@ -557,7 +557,47 @@ class CafeBranch:
             if table.table_id == table_id:
                 return table
         return None
+    def update_reserved_tables(self):
 
+        now = datetime.datetime.now()
+
+        for reservation in self.__reservations:
+
+            branch = self.find_cafe_branch_by_id(reservation.branch_id)
+            if branch is None:
+                continue
+
+            table = branch.get_table_by_id(reservation.table_id)
+            if table is None:
+                continue
+
+            reservation_time = reservation.reservation_time
+            time_diff = reservation_time - now
+
+            if datetime.timedelta(hours=0) <= time_diff <= datetime.timedelta(hours=1):
+                table.status = TableStatus.RESERVED
+                
+    def search_available_table(self, branch_id, required_capacity):
+
+
+        self.update_reserved_tables()
+
+        branch = self.find_cafe_branch_by_id(branch_id)
+
+        if branch is None:
+            raise ValueError("Cafe Branch not found")
+
+        available_tables = []
+
+        for table in branch.tables:
+
+            if table.status != TableStatus.AVAILABLE:
+                continue
+
+            if table.capacity >= required_capacity:
+                available_tables.append(table)
+
+        return available_tables
     # / ================================================================
     # \ BOARD GAME
 
