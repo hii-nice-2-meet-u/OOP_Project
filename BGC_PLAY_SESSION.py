@@ -225,12 +225,12 @@ class PlaySession:
         self.__end_time = end_time
 
     @current_players_id.setter
-    def current_players_id(self, players_id):
-        self.__current_players_id = players_id
+    def current_players_id(self, player_id):
+        self.__current_players_id = player_id
 
     @current_board_games_id.setter
-    def current_board_games_id(self, board_games_id):
-        self.__current_board_games_id = board_games_id
+    def current_board_games_id(self, board_game_id):
+        self.__current_board_games_id = board_game_id
 
     @current_order.setter
     def current_order(self, order):
@@ -243,6 +243,11 @@ class PlaySession:
     # / ================================================================
     # - Methods
     # / ================================================================
+    def add_players_id(self, player_id):
+        self.__current_players_id.append(player_id)
+    
+    def add_board_games_id(self, board_game_id):
+        self.__current_board_games_id.append(board_game_id)
 
     # / ================================================================
 
