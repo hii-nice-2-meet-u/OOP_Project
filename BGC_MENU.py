@@ -157,19 +157,31 @@ class MenuList:
             raise ValueError("Invalid menu item")
         self.__menu_items.append(menu_item)
 
-    def remove_menu_item(self, item_id):
-        self.__menu_items = [
-            item for item in self.__menu_items if item.item_id != item_id
-        ]
-
     def get_menu_item(self, item_id):
         for item in self.__menu_items:
             if item.item_id == item_id:
                 return item
         return None
 
+    def get_menu_item_food(self):
+        return [item for item in self.__menu_items if isinstance(item, Food)]
+
+    def get_menu_item_drink(self):
+        return [item for item in self.__menu_items if isinstance(item, Drink)]
+
     def get_menu_item_list(self):
         return self.__menu_items.copy()
+
+    def find_menu_item_by_id(self, item_id):
+        for item in self.__menu_items:
+            if item.item_id == item_id:
+                return item
+        return None
+
+    def remove_menu_item(self, item_id):
+        self.__menu_items = [
+            item for item in self.__menu_items if item.item_id != item_id
+        ]
 
     # / ================================================================
 
@@ -210,10 +222,6 @@ class Order:
     # / ================================================================
     # - Setters
     # / ================================================================
-
-    @menu_items.setter
-    def menu_items(self, menu_items):
-        self.__menu_items = menu_items
 
     @status.setter
     def status(self, status):

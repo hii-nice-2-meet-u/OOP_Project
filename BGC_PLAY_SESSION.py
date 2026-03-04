@@ -232,10 +232,10 @@ class PlaySession:
     def add_board_games_id(self, board_game_id):
         self.__current_board_games_id.append(board_game_id)
 
-    def add_order(self, order):
-        if not isinstance(order, Order):
-            raise ValueError("Invalid order")
-        self.__current_order.append(order)
+    def take_order(self, menu_item):
+        if not isinstance(order, MenuItem):
+            raise ValueError("Type Error : Invalid order")
+        self.__current_order.append(Order(menu_item))
 
     # / ================================================================
 
