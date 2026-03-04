@@ -135,6 +135,7 @@ class CafeSystem:
             return cafe_branch.add_table(capacity)
         else:
             raise ValueError("Cafe Branch not found")
+
     def update_reserved_tables(self):
 
         now = datetime.datetime.now()
@@ -149,7 +150,7 @@ class CafeSystem:
                 self.update_table_status(
                     reservation.branch_id,
                     reservation.table_id,
-                    TableStatus.RESERVED
+                    TableStatus.RESERVED,
                 )
 
             elif time_diff < datetime.timedelta(hours=0):
@@ -157,8 +158,9 @@ class CafeSystem:
                 self.update_table_status(
                     reservation.branch_id,
                     reservation.table_id,
-                    TableStatus.AVAILABLE
+                    TableStatus.AVAILABLE,
                 )
+
     def search_available_table(self, branch_id, required_capacity):
         self.update_reserved_tables()
 
@@ -179,7 +181,7 @@ class CafeSystem:
                 available_tables.append(table.capacity)
 
         return available_tables
-    
+
     def update_table_status(self, branch_id, table_id, status):
 
         if not isinstance(status, TableStatus):
@@ -196,10 +198,11 @@ class CafeSystem:
             raise ValueError("Table not found")
 
         table.status = status
+
     # / ================================================================
     # \ GAME SESSION
-    def check_in_reserved(self, reservation_id, customer):
 
+    def check_in_reserved(self, reservation_id, customer):
         reservation = self.find_reservation_by_id(reservation_id)
 
         if reservation is None:
@@ -223,17 +226,14 @@ class CafeSystem:
         table.status = TableStatus.OCCUPIED
 
         if customer.temp_id == reservation.customer_id:
-            session = PlaySession(
-                None,
-                reservation.table_id,
-                datetime.datetime.now()
-            )
-            
+            session = PlaySession(None, reservation.table_id, datetime.datetime.now())
+
             branch.add_play_session(session)
             session.add_players_id(reservation.customer_id)
             return session
         else:
             raise ValueError("Wrong personal ID")
+
     def check_in_walkin(self, branch_id, player_amount, table_id="auto"):
 
         self.update_reserved_tables()
@@ -265,15 +265,9 @@ class CafeSystem:
             if table.capacity < player_amount:
                 raise ValueError("Table capacity not enough")
 
-
         table.status = TableStatus.OCCUPIED
 
-
-        session = PlaySession(
-            None,
-            table.table_id,
-            datetime.datetime.now()
-        )
+        session = PlaySession(None, table.table_id, datetime.datetime.now())
 
         branch.add_play_session(session)
 
