@@ -135,6 +135,149 @@ class CafeSystem:
             return cafe_branch.add_table(capacity)
         else:
             raise ValueError("Cafe Branch not found")
+    def update_reserved_tables(self):
+
+        now = datetime.datetime.now()
+
+        for reservation in self.__reservations:
+
+            reservation_time = reservation.reservation_time
+            time_diff = reservation_time - now
+
+            if datetime.timedelta(hours=0) <= time_diff <= datetime.timedelta(hours=1):
+
+                self.update_table_status(
+                    reservation.branch_id,
+                    reservation.table_id,
+                    TableStatus.RESERVED
+                )
+
+            elif time_diff < datetime.timedelta(hours=0):
+
+                self.update_table_status(
+                    reservation.branch_id,
+                    reservation.table_id,
+                    TableStatus.AVAILABLE
+                )
+    def search_available_table(self, branch_id, required_capacity):
+        self.update_reserved_tables()
+
+        branch = self.find_cafe_branch_by_id(branch_id)
+
+        if branch is None:
+            raise ValueError("Cafe Branch not found")
+
+        available_tables = []
+
+        for table in branch.tables:
+
+            if table.status != TableStatus.AVAILABLE:
+                continue
+
+            if table.capacity >= required_capacity:
+                available_tables.append(table.table_id)
+                available_tables.append(table.capacity)
+
+        return available_tables
+    
+    def update_table_status(self, branch_id, table_id, status):
+
+        if not isinstance(status, TableStatus):
+            raise TypeError("Status must be TableStatus")
+
+        cafe_branch = self.find_cafe_branch_by_id(branch_id)
+
+        if cafe_branch is None:
+            raise ValueError("Cafe Branch not found")
+
+        table = cafe_branch.get_table_by_id(table_id)
+
+        if table is None:
+            raise ValueError("Table not found")
+
+        table.status = status
+    # / ================================================================
+    # \ GAME SESSION
+    def check_in_reserved(self, reservation_id, customer):
+
+        reservation = self.find_reservation_by_id(reservation_id)
+
+        if reservation is None:
+            raise ValueError("Reservation not found")
+
+        now = datetime.datetime.now()
+
+        if now < reservation.reservation_time:
+            raise ValueError("Too early to check-in")
+
+        branch = self.find_cafe_branch_by_id(reservation.branch_id)
+
+        if branch is None:
+            raise ValueError("Branch not found")
+
+        table = branch.get_table_by_id(reservation.table_id)
+
+        if table is None:
+            raise ValueError("Table not found")
+
+        table.status = TableStatus.OCCUPIED
+
+        if customer.temp_id == reservation.customer_id:
+            session = PlaySession(
+                None,
+                reservation.table_id,
+                datetime.datetime.now()
+            )
+            
+            branch.add_play_session(session)
+            session.add_players_id(reservation.customer_id)
+            return session
+        else:
+            raise ValueError("Wrong personal ID")
+    def check_in_walkin(self, branch_id, player_amount, table_id="auto"):
+
+        self.update_reserved_tables()
+
+        branch = self.find_cafe_branch_by_id(branch_id)
+
+        if branch is None:
+            raise ValueError("Cafe Branch not found")
+
+        if table_id == "auto":
+
+            tables = self.search_available_table(branch_id, player_amount)
+
+            if not tables:
+                raise ValueError("No available table")
+
+            table = min(tables, key=lambda t: t.capacity)
+
+        else:
+
+            table = branch.get_table_by_id(table_id)
+
+            if table is None:
+                raise ValueError("Table not found")
+
+            if table.status != TableStatus.AVAILABLE:
+                raise ValueError("Table is not available")
+
+            if table.capacity < player_amount:
+                raise ValueError("Table capacity not enough")
+
+
+        table.status = TableStatus.OCCUPIED
+
+
+        session = PlaySession(
+            None,
+            table.table_id,
+            datetime.datetime.now()
+        )
+
+        branch.add_play_session(session)
+
+        return session
 
     def get_branch_tables(self, branch_id):
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
