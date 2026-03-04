@@ -99,21 +99,7 @@ package "Management Core" {
         + capacity
         + status
         }
-    class PlayTableStandard {
-        - price_per_hour : 50.00
-        - table_id : str
-        - capacity : int
-        - status : str
-        + clear_table()
-    }
 
-    class PlayTableVIP {
-        - price_per_hour : 50.00
-        - table_id : str
-        - capacity : int
-        - status : str
-        + clear_table()
-    }
 }
 
 package "Person & Auth" {
@@ -206,23 +192,16 @@ package "Inventory & Menu" {
     }
 
 class BoardGame{
-- __board_game_id : str
-- __name : str
-- __genre : str
-- __price : float
-- __status : BoardGameStatus
-- __min_players : int
-- __max_players : int
-- __description : str
+- board_game_id : str
+- name : str
+- genre : str
+- price : float
+- status : BoardGameStatus
+- min_players : int
+- max_players : int
+- description : str
 
-+ game_id
-+ name
-+ genre
-+ price
-+ status
-+ min_players
-+ max_players
-+ description
+
 }
 }
 
@@ -285,7 +264,6 @@ package "Operations (Order & Resv)" {
         + refund_transaction(transaction_id : str) : bool
     }
 
-    ' === อัปเดต Methods ตามเกณฑ์ OOP ===
     class PlaySession{
         - session_id : str
         - table_id : str
@@ -315,9 +293,6 @@ NonCustomer <|-- Manager
 NonCustomer <|-- Staff
 NonCustomer <|-- Owner
 Person <|-- Customer
-
-Table <|-- PlayTableStandard
-Table <|-- PlayTableVIP
 
 MenuItem <|-- Food
 MenuItem <|-- Drink
