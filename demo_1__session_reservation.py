@@ -86,30 +86,30 @@ if __name__ == "__main__":
 
     # / ════════════════════════════════════════════════════════════════
 
-    print(f"\n{" TEST - BORROW BOARD GAME ":═^64}\n")
+    print(f'\n{" TEST - BORROW BOARD GAME ":═^64}\n')
     print(
-        f"{"BEFORE":<10}:\t{ play_session.current_board_games_id } ",
+        f'{"BEFORE":<10}:\t{ play_session.current_board_games_id } ',
     )
     sys.borrow_board_game("TABLE-00000", "BG-00000")
     sys.borrow_board_game("TABLE-00000", "BG-00001")
     sys.borrow_board_game("TABLE-00000", "BG-00002")
     print(
-        f"{"AFTER":<10}:\t{ play_session.current_board_games_id } ",
+        f'{"AFTER":<10}:\t{ play_session.current_board_games_id } ',
     )
-    print(f"\n{"":═^64}\n")
+    print(f'\n{"":═^64}\n')
 
     # / ════════════════════════════════════════════════════════════════
 
-    print(f"\n{" TEST - TAKE ORDER ":═^64}\n")
+    print(f'\n{" TEST - TAKE ORDER ":═^64}\n')
     print(
-        f"{"BEFORE":<10}:\t{ [a.menu_items.name for a in play_session.current_order] } ",
+        f'{"BEFORE":<10}:\t{ [a.menu_items.name for a in play_session.current_order] } ',
     )
     sys.take_order("TABLE-00000", "FOOD-00000")
     sys.take_order("TABLE-00000", "DRINK-00000")
     print(
-        f"{"AFTER":<10}:\t{ [a.menu_items.name for a in play_session.current_order] } ",
+        f'{"AFTER":<10}:\t{ [a.menu_items.name for a in play_session.current_order] } ',
     )
-    print(f"\n{"":═^64}\n")
+    print(f'\n{"":═^64}\n')
 
     # / ════════════════════════════════════════════════════════════════
 
