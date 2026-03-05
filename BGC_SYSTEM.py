@@ -212,8 +212,21 @@ class CafeSystem:
         if reservation:
             self.__reservations.remove(reservation)
         else:
-            raise ValueError("Invalid ID : Reservation not found")
+            raise ValueError("Reservation not found")
+    def cancel_reservation(self, reservation_id):
+        reservation = self.find_reservation_by_id(reservation_id)
 
+        if reservation is None:
+            raise ValueError("Reservation not found")
+
+        reservation.status = ReservationStatus.CANCELLED
+
+        branch = self.find_cafe_branch_by_id(reservation.branch_id)
+        table = branch.find_table_by_id(reservation.table_id)
+
+        if table.status == TableStatus.RESERVED:
+            table.status = TableStatus.AVAILABLE
+        
     def update_reservation_status_by_id(self, reservation_id, status):
         if not isinstance(status, ReservationStatus):
             raise TypeError("Status must be ReservationStatus")
