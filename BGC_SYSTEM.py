@@ -686,6 +686,10 @@ class CafeSystem:
         if play_session is None:
             raise ValueError("Play Session not found")
 
+        if len(play_session.current_board_games_id) + 1 > 2:
+            # ! raise ValueError("limit 2 board games per session")
+            return None
+
         board_game = cafe_branch.find_board_game_by_id(board_game_id)
         if board_game is None:
             raise ValueError("Board Game not found")
@@ -694,9 +698,11 @@ class CafeSystem:
             # ! raise ValueError("Board Game is not available")
             return None
 
-        if board_game_id in play_session.current_board_games_id:
-            raise ValueError("Board Game already borrowed")
+            if board_game.status == BoardGameStatus.IN_USE:
+                # ! raise ValueError("Board Game already borrowed")
+                return None
 
+        play_session.add_board_games_id(board_game_id)
         board_game.status = BoardGameStatus.IN_USE
         return board_game
 
