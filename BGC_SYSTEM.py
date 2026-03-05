@@ -185,99 +185,94 @@ class CafeSystem:
     # / ════════════════════════════════════════════════════════════════
     # \ RESERVATION
 
-    def make_reservation(
-        self,
-        customer_id,
-        branch_id,
-        total_player,
-        date,
-        start_time,
-        end_time,
-        table_id="auto",
-    ):
+    def make_reservation(self, 
+                         customer_id, 
+                         branch_id, 
+                         total_player, 
+                         date, 
+                         start_time, 
+                         end_time, 
+                         table_id="auto"):
+                         
+        customer = self.find_person_by_id(customer_id)
+        if customer is None:
+            raise ValueError("Customer not found.")
+        else:
+            pass
+
+        # ดึงระดับสมาชิกแบบเต็มบล็อก (หลีกเลี่ยงการเขียนแบบย่อ)
+        if hasattr(customer, 'member_tier'):
+            tier = customer.member_tier
+        else:
+            tier = MemberTier.NONE_TIER
+
+        # 🟢 ด่านที่ 1: ตรวจสอบกฎธุรกิจทั้งหมด
+        self.__validate_active_quota(customer_id, tier)
+        self.__validate_advance_booking(date, tier)
+        self.__validate_duration(start_time, end_time, tier)
+        self.__validate_minimum_lead_time(date, start_time)
+
         branch = self.find_cafe_branch_by_id(branch_id)
         if branch is None:
-            raise ValueError("Cafe Branch not found")
+            raise ValueError("Cafe branch not found.")
+        else:
+            pass
+            
+        target_table = None
 
-        table = branch.find_table_by_id(table_id)
-        if table is None:
-            raise ValueError("Table not found")
+        # 🟢 ด่านที่ 2: ค้นหาและตรวจสอบโต๊ะ
+        if table_id == "auto":
+            available_tables = []
+            
+            for table in branch.tables:
+                if table.capacity >= total_player:
+                    if self.__is_table_free(table.table_id, date, start_time, end_time) == True:
+                        available_tables.append(table)
+                    else:
+                        pass
+                else:
+                    pass
+            
+            # เช็คว่ามีโต๊ะว่างหรือไม่
+            if len(available_tables) == 0:
+                raise ValueError("No available tables for the requested capacity and time.")
+            else:
+                pass
+            
+            # ค้นหาโต๊ะที่มีความจุน้อยที่สุด (พอดีกับจำนวนคน) ด้วย Loop ธรรมดาแทนการใช้ lambda
+            target_table = available_tables[0]
+            for t in available_tables:
+                if t.capacity < target_table.capacity:
+                    target_table = t
+                else:
+                    pass
+            
+        else:
+            target_table = branch.find_table_by_id(table_id)
+            if target_table is None:
+                raise ValueError("The specified table is not found.")
+            else:
+                pass
+                
+            if target_table.capacity < total_player:
+                raise ValueError("The specified table does not have enough capacity.")
+            else:
+                pass
+                
+            if self.__is_table_free(target_table.table_id, date, start_time, end_time) == False:
+                raise ValueError("The specified table is already booked for this time slot.")
+            else:
+                pass
 
-        reservation = Reservation(
-            customer_id,
-            branch_id,
-            table_id,
-            date,
-            start_time,
-            end_time,
+        # 🟢 ด่านที่ 3: สร้างการจอง
+        new_resv = Reservation(
+            customer_id, branch_id, target_table.table_id, date, start_time, end_time
         )
+        
+        new_resv.status = ReservationStatus.PENDING 
+        self.add_reservation(new_resv)
 
-        self.add_reservation(reservation)
-        return reservation
-
-    # !!! TODO : FIX PLS FOR REAL, JUST FOR SIMPLE PLS
-    # def make_reservation(
-    #     self, customer_id, branch_id, pax, date, start_time, end_time, table_id="auto"
-    # ):
-    #     customer = self.find_person_by_id(customer_id)
-    #     if not customer:
-    #         raise ValueError("Customer not found.")
-
-    #     tier = (
-    #         customer.member_tier
-    #         if isinstance(customer, Member)
-    #         else MemberTier.NONE_TIER
-    #     )
-
-    #     self.__validate_active_quota(customer_id, tier)
-    #     self.__validate_advance_booking(date, tier)
-    #     self.__validate_duration(start_time, end_time, tier)
-
-    #     branch = self.find_cafe_branch_by_id(branch_id)
-    #     if not branch:
-    #         raise ValueError("Cafe branch not found.")
-
-    #     target_table = None
-
-    #     if table_id == "auto":
-    #         available_tables = []
-    #         for table in branch.tables:
-    #             if table.capacity >= pax and self.__is_table_free(
-    #                 table.table_id, date, start_time, end_time
-    #             ):
-    #                 available_tables.append(table)
-
-    #         if not available_tables:
-    #             raise ValueError(
-    #                 "No available tables for the requested capacity and time."
-    #             )
-
-    #         target_table = min(available_tables, key=lambda t: t.capacity)
-
-    #     else:
-    #         target_table = branch.find_table_by_id(table_id)
-    #         if not target_table:
-    #             raise ValueError("The specified table is not found.")
-    #         if target_table.capacity < pax:
-    #             raise ValueError("The specified table does not have enough capacity.")
-    #         if not self.__is_table_free(
-    #             target_table.table_id, date, start_time, end_time
-    #         ):
-    #             raise ValueError(
-    #                 "The specified table is already booked for this time slot."
-    #             )
-
-    #     self.__validate_minimum_lead_time(target_table, date, start_time)
-
-    #     target_table.status = TableStatus.RESERVED
-    #     new_resv = Reservation(
-    #         customer_id, branch_id, target_table.table_id, date, start_time, end_time
-    #     )
-
-    #     new_resv.status = ReservationStatus.PENDING
-    #     self.add_reservation(new_resv)
-
-    #     return new_resv
+        return new_resv
 
     def add_reservation(self, reservation):
         if not isinstance(reservation, Reservation):
@@ -346,98 +341,123 @@ class CafeSystem:
     # \ PRIVATE HELPER METHODS (RESERVATION)
 
     # !!! TODO : FIX PLS FOR REAL, JUST FOR SIMPLE PLS
-    # def __is_table_free(self, table_id, date_str, start_time, end_time):
-    #     new_start = datetime.strptime(start_time, "%H:%M")
-    #     new_end = datetime.strptime(end_time, "%H:%M")
+    # / ════════════════════════════════════════════════════════════════
+    # \ PRIVATE HELPER METHODS (BUSINESS RULES VALIDATION)
+    # / ════════════════════════════════════════════════════════════════
 
-    # for r in self.__reservations:
-    #     status_str = str(getattr(r, "status", ""))
+    def __is_table_free(self, table_id, date_str, start_time, end_time):
+        new_start = datetime.strptime(start_time, "%H:%M")
+        new_end = datetime.strptime(end_time, "%H:%M")
+        
+        for reservation in self.__reservations:
+            
+            if reservation.date == date_str and reservation.table_id == table_id:
 
-    #         if (
-    #             r.date == date_str
-    #             and r.table_id == table_id
-    #             and "PENDING" in status_str
-    #         ):
-    #             exist_start = datetime.strptime(r.start_time, "%H:%M")
-    #             exist_end = datetime.strptime(r.end_time, "%H:%M")
+                if reservation.status == ReservationStatus.PENDING:
+                    exist_start = datetime.strptime(reservation.start_time, "%H:%M")
+                    exist_end = datetime.strptime(reservation.end_time, "%H:%M")
+                    
+                    # เช็คเวลาทับซ้อน
+                    if new_start < exist_end and new_end > exist_start:
+                        return False
+                        
+        return True
 
-    #             if new_start < exist_end and new_end > exist_start:
-    #                 return False
-    #     return True
+    def __validate_active_quota(self, customer_id, tier):
+        active_count = 0
+        
+        # นับจำนวนคิวที่ยังค้างอยู่
+        for reservation in self.__reservations:
+            if reservation.customer_id == customer_id:
+                if reservation.status == ReservationStatus.PENDING:
+                    active_count = active_count + 1
+                
+        # กำหนดโควตาตามระดับสมาชิก
+        if tier == MemberTier.PLATINUM:
+            max_quota = 3
+        elif tier == MemberTier.GOLD:
+            max_quota = 2
+        elif tier == MemberTier.SILVER:
+            max_quota = 1
+        elif tier == MemberTier.BRONZE:
+            max_quota = 1
+        else:
+            max_quota = 1
+        
+        # ตรวจสอบโควตา
+        if active_count >= max_quota:
+            raise ValueError(f"Active booking quota exceeded. Maximum allowed for your tier is {max_quota}.")
 
-    # def __validate_active_quota(self, customer_id, tier):
-    #     active_resv = []
-    #     for r in self.__reservations:
-    #         status_str = str(getattr(r, "status", ""))
+    def __validate_advance_booking(self, date_str, tier):
+        resv_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        today = datetime.now().date()
+        
+        # คำนวณวันล่วงหน้า
+        days_advance = (resv_date - today).days
 
-    #         if r.customer_id == customer_id and "PENDING" in status_str:
-    #             active_resv.append(r)
+        if days_advance < 0:
+            raise ValueError("Cannot make a reservation in the past.")
 
-    #     max_quota = 1
-    #     if tier == MemberTier.PLATINUM:
-    #         max_quota = 3
-    #     elif tier == MemberTier.GOLD:
-    #         max_quota = 2
+        # กำหนดวันล่วงหน้าตามระดับสมาชิก
+        if tier == MemberTier.PLATINUM:
+            max_adv_days = 30
+        elif tier == MemberTier.GOLD:
+            max_adv_days = 21
+        elif tier == MemberTier.SILVER:
+            max_adv_days = 14
+        elif tier == MemberTier.BRONZE:
+            max_adv_days = 5
+        else:
+            max_adv_days = 5
 
-    #     if len(active_resv) >= max_quota:
-    #         raise ValueError(
-    #             f"Active booking quota exceeded. Maximum allowed for your tier is {max_quota}."
-    #         )
+        if days_advance > max_adv_days:
+            raise ValueError(f"Maximum advance booking exceeded. Your tier allows up to {max_adv_days} days.")
 
-    # def __validate_advance_booking(self, date_str, tier):
-    #     resv_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-    #     today = datetime.now().date()
-    #     days_advance = (resv_date - today).days
+    def __validate_duration(self, start_time, end_time, tier):
+        start_dt = datetime.strptime(start_time, "%H:%M")
+        end_dt = datetime.strptime(end_time, "%H:%M")
+        
+        # คำนวณระยะเวลา (ชั่วโมง)
+        duration_hrs = (end_dt - start_dt).total_seconds() / 3600
 
-    #     if days_advance < 0:
-    #         raise ValueError("Cannot make a reservation in the past.")
+        # กรณีข้ามคืน (เช่น 23:00 ถึง 02:00)
+        if duration_hrs <= 0:
+            duration_hrs = duration_hrs + 24
 
-    #     max_adv_days = 5
-    #     if tier == MemberTier.PLATINUM:
-    #         max_adv_days = 30
-    #     elif tier == MemberTier.GOLD:
-    #         max_adv_days = 21
-    #     elif tier == MemberTier.SILVER:
-    #         max_adv_days = 14
-    #     elif tier == MemberTier.BRONZE:
-    #         max_adv_days = 7
+        if duration_hrs <= 0 or duration_hrs > 24:
+            raise ValueError("End time must be after start time or within 24 hours.")
 
-    #     if days_advance > max_adv_days:
-    #         raise ValueError(
-    #             f"Maximum advance booking exceeded. Your tier allows up to {max_adv_days} days."
-    #         )
+        # กำหนดชั่วโมงสูงสุดตามระดับสมาชิก
+        if tier == MemberTier.PLATINUM:
+            max_dur_hrs = 999
+        elif tier == MemberTier.GOLD:
+            max_dur_hrs = 7
+        elif tier == MemberTier.SILVER:
+            max_dur_hrs = 3.5
+        elif tier == MemberTier.BRONZE:
+            max_dur_hrs = 2
+        else:
+            max_dur_hrs = 2
 
-    # def __validate_duration(self, start_time, end_time, tier):
-    #     start_dt = datetime.strptime(start_time, "%H:%M")
-    #     end_dt = datetime.strptime(end_time, "%H:%M")
-    #     duration_hrs = (end_dt - start_dt).total_seconds() / 3600
+        if duration_hrs > max_dur_hrs:
+            if tier == MemberTier.PLATINUM:
+                limit_str = "Unlimited"
+            else:
+                limit_str = f"{max_dur_hrs} hours"
+                
+            raise ValueError(f"Maximum duration exceeded. Your tier allows up to {limit_str} per session.")
 
-    #     max_dur_hrs = 2
-    #     if tier == MemberTier.PLATINUM:
-    #         max_dur_hrs = 999
-    #     elif tier == MemberTier.GOLD:
-    #         max_dur_hrs = 7
-    #     elif tier == MemberTier.SILVER:
-    #         max_dur_hrs = 3.5
-
-    #     # if duration_hrs > max_dur_hrs:
-    #     #     raise ValueError(
-    #     #         f"Maximum duration exceeded. Your tier allows up to {max_dur_hrs} hours per session."
-    #     #     )
-
-    # def __validate_minimum_lead_time(self, table, date_str, start_time):
-    #     resv_datetime = datetime.strptime(f"{date_str} {start_time}", "%Y-%m-%d %H:%M")
-    #     lead_time = resv_datetime - datetime.now()
-
-    #     is_vip_table = type(table).__name__ == "PlayTableVIP"
-    #     min_lead_hours = 3 if is_vip_table else 1
-
-    #     # if lead_time < timedelta(hours=min_lead_hours):
-    #     #     table_type_str = "VIP" if is_vip_table else "Standard"
-    #     #     raise ValueError(
-    #     #         f"Minimum lead time not met. {table_type_str} tables require at least {min_lead_hours} hour(s) advance booking."
-    #     #     )
-
+    def __validate_minimum_lead_time(self, date_str, start_time):
+        resv_datetime = datetime.strptime(f"{date_str} {start_time}", "%Y-%m-%d %H:%M")
+        
+        # คำนวณเวลาที่เหลือก่อนถึงคิว (ลบด้วยเวลาปัจจุบัน)
+        lead_time = resv_datetime - datetime.now()
+        
+        # กำหนดเวลา 1 ชั่วโมง ให้เป็นตัวแปรแบบตรงไปตรงมา
+        one_hour = timedelta(hours=1)
+        
+        if lead_time < one_hour:
+            raise ValueError("Minimum lead time not met. Tables require at least 1 hour(s) advance booking.")
     # / ════════════════════════════════════════════════════════════════
     # \ TABLE
 
@@ -644,20 +664,27 @@ class CafeSystem:
     # / ════════════════════════════════════════════════════════════════
     # \ GAME SESSION - CHECK-IN
 
-    def check_in_reserved(self, reservation_id, customer_id):
+    def check_in_reserved(self, reservation_id, customer_id, current_time=None):
         reservation = self.find_reservation_by_id(reservation_id)
         if reservation is None:
             raise ValueError("Reservation not found")
         customer = self.find_person_by_id(customer_id)
         if customer is None:
             raise ValueError("Customer not found")
-        now = datetime.now()
+        if current_time:
+            now = current_time
+        else:
+            now = datetime.now()
 
         # ! fix time arrive
         if now < reservation.reservation_time:
             raise ValueError("Too early to check-in")
+        late_limit = reservation.reservation_time + timedelta(minutes=15)
+        if now > late_limit:
+            reservation.status = ReservationStatus.NO_SHOW
+            raise ValueError("Check-in failed: You are more than 15 minutes late. Marked as No-Show.")
         if reservation.status != ReservationStatus.PENDING:
-            raise ValueError("Can check in reservation that already completed")
+            raise ValueError("Can't check in reservation that already completed")
         branch = self.find_cafe_branch_by_id(reservation.branch_id)
         if branch is None:
             raise ValueError("Branch not found")
