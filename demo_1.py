@@ -81,7 +81,7 @@ if __name__ == "__main__":
 
     for iii in range(4):
         branch_id = "BRCH-0000" + str(iii)
-        print(f"Board Games for {branch_id}:")
+        print(f"Board Games for {branch_id} :")
         for o in [
             f"{a.name:<15}- {a.genre:20} | {a.price} ฿ | {a.min_players}-{a.max_players} players"
             for a in sys.get_branch_board_games(branch_id)
@@ -94,14 +94,14 @@ if __name__ == "__main__":
     for iii in range(4):
         branch_id = "BRCH-0000" + str(iii)
         sys.add_menu_to_branch(branch_id)
-        sys.add_menu_item_food_to_branch(branch_id, "ITEM_F1", 11.11)
-        sys.add_menu_item_food_to_branch(branch_id, "ITEM_F2", 22.22)
-        sys.add_menu_item_drink_to_branch(branch_id, "ITEM_D1", 33.33)
-        sys.add_menu_item_drink_to_branch(branch_id, "ITEM_D2", 44.44)
+        sys.add_menu_item_food_to_branch(branch_id, "ITEM_F1", 11.11, "FOOD TEST 1")
+        sys.add_menu_item_food_to_branch(branch_id, "ITEM_F2", 22.22, "FOOD TEST 2")
+        sys.add_menu_item_drink_to_branch(branch_id, "ITEM_D1", 33.33, "DRINK TEST 1")
+        sys.add_menu_item_drink_to_branch(branch_id, "ITEM_D2", 44.44, "DRINK TEST 2")
 
     for iii in range(4):
         branch_id = "BRCH-0000" + str(iii)
-        print(f"Menu for {branch_id}:")
+        print(f"Menu for {branch_id} :")
         for o in [
             f"{a.name:<10} - {a.price} ฿ | {a.item_id} "
             for a in sys.get_branch_menu_item(branch_id)
@@ -111,13 +111,13 @@ if __name__ == "__main__":
         print(" ")
 
         for o in [
-            f"{a.name:<10} - {a.price} ฿ | {a.item_id} "
+            f"{a.name:<10} |\t{a.description} "
             for a in sys.get_branch_menu_item_food(branch_id)
         ]:
             print(o)
 
         for o in [
-            f"{a.name:<10} - {a.price} ฿ | {a.item_id} "
+            f"{a.name:<10} |\t{a.description} "
             for a in sys.get_branch_menu_item_drink(branch_id)
         ]:
             print(o)

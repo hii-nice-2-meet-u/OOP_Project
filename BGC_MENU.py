@@ -231,6 +231,18 @@ class Order:
     # - Methods
     # / ================================================================
 
+    def set_order_status(self, status):
+        self.__status = status
+
+    def set_order_preparing(self):
+        self.__status = OrderStatus.CANCELLED
+
+    def set_order_serve(self):
+        self.__status = OrderStatus.SERVED
+
+    def set_order_cancel(self):
+        self.__status = OrderStatus.CANCELLED
+
     # / ================================================================
 
 

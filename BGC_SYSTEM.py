@@ -155,7 +155,7 @@ class CafeSystem:
 
     def find_cafe_branch_by_play_session_id(self, play_session_id):
         for cafe_branch in self.__cafe_branches:
-            if cafe_branch.get_play_session_by_id(play_session_id):
+            if cafe_branch.find_play_session_by_id(play_session_id):
                 return cafe_branch
         return None
 
@@ -430,30 +430,6 @@ class CafeSystem:
             raise ValueError("Menu Item not found")
 
     # / ================================================================
-    # \ ORDER
-
-    def take_order(self, table_id, menu_item_id):
-        cafe_branch = self.find_cafe_branch_by_table_id(table_id)
-        play_session = cafe_branch.get_play_sessions_by_table_id(table_id)
-        if play_session:
-            menu_item = cafe_branch.find_menu_item_by_id(menu_item_id)
-            if menu_item:
-                play_session.take_order(menu_item)
-            else:
-                raise ValueError("Menu Item not found")
-        else:
-            raise ValueError("Play Session not found")
-
-    def get_pending_orders(self, branch_id):
-        cafe_branch = self.find_cafe_branch_by_id(branch_id)
-        if cafe_branch:
-            return cafe_branch.get_pending_orders()
-        else:
-            raise ValueError("Cafe Branch not found")
-
-    # ? def serve_order(self, table_id):
-
-    # / ================================================================
     # \ GAME SESSION - CHECK-IN
 
     def check_in_reserved(self, reservation_id, customer):
@@ -547,6 +523,115 @@ class CafeSystem:
         session.add_players_id(member_id)
         branch.add_play_session(session)
         return session
+
+    # / ================================================================
+    # \ GAME SESSION - JOIN
+
+    def join_session(self, play_session_id, customer_id):
+        cafe_branch = self.find_cafe_branch_by_play_session_id(play_session_id)
+        if cafe_branch is None:
+            raise ValueError("Cafe Branch not found")
+
+        play_session = cafe_branch.find_play_session_by_id(play_session_id)
+
+        if play_session:
+            play_session.add_players_id(customer_id)
+        else:
+            raise ValueError("Play Session not found")
+
+    def join_session_walkin(self, play_session_id):
+        cafe_branch = self.find_cafe_branch_by_play_session_id(play_session_id)
+        if cafe_branch is None:
+            raise ValueError("Cafe Branch not found")
+
+        play_session = cafe_branch.find_play_session_by_id(play_session_id)
+        if play_session:
+            play_session.add_players_id(self.add_customer_walk_in().user_id)
+        else:
+            raise ValueError("Play Session not found")
+
+    def join_session_member(self, play_session_id, member_id):
+        cafe_branch = self.find_cafe_branch_by_play_session_id(play_session_id)
+        if cafe_branch is None:
+            raise ValueError("Cafe Branch not found")
+
+        play_session = cafe_branch.find_play_session_by_id(play_session_id)
+
+        if play_session:
+            play_session.add_players_id(member_id)
+        else:
+            raise ValueError("Play Session not found")
+
+    def join_session_walkin_by_table_id(self, table_id):
+        cafe_branch = self.find_cafe_branch_by_table_id(table_id)
+        if cafe_branch is None:
+            raise ValueError("Cafe Branch not found")
+
+        play_session = cafe_branch.find_play_session_by_table_id(table_id)
+        if play_session:
+            play_session.add_players_id(self.add_customer_walk_in().user_id)
+        else:
+            raise ValueError("Play Session not found")
+
+    def join_session_member_by_table_id(self, table_id, member_id):
+        cafe_branch = self.find_cafe_branch_by_table_id(table_id)
+        if cafe_branch is None:
+            raise ValueError("Cafe Branch not found")
+
+        play_session = cafe_branch.find_play_session_by_table_id(table_id)
+        if play_session:
+            play_session.add_players_id(member_id)
+        else:
+            raise ValueError("Play Session not found")
+
+    # / ================================================================
+    # \ GAME SESSION - ORDER
+
+    def take_order(self, table_id, menu_item_id):
+        cafe_branch = self.find_cafe_branch_by_table_id(table_id)
+        if cafe_branch is None:
+            raise ValueError("Cafe Branch not found")
+
+        play_session = cafe_branch.find_play_session_by_table_id(table_id)
+        if play_session:
+            menu_item = cafe_branch.find_menu_item_by_id(menu_item_id)
+            if menu_item:
+                play_session.take_order(menu_item)
+            else:
+                raise ValueError("Menu Item not found")
+        else:
+            raise ValueError("Play Session not found")
+
+    def get_pending_orders(self, branch_id):
+        cafe_branch = self.find_cafe_branch_by_id(branch_id)
+        if cafe_branch:
+            return cafe_branch.get_pending_orders()
+        else:
+            raise ValueError("Cafe Branch not found")
+
+    def update_order(self, play_session_id, order_id, session_status):
+        cafe_branch = self.find_cafe_branch_by_play_session_id(play_session_id)
+        if cafe_branch is None:
+            raise ValueError("Cafe Branch not found")
+
+        play_session = cafe_branch.find_play_session_by_id(play_session_id)
+        if play_session:
+            for order in play_session.current_order:
+                if order.order_id == order_id:
+                    order.set_order_status(session_status)
+                    return
+            raise ValueError("Order not found")
+        else:
+            raise ValueError("Play Session not found")
+
+    def update_order_preparing(self, play_session_id, order_id):
+        self.update_order(play_session_id, order_id, OrderStatus.PREPARING)
+
+    def update_order_serve(self, play_session_id, order_id):
+        self.update_order(play_session_id, order_id, OrderStatus.SERVED)
+
+    def update_order_cancel(self, play_session_id, order_id):
+        self.update_order(play_session_id, order_id, OrderStatus.CANCELLED)
 
     # / ================================================================
     # \ GAME SESSION - CHECK-OUT
@@ -776,27 +861,30 @@ class CafeBranch:
         else:
             raise TypeError("Type Error : must be an instance of PlaySession")
 
-    def get_play_session_by_id(self, play_session_id):
+    def get_play_sessions(self):
+        return self.__play_sessions.copy()
+
+    def find_play_session_by_id(self, play_session_id):
         for play_session in self.__play_sessions:
             if play_session.session_id == play_session_id:
                 return play_session
         return None
 
-    def get_play_sessions_by_table_id(self, table_id):
+    def find_play_session_by_table_id(self, table_id):
         for play_session in self.__play_sessions:
             if play_session.table_id == table_id:
                 return play_session
         return None
 
     def remove_play_session_by_id(self, play_session_id):
-        play_session = self.get_play_session_by_id(play_session_id)
+        play_session = self.find_play_session_by_id(play_session_id)
         if play_session:
             self.__play_sessions.remove(play_session)
         else:
             raise ValueError("Invalid ID : Play Session not found")
 
     def end_play_session(self, play_session_id):
-        play_session = self.get_play_session_by_id(play_session_id)
+        play_session = self.find_play_session_by_id(play_session_id)
         if play_session:
             play_session.end_time = datetime.datetime.now()
             self.__play_sessions_history.append(play_session)
