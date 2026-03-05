@@ -176,15 +176,17 @@ class CafeSystem:
 
     # / ================================================================
     # \ RESERVATION
-    
+
     # ถ้าทำเอาเวลาเก็บในโต๊ะได้จะเฟี้ยวมาก
     def add_reservation(self, reservation):
         if not isinstance(reservation, Reservation):
             raise TypeError("Must be an instance of Reservation")
 
         for r in self.__reservations:
-
-            if (r.branch_id == reservation.branch_id and r.table_id == reservation.table_id and r.date == reservation.date
+            if (
+                r.branch_id == reservation.branch_id
+                and r.table_id == reservation.table_id
+                and r.date == reservation.date
             ):
 
                 start1 = datetime.strptime(r.start_time, "%H:%M")
@@ -213,6 +215,7 @@ class CafeSystem:
             self.__reservations.remove(reservation)
         else:
             raise ValueError("Reservation not found")
+
     def cancel_reservation(self, reservation_id):
         reservation = self.find_reservation_by_id(reservation_id)
 
@@ -226,7 +229,7 @@ class CafeSystem:
 
         if table.status == TableStatus.RESERVED:
             table.status = TableStatus.AVAILABLE
-        
+
     def update_reservation_status_by_id(self, reservation_id, status):
         if not isinstance(status, ReservationStatus):
             raise TypeError("Status must be ReservationStatus")
