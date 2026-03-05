@@ -293,10 +293,10 @@ class Owner(NonCustomer):
 class Staff(NonCustomer):
     __counter = 0
 
-    def __init__(self, name, user_id):
+    def __init__(self, name):
         temp_id = "STAFF-" + str(Staff.__counter).zfill(5)
         Staff.__counter += 1
-        super().__init__(name, user_id)
+        super().__init__(name, temp_id)
         self.__assigned_branch = None
 
     # / ================================================================

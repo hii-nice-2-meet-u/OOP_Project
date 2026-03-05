@@ -41,38 +41,71 @@ class CafeSystem:
     # / ================================================================
     # - Methods
     # / ================================================================
-    # \ ADD PERSON
+    # \ PERSON METHOD
 
-    def add_person(self, person):
+    def create_person(self, person):
         if isinstance(person, Person):
             self.__person.append(person)
         else:
             raise TypeError("Type Error : must be an instance of Person")
 
-    def add_owner(self, name):
+    def create_owner(self, name):
         new_owner = Owner(name)
-        self.add_person(new_owner)
+        self.create_person(new_owner)
         return new_owner
 
-    def add_manager(self, name):
+    def create_manager(self, name):
         new_manager = Manager(name)
-        self.add_person(new_manager)
+        self.create_person(new_manager)
         return new_manager
 
-    def add_staff(self, name):
+    def create_staff(self, name):
         new_staff = Staff(name)
-        self.add_person(new_staff)
+        self.create_person(new_staff)
         return new_staff
 
-    def add_customer_member(self, name):
+    def create_customer_member(self, name):
         new_customer = Member(name)
-        self.add_person(new_customer)
+        self.create_person(new_customer)
         return new_customer
 
-    def add_customer_walk_in(self):
+    def create_customer_walk_in(self):
         new_walk_in = WalkInCustomer()
-        self.add_person(new_walk_in)
+        self.create_person(new_walk_in)
         return new_walk_in
+
+    def add_owner_to_branch(self, branch_id, owner_id):
+        cafe_branch = self.find_cafe_branch_by_id(branch_id)
+        if cafe_branch:
+            owner = self.find_person_by_id(owner_id)
+            if owner:
+                cafe_branch.add_owner(owner)
+            else:
+                raise ValueError("Owner not found")
+        else:
+            raise ValueError("Cafe Branch not found")
+
+    def add_manager_to_branch(self, branch_id, manager_id):
+        cafe_branch = self.find_cafe_branch_by_id(branch_id)
+        if cafe_branch:
+            manager = self.find_person_by_id(manager_id)
+            if manager:
+                cafe_branch.add_manager(manager)
+            else:
+                raise ValueError("Manager not found")
+        else:
+            raise ValueError("Cafe Branch not found")
+
+    def add_staff_to_branch(self, branch_id, staff_id):
+        cafe_branch = self.find_cafe_branch_by_id(branch_id)
+        if cafe_branch:
+            staff = self.find_person_by_id(staff_id)
+            if staff:
+                cafe_branch.add_staff(staff)
+            else:
+                raise ValueError("Staff not found")
+        else:
+            raise ValueError("Cafe Branch not found")
 
     def get_person(self):
         return self.__person.copy()
@@ -121,7 +154,7 @@ class CafeSystem:
     # / ================================================================
     # \ CAFE BRANCH
 
-    def add_cafe_branch(self, cafe_branch_name, cafe_branch_location=""):
+    def create_cafe_branch(self, cafe_branch_name, cafe_branch_location=""):
         new_cafe_branch = CafeBranch(cafe_branch_name, cafe_branch_location)
         self.__cafe_branches.append(new_cafe_branch)
         return new_cafe_branch
@@ -286,7 +319,7 @@ class CafeSystem:
     # / ================================================================
     # \ TABLE
 
-    def add_table_to_branch(self, branch_id, capacity):
+    def create_table_to_branch(self, branch_id, capacity):
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
         if cafe_branch:
             return cafe_branch.add_table(capacity)
@@ -353,7 +386,7 @@ class CafeSystem:
     # / ================================================================
     # \ BOARD GAME
 
-    def add_board_game_to_branch(
+    def create_board_game_to_branch(
         self,
         branch_id,
         name,
@@ -417,24 +450,24 @@ class CafeSystem:
     # / ================================================================
     # \ MENU
 
-    def add_menu_to_branch(self, branch_id):
+    def create_menu_to_branch(self, branch_id):
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
         if cafe_branch:
             new_menu = MenuList()
-            cafe_branch.add_menu(new_menu)
+            cafe_branch.create_menu(new_menu)
             return new_menu
         else:
             raise ValueError("Cafe Branch not found")
 
-    def add_menu_item_food_to_branch(self, branch_id, name, price, description=""):
+    def create_menu_item_food_to_branch(self, branch_id, name, price, description=""):
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
         if cafe_branch:
-            return cafe_branch.add_menu_item_food(name, price, description)
+            return cafe_branch.create_menu_item_food(name, price, description)
 
-    def add_menu_item_drink_to_branch(self, branch_id, name, price, description=""):
+    def create_menu_item_drink_to_branch(self, branch_id, name, price, description=""):
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
         if cafe_branch:
-            return cafe_branch.add_menu_item_drink(name, price, description)
+            return cafe_branch.create_menu_item_drink(name, price, description)
 
     def get_branch_menu(self, branch_id):
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
@@ -493,7 +526,7 @@ class CafeSystem:
         if reservation is None:
             raise ValueError("Reservation not found")
 
-        now = datetime.datetime.now()
+        now = datetime.now()
 
         # ! fix time arrive
         if now < reservation.reservation_time:
@@ -545,7 +578,7 @@ class CafeSystem:
         table.status = TableStatus.OCCUPIED
 
         session = PlaySession(table.table_id, datetime.now())
-        session.add_players_id(self.add_customer_walk_in().user_id)
+        session.add_players_id(self.create_customer_walk_in().user_id)
         branch.add_play_session(session)
         return session
 
@@ -602,7 +635,7 @@ class CafeSystem:
 
         play_session = cafe_branch.find_play_session_by_id(play_session_id)
         if play_session:
-            play_session.add_players_id(self.add_customer_walk_in().user_id)
+            play_session.add_players_id(self.create_customer_walk_in().user_id)
         else:
             raise ValueError("Play Session not found")
 
@@ -625,7 +658,7 @@ class CafeSystem:
 
         play_session = cafe_branch.find_play_session_by_table_id(table_id)
         if play_session:
-            play_session.add_players_id(self.add_customer_walk_in().user_id)
+            play_session.add_players_id(self.create_customer_walk_in().user_id)
         else:
             raise ValueError("Play Session not found")
 
@@ -827,13 +860,13 @@ class CafeBranch:
     # / ================================================================
     # \ MENU
 
-    def add_menu(self, menu):
+    def create_menu(self, menu):
         if isinstance(menu, MenuList):
             self.__menu_list = menu
         else:
             raise TypeError("Type Error : must be an instance of Menu")
 
-    def add_menu_item_food(self, name, price, description=""):
+    def create_menu_item_food(self, name, price, description=""):
         if self.__menu_list is not None:
             new_menu_item = Food(name, price, description)
             self.__menu_list.add_menu_item(new_menu_item)
@@ -841,7 +874,7 @@ class CafeBranch:
         else:
             raise ValueError("Menu not found")
 
-    def add_menu_item_drink(self, name, price, description=""):
+    def create_menu_item_drink(self, name, price, description=""):
         if self.__menu_list is not None:
             new_menu_item = Drink(name, price, description)
             self.__menu_list.add_menu_item(new_menu_item)
