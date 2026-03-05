@@ -914,7 +914,6 @@ class CafeSystem:
         total += table.price_per_hour * play_session.duration()
         return total
     def check_out_by_session_id(self, play_session_id):
-
         cafe_branch = self.find_cafe_branch_by_play_session_id(play_session_id)
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
