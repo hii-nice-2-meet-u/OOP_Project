@@ -672,7 +672,66 @@ class CafeSystem:
             play_session.add_players_id(member_id)
         else:
             raise ValueError("Play Session not found")
+    # / ================================================================
+    # \ GAME SESSION - BORROW BOARD GAME
+    def borrow_boardgame(self, table_id, board_game_id):
 
+        cafe_branch = self.find_cafe_branch_by_table_id(table_id)
+        if cafe_branch is None:
+            raise ValueError("Cafe Branch not found")
+
+        play_session = cafe_branch.find_play_session_by_table_id(table_id)
+        if play_session is None:
+            raise ValueError("Play Session not found")
+
+        board_game = cafe_branch.find_board_game_by_id(board_game_id)
+        if board_game is None:
+            raise ValueError("Board Game not found")
+
+        if board_game.status != BoardGameStatus.AVAILABLE:
+            raise ValueError("Board Game is not available")
+
+        play_session.add_board_games_id(board_game_id)
+
+        board_game.status = BoardGameStatus.IN_USE
+        
+        return boardgame
+    def return_boardgame(self, table_id, boardgame_id):
+
+        cafe_branch = self.find_cafe_branch_by_table_id(table_id)
+        if cafe_branch is None:
+            raise ValueError("Cafe Branch not found")
+
+        play_session = cafe_branch.find_play_session_by_table_id(table_id)
+        if play_session is None:
+            raise ValueError("Play Session not found")
+
+        boardgame = cafe_branch.find_board_game_by_id(boardgame_id)
+        if boardgame is None:
+            raise ValueError("Board Game not found")
+
+        boardgame.status = BoardGameStatus.AVAILABLE
+
+        play_session.remove_board_games_id(boardgame)
+
+        return boardgame
+    
+    def fix_boardgame(self, boardgame_id):
+        cafe_branch = self.find_cafe_branch_by_board_game_id(boardgame_id)
+        if cafe_branch is None:
+            raise ValueError("Cafe Branch not found")
+
+        boardgame = cafe_branch.find_board_game_by_id(boardgame_id)
+        if boardgame is None:
+            raise ValueError("Board Game not found")
+
+        boardgame.status = BoardGameStatus.MAINTENANCE
+
+        for session in cafe_branch.get_play_sessions():
+            if boardgame in session.borrowed_boardgames:
+                raise ValueError("Board Game in use")
+
+        return boardgame
     # / ================================================================
     # \ GAME SESSION - ORDER
 
