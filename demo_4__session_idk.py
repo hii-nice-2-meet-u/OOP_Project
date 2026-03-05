@@ -97,8 +97,8 @@ if __name__ == "__main__":
     print(
         f'{"BEFORE":<10}:\t{ play_session.current_players_id } ',
     )
-    sys.join_session_member("PS-00000", "MEMBER-00001")
-    sys.join_session_walk_in("PS-00000")
+    sys.join_session("PS-00000", "MEMBER-00001")
+    sys.join_session("PS-00000")
     print(
         f'{"AFTER":<10}:\t{ play_session.current_players_id } ',
     )

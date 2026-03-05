@@ -43,7 +43,7 @@ class CafeSystem:
     # / ════════════════════════════════════════════════════════════════
     # \ PERSON METHOD
 
-    def create_person(self, person):
+    def add_person(self, person):
         if isinstance(person, Person):
             self.__person.append(person)
         else:
@@ -51,27 +51,27 @@ class CafeSystem:
 
     def create_owner(self, name):
         new_owner = Owner(name)
-        self.create_person(new_owner)
+        self.add_person(new_owner)
         return new_owner
 
     def create_manager(self, name):
         new_manager = Manager(name)
-        self.create_person(new_manager)
+        self.add_person(new_manager)
         return new_manager
 
     def create_staff(self, name):
         new_staff = Staff(name)
-        self.create_person(new_staff)
+        self.add_person(new_staff)
         return new_staff
 
     def create_customer_member(self, name):
         new_customer = Member(name)
-        self.create_person(new_customer)
+        self.add_person(new_customer)
         return new_customer
 
     def create_customer_walk_in(self):
         new_walk_in = WalkInCustomer()
-        self.create_person(new_walk_in)
+        self.add_person(new_walk_in)
         return new_walk_in
 
     def add_owner_to_branch(self, branch_id, owner_id):
@@ -113,24 +113,6 @@ class CafeSystem:
     def get_person_by_type(self, person_type):
         return [person for person in self.__person if isinstance(person, person_type)]
 
-    def get_owner(self):
-        return self.get_person_by_type(Owner)
-
-    def get_manager(self):
-        return self.get_person_by_type(Manager)
-
-    def get_staff(self):
-        return self.get_person_by_type(Staff)
-
-    def get_customer(self):
-        return self.get_person_by_type(Customer)
-
-    def get_customer_member(self):
-        return self.get_person_by_type(Member)
-
-    def get_customer_walk_in(self):
-        return self.get_person_by_type(Walk_InCustomer)
-
     def find_person_by_id(self, user_id):
         for person in self.__person:
             if person.user_id == user_id:
@@ -162,34 +144,27 @@ class CafeSystem:
     def get_cafe_branches(self):
         return self.cafe_branches
 
-    def find_cafe_branch_by_id(self, branch_id):
-        for cafe_branch in self.__cafe_branches:
-            if cafe_branch.branch_id == branch_id:
-                return cafe_branch
-        return None
-
-    def find_cafe_branch_by_table_id(self, table_id):
-        for cafe_branch in self.__cafe_branches:
-            if cafe_branch.find_table_by_id(table_id):
-                return cafe_branch
-        return None
-
-    def find_cafe_branch_by_board_game_id(self, board_game_id):
-        for cafe_branch in self.__cafe_branches:
-            if cafe_branch.find_board_game_by_id(board_game_id):
-                return cafe_branch
-        return None
-
-    def find_cafe_branch_by_menu_item_id(self, menu_item_id):
-        for cafe_branch in self.__cafe_branches:
-            if cafe_branch.find_menu_item_by_id(menu_item_id):
-                return cafe_branch
-        return None
-
-    def find_cafe_branch_by_play_session_id(self, play_session_id):
-        for cafe_branch in self.__cafe_branches:
-            if cafe_branch.find_play_session_by_id(play_session_id):
-                return cafe_branch
+    def find_cafe_branch_by_id(self, _id):
+        if _id.startswith("BRCH-"):
+            for cafe_branch in self.__cafe_branches:
+                if cafe_branch.branch_id == _id:
+                    return cafe_branch
+        elif _id.startswith("PS-"):
+            for cafe_branch in self.__cafe_branches:
+                if cafe_branch.find_play_session_by_id(_id):
+                    return cafe_branch
+        elif _id.startswith("TABLE-"):
+            for cafe_branch in self.__cafe_branches:
+                if cafe_branch.find_table_by_id(_id):
+                    return cafe_branch
+        elif _id.startswith("BG-"):
+            for cafe_branch in self.__cafe_branches:
+                if cafe_branch.find_board_game_by_id(_id):
+                    return cafe_branch
+        elif _id.startswith("FOOD-") or _id.startswith("DRINK-"):
+            for cafe_branch in self.__cafe_branches:
+                if cafe_branch.find_menu_item_by_id(_id):
+                    return cafe_branch
         return None
 
     def remove_cafe_branch_by_id(self, cafe_branch_id):
@@ -375,8 +350,8 @@ class CafeSystem:
     #     new_start = datetime.strptime(start_time, "%H:%M")
     #     new_end = datetime.strptime(end_time, "%H:%M")
 
-    #     for r in self.__reservations:
-    #         status_str = str(getattr(r, "status", ""))
+    # for r in self.__reservations:
+    #     status_str = str(getattr(r, "status", ""))
 
     #         if (
     #             r.date == date_str
@@ -398,7 +373,7 @@ class CafeSystem:
     #         if r.customer_id == customer_id and "PENDING" in status_str:
     #             active_resv.append(r)
 
-    #     max_quota = 2
+    #     max_quota = 1
     #     if tier == MemberTier.PLATINUM:
     #         max_quota = 3
     #     elif tier == MemberTier.GOLD:
@@ -520,7 +495,7 @@ class CafeSystem:
         if not isinstance(status, TableStatus):
             raise TypeError("Status must be TableStatus")
 
-        cafe_branch = self.find_cafe_branch_by_table_id(table_id)
+        cafe_branch = self.find_cafe_branch_by_id(table_id)
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
@@ -772,14 +747,10 @@ class CafeSystem:
         play_session = None
         cafe_branch = None
         if play_session_or_table_id.startswith("PS-"):
-            cafe_branch = self.find_cafe_branch_by_play_session_id(
-                play_session_or_table_id,
-            )
+            cafe_branch = self.find_cafe_branch_by_id(play_session_or_table_id)
             play_session = cafe_branch.find_play_session_by_id(play_session_or_table_id)
         elif play_session_or_table_id.startswith("TABLE-"):
-            cafe_branch = self.find_cafe_branch_by_table_id(
-                play_session_or_table_id,
-            )
+            cafe_branch = self.find_cafe_branch_by_id(play_session_or_table_id)
             play_session = cafe_branch.find_play_session_by_table_id(
                 play_session_or_table_id
             )
@@ -801,7 +772,7 @@ class CafeSystem:
     # \ GAME SESSION - BORROW BOARD GAME
 
     def borrow_board_game(self, table_id, board_game_id):
-        cafe_branch = self.find_cafe_branch_by_table_id(table_id)
+        cafe_branch = self.find_cafe_branch_by_id(table_id)
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
@@ -830,7 +801,7 @@ class CafeSystem:
         return board_game
 
     def return_board_game(self, table_id, board_game_id):
-        cafe_branch = self.find_cafe_branch_by_table_id(table_id)
+        cafe_branch = self.find_cafe_branch_by_id(table_id)
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
@@ -867,7 +838,7 @@ class CafeSystem:
     # \ GAME SESSION - ORDER
 
     def take_order(self, table_id, menu_item_id):
-        cafe_branch = self.find_cafe_branch_by_table_id(table_id)
+        cafe_branch = self.find_cafe_branch_by_id(table_id)
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
@@ -889,7 +860,7 @@ class CafeSystem:
             raise ValueError("Cafe Branch not found")
 
     def update_order(self, play_session_id, order_id, session_status):
-        cafe_branch = self.find_cafe_branch_by_play_session_id(play_session_id)
+        cafe_branch = self.find_cafe_branch_by_id(play_session_id)
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
