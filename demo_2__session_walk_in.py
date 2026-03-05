@@ -56,16 +56,16 @@ if __name__ == "__main__":
 
     sys.create_menu_to_branch("BRCH-00000")
     sys.create_menu_item_food_to_branch(
-        "BRCH-00000", "ITEM_FOOD_1", 11.11, "DESCRIPTION FOOD TEST 1"
+        "BRCH-00000", "ITEM_FOOD_1", 10, "DESCRIPTION FOOD TEST 1"
     )
     sys.create_menu_item_food_to_branch(
-        "BRCH-00000", "ITEM_FOOD_2", 22.22, "DESCRIPTION FOOD TEST 2"
+        "BRCH-00000", "ITEM_FOOD_2", 20, "DESCRIPTION FOOD TEST 2"
     )
     sys.create_menu_item_drink_to_branch(
-        "BRCH-00000", "ITEM_DRINK_1", 33.33, "DESCRIPTION DRINK TEST 1"
+        "BRCH-00000", "ITEM_DRINK_1", 10, "DESCRIPTION DRINK TEST 1"
     )
     sys.create_menu_item_drink_to_branch(
-        "BRCH-00000", "ITEM_DRINK_2", 44.44, "DESCRIPTION DRINK TEST 2"
+        "BRCH-00000", "ITEM_DRINK_2", 20, "DESCRIPTION DRINK TEST 2"
     )
 
     # / ════════════════════════════════════════════════════════════════
@@ -123,3 +123,12 @@ if __name__ == "__main__":
 
     sys.update_order_preparing("PS-00000", "ORDER-00000")
     sys.update_order_serve("PS-00000", "ORDER-00000")
+
+    # / ════════════════════════════════════════════════════════════════
+
+    a = sys.check_out_by_table_id("TABLE-00000")
+    print(f'\n{" TEST - CHECK OUT ":═^64}\n')
+    print(f'{"TOTAL":<10}:\t{ a } ')
+    print(f'\n{"":═^64}\n')
+
+    # / ════════════════════════════════════════════════════════════════
