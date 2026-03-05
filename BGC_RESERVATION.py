@@ -71,6 +71,30 @@ class Reservation:
     def status(self):
         return self.__status
 
+    @property
+    def date(self):
+        return self.__date
+
+    @property
+    def start_time(self):
+        return self.__start_time
+
+    @property
+    def end_time(self):
+        return self.__end_time
+
+    @property
+    def table_id(self):
+        return self.__table_id
+
+    @property
+    def customer_id(self):
+        return self.__customer_id
+
+    @property
+    def branch_id(self):
+        return self.__branch_id
+    
     # / ════════════════════════════════════════════════════════════════
     # - Setters
     # / ════════════════════════════════════════════════════════════════
