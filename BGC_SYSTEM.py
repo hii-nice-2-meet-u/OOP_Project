@@ -960,7 +960,7 @@ class CafeSystem:
     # / ════════════════════════════════════════════════════════════════
     def check_out_by_table_id(self, table_id):
 
-        cafe_branch = self.find_cafe_branch_by_table_id(table_id)
+        cafe_branch = self.find_cafe_branch_by_id(table_id)
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
@@ -978,7 +978,7 @@ class CafeSystem:
 
         for order in play_session.current_order:
             if order.status != OrderStatus.CANCELLED:
-                total += order.menu_item.price
+                total += order.menu_items.price
 
         cafe_branch.end_play_session(play_session.session_id)
         if table:
