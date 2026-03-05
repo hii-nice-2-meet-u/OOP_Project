@@ -194,7 +194,7 @@ class Order:
     __counter = 0
 
     def __init__(self, menu_items):
-        self.__order_id = "ODR-" + str(Order.__counter).zfill(5)
+        self.__order_id = "ORDER-" + str(Order.__counter).zfill(5)
         Order.__counter += 1
         self.__menu_items = menu_items
         self.__status = OrderStatus.PENDING

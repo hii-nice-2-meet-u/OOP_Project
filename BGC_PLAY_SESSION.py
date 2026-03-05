@@ -233,15 +233,16 @@ class PlaySession:
         self.__current_board_games_id.append(board_game_id)
 
     def take_order(self, menu_item):
-        if not isinstance(order, MenuItem):
+        if not isinstance(menu_item, MenuItem):
             raise ValueError("Type Error : Invalid order")
         self.__current_order.append(Order(menu_item))
 
     def remove_board_games_id(self, board_game_id):
         self.__current_board_games_id.remove(board_game_id)
-        
+
     def remove_players_id(self, player_id):
         self.__current_players_id.remove(player_id)
+
     # / ================================================================
 
 
