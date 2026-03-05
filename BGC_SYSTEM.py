@@ -176,12 +176,27 @@ class CafeSystem:
 
     # / ================================================================
     # \ RESERVATION
-
+    
+    # ถ้าทำเอาเวลาเก็บในโต๊ะได้จะเฟี้ยวมาก
     def add_reservation(self, reservation):
-        if isinstance(reservation, Reservation):
-            self.__reservations.append(reservation)
-        else:
-            raise TypeError("Type Error : must be an instance of Reservation")
+        if not isinstance(reservation, Reservation):
+            raise TypeError("Must be an instance of Reservation")
+
+        for r in self.__reservations:
+
+            if (r.branch_id == reservation.branch_id and r.table_id == reservation.table_id and r.date == reservation.date
+            ):
+
+                start1 = datetime.strptime(r.start_time, "%H:%M")
+                end1 = datetime.strptime(r.end_time, "%H:%M")
+
+                start2 = datetime.strptime(reservation.start_time, "%H:%M")
+                end2 = datetime.strptime(reservation.end_time, "%H:%M")
+
+                if start2 < end1 and end2 > start1:
+                    raise ValueError("Table already reserved at this time")
+
+        self.__reservations.append(reservation)
 
     def get_reservations(self):
         return self.reservations
@@ -197,8 +212,21 @@ class CafeSystem:
         if reservation:
             self.__reservations.remove(reservation)
         else:
-            raise ValueError("Invalid ID : Reservation not found")
+            raise ValueError("Reservation not found")
+    def cancel_reservation(self, reservation_id):
+        reservation = self.find_reservation_by_id(reservation_id)
 
+        if reservation is None:
+            raise ValueError("Reservation not found")
+
+        reservation.status = ReservationStatus.CANCELLED
+
+        branch = self.find_cafe_branch_by_id(reservation.branch_id)
+        table = branch.find_table_by_id(reservation.table_id)
+
+        if table.status == TableStatus.RESERVED:
+            table.status = TableStatus.AVAILABLE
+        
     def update_reservation_status_by_id(self, reservation_id, status):
         if not isinstance(status, ReservationStatus):
             raise TypeError("Status must be ReservationStatus")
