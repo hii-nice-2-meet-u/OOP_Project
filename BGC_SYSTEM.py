@@ -210,55 +210,99 @@ class CafeSystem:
     # / ════════════════════════════════════════════════════════════════
     # \ RESERVATION
 
-    def make_reservation(self, customer_id, branch_id, pax, date, start_time, end_time, table_id="auto"):
-        customer = self.find_person_by_id(customer_id)
-        if not customer:
-            raise ValueError("Customer not found.")
-
-        tier = customer.member_tier if isinstance(customer, Member) else MemberTier.NONE_TIER
-
-        self.__validate_active_quota(customer_id, tier)
-        self.__validate_advance_booking(date, tier)
-        self.__validate_duration(start_time, end_time, tier)
-
+    def make_reservation(
+        self,
+        customer_id,
+        branch_id,
+        total_player,
+        date,
+        start_time,
+        end_time,
+        table_id="auto",
+    ):
         branch = self.find_cafe_branch_by_id(branch_id)
-        if not branch:
-            raise ValueError("Cafe branch not found.")
-            
-        target_table = None
+        if branch is None:
+            raise ValueError("Cafe Branch not found")
 
-        if table_id == "auto":
-            available_tables = []
-            for table in branch.tables:
-                if table.capacity >= pax and self.__is_table_free(table.table_id, date, start_time, end_time):
-                    available_tables.append(table)
-            
-            if not available_tables:
-                raise ValueError("No available tables for the requested capacity and time.")
-            
-            target_table = min(available_tables, key=lambda t: t.capacity)
-            
-        else:
-            target_table = branch.find_table_by_id(table_id)
-            if not target_table:
-                raise ValueError("The specified table is not found.")
-            if target_table.capacity < pax:
-                raise ValueError("The specified table does not have enough capacity.")
-            if not self.__is_table_free(target_table.table_id, date, start_time, end_time):
-                raise ValueError("The specified table is already booked for this time slot.")
+        table = branch.find_table_by_id(table_id)
+        if table is None:
+            raise ValueError("Table not found")
 
-        self.__validate_minimum_lead_time(target_table, date, start_time)
-
-        target_table.status = TableStatus.RESERVED
-        new_resv = Reservation(
-            customer_id, branch_id, target_table.table_id, date, start_time, end_time
+        reservation = Reservation(
+            customer_id,
+            branch_id,
+            table_id,
+            date,
+            start_time,
+            end_time,
         )
-        
-        new_resv.status = ReservationStatus.PENDING
-        
-        self.add_reservation(new_resv)
 
-        return new_resv
+        self.add_reservation(reservation)
+        return reservation
+
+    # !!! TODO : FIX PLS FOR REAL, JUST FOR SIMPLE PLS
+    # def make_reservation(
+    #     self, customer_id, branch_id, pax, date, start_time, end_time, table_id="auto"
+    # ):
+    #     customer = self.find_person_by_id(customer_id)
+    #     if not customer:
+    #         raise ValueError("Customer not found.")
+
+    #     tier = (
+    #         customer.member_tier
+    #         if isinstance(customer, Member)
+    #         else MemberTier.NONE_TIER
+    #     )
+
+    #     self.__validate_active_quota(customer_id, tier)
+    #     self.__validate_advance_booking(date, tier)
+    #     self.__validate_duration(start_time, end_time, tier)
+
+    #     branch = self.find_cafe_branch_by_id(branch_id)
+    #     if not branch:
+    #         raise ValueError("Cafe branch not found.")
+
+    #     target_table = None
+
+    #     if table_id == "auto":
+    #         available_tables = []
+    #         for table in branch.tables:
+    #             if table.capacity >= pax and self.__is_table_free(
+    #                 table.table_id, date, start_time, end_time
+    #             ):
+    #                 available_tables.append(table)
+
+    #         if not available_tables:
+    #             raise ValueError(
+    #                 "No available tables for the requested capacity and time."
+    #             )
+
+    #         target_table = min(available_tables, key=lambda t: t.capacity)
+
+    #     else:
+    #         target_table = branch.find_table_by_id(table_id)
+    #         if not target_table:
+    #             raise ValueError("The specified table is not found.")
+    #         if target_table.capacity < pax:
+    #             raise ValueError("The specified table does not have enough capacity.")
+    #         if not self.__is_table_free(
+    #             target_table.table_id, date, start_time, end_time
+    #         ):
+    #             raise ValueError(
+    #                 "The specified table is already booked for this time slot."
+    #             )
+
+    #     self.__validate_minimum_lead_time(target_table, date, start_time)
+
+    #     target_table.status = TableStatus.RESERVED
+    #     new_resv = Reservation(
+    #         customer_id, branch_id, target_table.table_id, date, start_time, end_time
+    #     )
+
+    #     new_resv.status = ReservationStatus.PENDING
+    #     self.add_reservation(new_resv)
+
+    #     return new_resv
 
     def add_reservation(self, reservation):
         if not isinstance(reservation, Reservation):
@@ -326,85 +370,98 @@ class CafeSystem:
     # / ════════════════════════════════════════════════════════════════
     # \ PRIVATE HELPER METHODS (RESERVATION)
 
-    def __is_table_free(self, table_id, date_str, start_time, end_time):
-        new_start = datetime.strptime(start_time, "%H:%M")
-        new_end = datetime.strptime(end_time, "%H:%M")
-        
-        for r in self.__reservations:
-            status_str = str(getattr(r, 'status', ''))
-            
-            if r.date == date_str and r.table_id == table_id and "PENDING" in status_str:
-                exist_start = datetime.strptime(r.start_time, "%H:%M")
-                exist_end = datetime.strptime(r.end_time, "%H:%M")
-                
-                if new_start < exist_end and new_end > exist_start:
-                    return False 
-        return True
+    # !!! TODO : FIX PLS FOR REAL, JUST FOR SIMPLE PLS
+    # def __is_table_free(self, table_id, date_str, start_time, end_time):
+    #     new_start = datetime.strptime(start_time, "%H:%M")
+    #     new_end = datetime.strptime(end_time, "%H:%M")
 
-    def __validate_active_quota(self, customer_id, tier):
-        active_resv = []
-        for r in self.__reservations:
-            status_str = str(getattr(r, 'status', ''))
-            
-            if r.customer_id == customer_id and "PENDING" in status_str:
-                active_resv.append(r)
-                
-        max_quota = 1
-        if tier == MemberTier.PLATINUM:
-            max_quota = 3
-        elif tier == MemberTier.GOLD:
-            max_quota = 2
-        
-        if len(active_resv) >= max_quota:
-            raise ValueError(f"Active booking quota exceeded. Maximum allowed for your tier is {max_quota}.")
-        
-    def __validate_advance_booking(self, date_str, tier):
-        resv_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-        today = datetime.now().date()
-        days_advance = (resv_date - today).days
+    #     for r in self.__reservations:
+    #         status_str = str(getattr(r, "status", ""))
 
-        if days_advance < 0:
-            raise ValueError("Cannot make a reservation in the past.")
+    #         if (
+    #             r.date == date_str
+    #             and r.table_id == table_id
+    #             and "PENDING" in status_str
+    #         ):
+    #             exist_start = datetime.strptime(r.start_time, "%H:%M")
+    #             exist_end = datetime.strptime(r.end_time, "%H:%M")
 
-        max_adv_days = 5
-        if tier == MemberTier.PLATINUM:
-            max_adv_days = 30
-        elif tier == MemberTier.GOLD:
-            max_adv_days = 21
-        elif tier == MemberTier.SILVER:
-            max_adv_days = 14
-        elif tier == MemberTier.BRONZE:
-            max_adv_days = 7
+    #             if new_start < exist_end and new_end > exist_start:
+    #                 return False
+    #     return True
 
-        if days_advance > max_adv_days:
-            raise ValueError(f"Maximum advance booking exceeded. Your tier allows up to {max_adv_days} days.")
+    # def __validate_active_quota(self, customer_id, tier):
+    #     active_resv = []
+    #     for r in self.__reservations:
+    #         status_str = str(getattr(r, "status", ""))
 
-    def __validate_duration(self, start_time, end_time, tier):
-        start_dt = datetime.strptime(start_time, "%H:%M")
-        end_dt = datetime.strptime(end_time, "%H:%M")
-        duration_hrs = (end_dt - start_dt).total_seconds() / 3600
+    #         if r.customer_id == customer_id and "PENDING" in status_str:
+    #             active_resv.append(r)
 
-        max_dur_hrs = 2
-        if tier == MemberTier.PLATINUM:
-            max_dur_hrs = 999
-        elif tier == MemberTier.GOLD:
-            max_dur_hrs = 7
-        elif tier == MemberTier.SILVER:
-            max_dur_hrs = 3.5
+    #     max_quota = 2
+    #     if tier == MemberTier.PLATINUM:
+    #         max_quota = 3
+    #     elif tier == MemberTier.GOLD:
+    #         max_quota = 2
 
-        if duration_hrs > max_dur_hrs:
-            raise ValueError(f"Maximum duration exceeded. Your tier allows up to {max_dur_hrs} hours per session.")
+    #     if len(active_resv) >= max_quota:
+    #         raise ValueError(
+    #             f"Active booking quota exceeded. Maximum allowed for your tier is {max_quota}."
+    #         )
 
-    def __validate_minimum_lead_time(self, table, date_str, start_time):
-        resv_datetime = datetime.strptime(f"{date_str} {start_time}", "%Y-%m-%d %H:%M")
-        lead_time = resv_datetime - datetime.now()
-        
-        is_vip_table = type(table).__name__ == "PlayTableVIP"
-        min_lead_hours = 3 if is_vip_table else 1
+    # def __validate_advance_booking(self, date_str, tier):
+    #     resv_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    #     today = datetime.now().date()
+    #     days_advance = (resv_date - today).days
 
-        if lead_time < timedelta(hours=min_lead_hours):
-            table_type_str = "VIP" if is_vip_table else "Standard"
-            raise ValueError(f"Minimum lead time not met. {table_type_str} tables require at least {min_lead_hours} hour(s) advance booking.")
+    #     if days_advance < 0:
+    #         raise ValueError("Cannot make a reservation in the past.")
+
+    #     max_adv_days = 5
+    #     if tier == MemberTier.PLATINUM:
+    #         max_adv_days = 30
+    #     elif tier == MemberTier.GOLD:
+    #         max_adv_days = 21
+    #     elif tier == MemberTier.SILVER:
+    #         max_adv_days = 14
+    #     elif tier == MemberTier.BRONZE:
+    #         max_adv_days = 7
+
+    #     if days_advance > max_adv_days:
+    #         raise ValueError(
+    #             f"Maximum advance booking exceeded. Your tier allows up to {max_adv_days} days."
+    #         )
+
+    # def __validate_duration(self, start_time, end_time, tier):
+    #     start_dt = datetime.strptime(start_time, "%H:%M")
+    #     end_dt = datetime.strptime(end_time, "%H:%M")
+    #     duration_hrs = (end_dt - start_dt).total_seconds() / 3600
+
+    #     max_dur_hrs = 2
+    #     if tier == MemberTier.PLATINUM:
+    #         max_dur_hrs = 999
+    #     elif tier == MemberTier.GOLD:
+    #         max_dur_hrs = 7
+    #     elif tier == MemberTier.SILVER:
+    #         max_dur_hrs = 3.5
+
+    #     # if duration_hrs > max_dur_hrs:
+    #     #     raise ValueError(
+    #     #         f"Maximum duration exceeded. Your tier allows up to {max_dur_hrs} hours per session."
+    #     #     )
+
+    # def __validate_minimum_lead_time(self, table, date_str, start_time):
+    #     resv_datetime = datetime.strptime(f"{date_str} {start_time}", "%Y-%m-%d %H:%M")
+    #     lead_time = resv_datetime - datetime.now()
+
+    #     is_vip_table = type(table).__name__ == "PlayTableVIP"
+    #     min_lead_hours = 3 if is_vip_table else 1
+
+    #     # if lead_time < timedelta(hours=min_lead_hours):
+    #     #     table_type_str = "VIP" if is_vip_table else "Standard"
+    #     #     raise ValueError(
+    #     #         f"Minimum lead time not met. {table_type_str} tables require at least {min_lead_hours} hour(s) advance booking."
+    #     #     )
 
     # / ════════════════════════════════════════════════════════════════
     # \ TABLE
@@ -551,10 +608,14 @@ class CafeSystem:
         if cafe_branch:
             return cafe_branch.create_menu_item_food(name, price, description)
 
-    def create_menu_item_drink_to_branch(self, branch_id, name, price, description=""):
+    def create_menu_item_drink_to_branch(
+        self, branch_id, name, price, cup_size="S", description=""
+    ):
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
         if cafe_branch:
-            return cafe_branch.create_menu_item_drink(name, price, description)
+            return cafe_branch.create_menu_item_drink(
+                name, price, cup_size, description
+            )
 
     def get_branch_menu(self, branch_id):
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
@@ -707,60 +768,32 @@ class CafeSystem:
     # / ════════════════════════════════════════════════════════════════
     # \ GAME SESSION - JOIN
 
-    def join_session(self, play_session_id, customer_id):
-        cafe_branch = self.find_cafe_branch_by_play_session_id(play_session_id)
-        if cafe_branch is None:
-            raise ValueError("Cafe Branch not found")
-
-        play_session = cafe_branch.find_play_session_by_id(play_session_id)
-
-        if play_session:
-            play_session.add_players_id(customer_id)
+    def join_session(self, play_session_or_table_id, customer_id="walk_in"):
+        play_session = None
+        cafe_branch = None
+        if play_session_or_table_id.startswith("PS-"):
+            cafe_branch = self.find_cafe_branch_by_play_session_id(
+                play_session_or_table_id,
+            )
+            play_session = cafe_branch.find_play_session_by_id(play_session_or_table_id)
+        elif play_session_or_table_id.startswith("TABLE-"):
+            cafe_branch = self.find_cafe_branch_by_table_id(
+                play_session_or_table_id,
+            )
+            play_session = cafe_branch.find_play_session_by_table_id(
+                play_session_or_table_id
+            )
         else:
-            raise ValueError("Play Session not found")
+            raise ValueError("Invalid ID")
 
-    def join_session_walk_in(self, play_session_id):
-        cafe_branch = self.find_cafe_branch_by_play_session_id(play_session_id)
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
-        play_session = cafe_branch.find_play_session_by_id(play_session_id)
         if play_session:
-            play_session.add_players_id(self.create_customer_walk_in().user_id)
-        else:
-            raise ValueError("Play Session not found")
-
-    def join_session_member(self, play_session_id, member_id):
-        cafe_branch = self.find_cafe_branch_by_play_session_id(play_session_id)
-        if cafe_branch is None:
-            raise ValueError("Cafe Branch not found")
-
-        play_session = cafe_branch.find_play_session_by_id(play_session_id)
-
-        if play_session:
-            play_session.add_players_id(member_id)
-        else:
-            raise ValueError("Play Session not found")
-
-    def join_session_walk_in_by_table_id(self, table_id):
-        cafe_branch = self.find_cafe_branch_by_table_id(table_id)
-        if cafe_branch is None:
-            raise ValueError("Cafe Branch not found")
-
-        play_session = cafe_branch.find_play_session_by_table_id(table_id)
-        if play_session:
-            play_session.add_players_id(self.create_customer_walk_in().user_id)
-        else:
-            raise ValueError("Play Session not found")
-
-    def join_session_member_by_table_id(self, table_id, member_id):
-        cafe_branch = self.find_cafe_branch_by_table_id(table_id)
-        if cafe_branch is None:
-            raise ValueError("Cafe Branch not found")
-
-        play_session = cafe_branch.find_play_session_by_table_id(table_id)
-        if play_session:
-            play_session.add_players_id(member_id)
+            if customer_id == "walk_in":
+                play_session.add_players_id(self.create_customer_walk_in().user_id)
+            else:
+                play_session.add_players_id(customer_id)
         else:
             raise ValueError("Play Session not found")
 
@@ -814,7 +847,7 @@ class CafeSystem:
 
         return board__game
 
-    def fix_board_game(self, board__game_id):
+    def maintenance_board_game(self, board__game_id):
         cafe_branch = self.find_cafe_branch_by_board_game_id(board__game_id)
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
@@ -1031,9 +1064,9 @@ class CafeBranch:
         else:
             raise ValueError("Menu not found")
 
-    def create_menu_item_drink(self, name, price, description=""):
+    def create_menu_item_drink(self, name, price, cup_size="S", description=""):
         if self.__menu_list is not None:
-            new_menu_item = Drink(name, price, description)
+            new_menu_item = Drink(name, price, description, cup_size=cup_size)
             self.__menu_list.add_menu_item(new_menu_item)
             return new_menu_item
         else:

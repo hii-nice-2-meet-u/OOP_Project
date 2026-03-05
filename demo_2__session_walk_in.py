@@ -80,6 +80,20 @@ if __name__ == "__main__":
 
     # / ════════════════════════════════════════════════════════════════
 
+    print(f'\n{" TEST - ADD CUSTOMER TO SESSION ":═^64}\n')
+    print(
+        f'{"BEFORE":<10}:\t{ play_session.current_players_id } ',
+    )
+    sys.join_session("PS-00000", "MEMBER-00001")
+    sys.join_session("PS-00000")
+    sys.join_session("PS-00000")
+    print(
+        f'{"AFTER":<10}:\t{ play_session.current_players_id } ',
+    )
+    print(f'\n{"":═^64}\n')
+
+    # / ════════════════════════════════════════════════════════════════
+
     print(f'\n{" TEST - BORROW BOARD GAME ":═^64}\n')
     print(
         f'{"BEFORE":<10}:\t{ play_session.current_board_games_id } ',

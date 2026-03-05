@@ -77,12 +77,30 @@ if __name__ == "__main__":
     # / ════════════════════════════════════════════════════════════════
 
     sys.make_reservation(
-        "MEMBER-00000", "BRCH-00000", "TABLE-00000", "2025-01-01", "10:00", "11:00"
+        "MEMBER-00000",
+        "BRCH-00000",
+        2,
+        "2026-03-05",
+        "15:00",
+        "19:00",
+        "TABLE-00000",
     )
-
     # / ════════════════════════════════════════════════════════════════
 
     play_session = sys.check_in_reserved("RESV-00000", "MEMBER-00000")
+
+    # / ════════════════════════════════════════════════════════════════
+
+    print(f'\n{" TEST - ADD CUSTOMER TO SESSION ":═^64}\n')
+    print(
+        f'{"BEFORE":<10}:\t{ play_session.current_players_id } ',
+    )
+    sys.join_session("PS-00000", "MEMBER-00001")
+    sys.join_session("PS-00000")
+    print(
+        f'{"AFTER":<10}:\t{ play_session.current_players_id } ',
+    )
+    print(f'\n{"":═^64}\n')
 
     # / ════════════════════════════════════════════════════════════════
 
