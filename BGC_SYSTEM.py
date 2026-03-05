@@ -1,4 +1,4 @@
-import datetime
+from datetime import *
 import time
 
 from BGC_MENU import *
@@ -340,7 +340,7 @@ class CafeSystem:
             reservation_time = reservation.reservation_time
             time_diff = reservation_time - now
 
-            if datetime.timedelta(hours=0) <= time_diff <= datetime.timedelta(hours=1):
+            if timedelta(hours=0) <= time_diff <= timedelta(hours=1):
                 self.update_table_status(
                     reservation.branch_id,
                     reservation.table_id,
@@ -362,7 +362,7 @@ class CafeSystem:
 
         available_tables = []
         for table in cafe_branch.tables:
-            if table.status is not TableStatus.AVAILABLE:
+            if table.status != TableStatus.AVAILABLE:
                 continue
             if table.capacity >= required_capacity:
                 available_tables.append(table)
@@ -412,15 +412,12 @@ class CafeSystem:
             raise ValueError("Cafe Branch not found")
 
     def find_board_game_by_id(self, board_game_id):
-        cafe_branch = self.find_cafe_branch_by_board_game_id(branch_id)
+        cafe_branch = self.find_cafe_branch_by_board_game_id(board_game_id)
         if cafe_branch:
             board_game = cafe_branch.find_board_game_by_id(board_game_id)
             if board_game:
                 return board_game
-            else:
-                raise ValueError("Board Game not found")
-        else:
-            raise ValueError("Cafe Branch not found")
+        raise ValueError("Board Game not found")
 
     def search_board_game_by_min_players(self, branch_id, min_players):
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
@@ -521,17 +518,20 @@ class CafeSystem:
     # / ================================================================
     # \ GAME SESSION - CHECK-IN
 
-    def check_in_reserved(self, reservation_id, customer):
+    def check_in_reserved(self, reservation_id, customer_id):
         reservation = self.find_reservation_by_id(reservation_id)
         if reservation is None:
             raise ValueError("Reservation not found")
-
+        customer = self.find_person_by_id(customer_id)
+        if customer is None:
+            raise ValueError("Customer not found")
         now = datetime.now()
 
         # ! fix time arrive
         if now < reservation.reservation_time:
             raise ValueError("Too early to check-in")
-
+        if reservation.status != ReservationStatus.PENDING:
+            raise ValueError("Can check in reservation that already completed")
         branch = self.find_cafe_branch_by_id(reservation.branch_id)
         if branch is None:
             raise ValueError("Branch not found")
@@ -540,13 +540,13 @@ class CafeSystem:
         if table is None:
             raise ValueError("Table not found")
 
-        if customer.temp_id != reservation.customer_id:
+        if customer.user_id != reservation.customer_id:
             raise ValueError("Wrong personal ID")
         else:
             reservation.status = ReservationStatus.COMPLETED
             table.status = TableStatus.OCCUPIED
 
-            session = PlaySession(reservation.table_id, datetime.datetime.now())
+            session = PlaySession(reservation.table_id, datetime.now())
             branch.add_play_session(session)
             session.add_players_id(reservation.customer_id)
             return session
@@ -560,7 +560,7 @@ class CafeSystem:
 
         if table_id == "auto":
             tables = self.search_available_table(branch_id, player_amount)
-            if tables is None:
+            if not tables:
                 raise ValueError("No available table")
             table = min(tables, key=lambda t: t.capacity)
 
@@ -580,6 +580,7 @@ class CafeSystem:
         session = PlaySession(table.table_id, datetime.now())
         session.add_players_id(self.create_customer_walk_in().user_id)
         branch.add_play_session(session)
+        
         return session
 
     def check_in_member(self, branch_id, player_amount, member_id, table_id="auto"):
@@ -591,7 +592,7 @@ class CafeSystem:
 
         if table_id == "auto":
             tables = self.search_available_table(branch_id, player_amount)
-            if tables is None:
+            if not tables:
                 raise ValueError("No available table")
             table = min(tables, key=lambda t: t.capacity)
 
@@ -608,7 +609,7 @@ class CafeSystem:
 
         table.status = TableStatus.OCCUPIED
 
-        session = PlaySession(table.table_id, datetime.datetime.now())
+        session = PlaySession(table.table_id, datetime.now())
         session.add_players_id(member_id)
         branch.add_play_session(session)
         return session
@@ -691,12 +692,13 @@ class CafeSystem:
         if board_game.status != BoardGameStatus.AVAILABLE:
             raise ValueError("Board Game is not available")
 
-        play_session.add_board_games_id(board_game_id)
+        if board_game_id in play_session.current_board_games_id:
+            raise ValueError("Board Game already borrowed") 
 
         board_game.status = BoardGameStatus.IN_USE
         
-        return boardgame
-    def return_boardgame(self, table_id, boardgame_id):
+        return board_game
+    def return_boardgame(self, table_id, board_game_id):
 
         cafe_branch = self.find_cafe_branch_by_table_id(table_id)
         if cafe_branch is None:
@@ -706,32 +708,32 @@ class CafeSystem:
         if play_session is None:
             raise ValueError("Play Session not found")
 
-        boardgame = cafe_branch.find_board_game_by_id(boardgame_id)
-        if boardgame is None:
+        board_game = cafe_branch.find_board_game_by_id(board_game_id)
+        if board_game is None:
             raise ValueError("Board Game not found")
 
-        boardgame.status = BoardGameStatus.AVAILABLE
+        board_game.status = BoardGameStatus.AVAILABLE
 
-        play_session.remove_board_games_id(boardgame)
+        play_session.remove_board_games_id(board_game_id)
 
-        return boardgame
+        return board_game
     
-    def fix_boardgame(self, boardgame_id):
-        cafe_branch = self.find_cafe_branch_by_board_game_id(boardgame_id)
+    def fix_boardgame(self, board_game_id):
+        cafe_branch = self.find_cafe_branch_by_board_game_id(board_game_id)
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
-        boardgame = cafe_branch.find_board_game_by_id(boardgame_id)
-        if boardgame is None:
+        board_game = cafe_branch.find_board_game_by_id(board_game_id)
+        if board_game is None:
             raise ValueError("Board Game not found")
 
-        boardgame.status = BoardGameStatus.MAINTENANCE
+        board_game.status = BoardGameStatus.MAINTENANCE
 
         for session in cafe_branch.get_play_sessions():
-            if boardgame in session.borrowed_boardgames:
+            if board_game_id in session.current_board_games_id:
                 raise ValueError("Board Game in use")
 
-        return boardgame
+        return board_game
     # / ================================================================
     # \ GAME SESSION - ORDER
 
@@ -1034,7 +1036,7 @@ class CafeBranch:
     def end_play_session(self, play_session_id):
         play_session = self.find_play_session_by_id(play_session_id)
         if play_session:
-            play_session.end_time = datetime.datetime.now()
+            play_session.end_time = datetime.now()
             self.__play_sessions_history.append(play_session)
             self.__play_sessions.remove(play_session)
         else:
