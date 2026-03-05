@@ -176,7 +176,29 @@ class CafeSystem:
 
     # / ================================================================
     # \ RESERVATION
-    
+    def make_reservation(self, customer_id, branch_id, table_id, date, start_time, end_time):
+
+        branch = self.find_cafe_branch_by_id(branch_id)
+        if branch is None:
+            raise ValueError("Cafe Branch not found")
+
+        table = branch.find_table_by_id(table_id)
+        if table is None:
+            raise ValueError("Table not found")
+
+        reservation = Reservation(
+            customer_id,
+            branch_id,
+            table_id,
+            date,
+            start_time,
+            end_time,
+        )
+
+        self.add_reservation(reservation)
+
+        return reservation
+            
     # ถ้าทำเอาเวลาเก็บในโต๊ะได้จะเฟี้ยวมาก
     def add_reservation(self, reservation):
         if not isinstance(reservation, Reservation):
