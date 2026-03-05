@@ -176,12 +176,27 @@ class CafeSystem:
 
     # / ================================================================
     # \ RESERVATION
-
+    
+    # ถ้าทำเอาเวลาเก็บในโต๊ะได้จะเฟี้ยวมาก
     def add_reservation(self, reservation):
-        if isinstance(reservation, Reservation):
-            self.__reservations.append(reservation)
-        else:
-            raise TypeError("Type Error : must be an instance of Reservation")
+        if not isinstance(reservation, Reservation):
+            raise TypeError("Must be an instance of Reservation")
+
+        for r in self.__reservations:
+
+            if (r.branch_id == reservation.branch_id and r.table_id == reservation.table_id and r.date == reservation.date
+            ):
+
+                start1 = datetime.strptime(r.start_time, "%H:%M")
+                end1 = datetime.strptime(r.end_time, "%H:%M")
+
+                start2 = datetime.strptime(reservation.start_time, "%H:%M")
+                end2 = datetime.strptime(reservation.end_time, "%H:%M")
+
+                if start2 < end1 and end2 > start1:
+                    raise ValueError("Table already reserved at this time")
+
+        self.__reservations.append(reservation)
 
     def get_reservations(self):
         return self.reservations
