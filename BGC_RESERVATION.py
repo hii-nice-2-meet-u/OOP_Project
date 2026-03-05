@@ -20,7 +20,9 @@ class Reservation:
         self.__reservation_id = "RESV-" + str(Reservation.__counter).zfill(5)
         Reservation.__counter += 1
         self.__current_reservation_date = datetime.now().date()
-
+        self.__reservation_time = datetime.strptime(
+            f"{date} {start_time}", "%Y-%m-%d %H:%M"
+        )
         self.__customer_id = customer_id
         self.__branch_id = branch_id
         self.__table_id = table_id

@@ -66,4 +66,18 @@ if __name__ == "__main__":
         "MEMBER-00000", "BRCH-00000", "TABLE-00000", "2025-01-01", "10:00", "11:00"
     )
 
-    sys.check_in_reserved("RESV-00000", "MEMBER-00000")
+    
+    play_session = sys.check_in_reserved("RESV-00000", "MEMBER-00000")
+    # play_session2 = sys.check_in_reserved("RESV-00000", "MEMBER-00000")
+    print(play_session.session_id)
+    print(play_session.table_id)
+    print(play_session.current_players_id)
+    print(play_session.current_board_games_id)
+    print(play_session.current_order)
+    print(play_session.payment)
+    # print(play_session2.session_id)
+    # print(play_session2.table_id)
+    # print(play_session2.current_players_id)
+    # print(play_session2.current_board_games_id)
+    # print(play_session2.current_order)
+    # print(play_session2.payment)
