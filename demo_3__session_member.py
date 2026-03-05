@@ -90,5 +90,4 @@ if __name__ == "__main__":
     print(f"\n{"":═^50}\n")
 
     sys.update_order_preparing("PS-00000", "ORDER-00000")
-
     sys.update_order_serve("PS-00000", "ORDER-00000")
