@@ -8,7 +8,7 @@ from BGC_PLAY_SESSION import *
 from BGC_RESERVATION import *
 from ENUM_STATUS import *
 
-# | ================================================================================================================================
+# | ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 # | #EFFF11
 
 
@@ -18,9 +18,9 @@ class CafeSystem:
         self.__cafe_branches = []
         self.__reservations = []
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # - Getters
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
 
     @property
     def person(self):
@@ -34,13 +34,13 @@ class CafeSystem:
     def reservations(self):
         return self.__reservations.copy()
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # - Setters
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # - Methods
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # \ PERSON METHOD
 
     def create_person(self, person):
@@ -151,7 +151,7 @@ class CafeSystem:
         else:
             raise ValueError("Invalid ID : Person not found")
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # \ CAFE BRANCH
 
     def create_cafe_branch(self, cafe_branch_name, cafe_branch_location=""):
@@ -207,7 +207,7 @@ class CafeSystem:
         else:
             raise ValueError("Invalid ID : Cafe Branch not found")
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # \ RESERVATION
 
     def make_reservation(
@@ -316,7 +316,7 @@ class CafeSystem:
             ReservationStatus.COMPLETED,
         )
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # \ TABLE
 
     def create_table_to_branch(self, branch_id, capacity):
@@ -383,7 +383,7 @@ class CafeSystem:
 
         table.status = status
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # \ BOARD GAME
 
     def create_board_game_to_branch(
@@ -444,7 +444,7 @@ class CafeSystem:
         else:
             raise ValueError("Board Game not found")
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # \ MENU
 
     def create_menu_to_branch(self, branch_id):
@@ -515,7 +515,7 @@ class CafeSystem:
         else:
             raise ValueError("Menu Item not found")
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # \ GAME SESSION - CHECK-IN
 
     def check_in_reserved(self, reservation_id, customer_id):
@@ -580,7 +580,7 @@ class CafeSystem:
         session = PlaySession(table.table_id, datetime.now())
         session.add_players_id(self.create_customer_walk_in().user_id)
         branch.add_play_session(session)
-        
+
         return session
 
     def check_in_member(self, branch_id, player_amount, member_id, table_id="auto"):
@@ -614,7 +614,7 @@ class CafeSystem:
         branch.add_play_session(session)
         return session
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # \ GAME SESSION - JOIN
 
     def join_session(self, play_session_id, customer_id):
@@ -674,7 +674,7 @@ class CafeSystem:
         else:
             raise ValueError("Play Session not found")
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # \ GAME SESSION - BORROW BOARD GAME
 
     def borrow_board_game(self, table_id, board_game_id):
@@ -695,12 +695,10 @@ class CafeSystem:
             return None
 
         if board_game_id in play_session.current_board_games_id:
-            raise ValueError("Board Game already borrowed") 
+            raise ValueError("Board Game already borrowed")
 
         board_game.status = BoardGameStatus.IN_USE
-        
         return board_game
-    def return_boardgame(self, table_id, board_game_id):
 
     def return_board_game(self, table_id, board_game_id):
         cafe_branch = self.find_cafe_branch_by_table_id(table_id)
@@ -736,7 +734,7 @@ class CafeSystem:
 
         return board__game
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # \ GAME SESSION - ORDER
 
     def take_order(self, table_id, menu_item_id):
@@ -785,13 +783,13 @@ class CafeSystem:
     def update_order_cancel(self, play_session_id, order_id):
         self.update_order(play_session_id, order_id, OrderStatus.CANCELLED)
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # \ GAME SESSION - CHECK-OUT
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
 
 
-# | ================================================================================================================================
+# | ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 # | #EFFF11
 
 
@@ -812,9 +810,9 @@ class CafeBranch:
         self.__play_sessions = []
         self.__play_sessions_history = []
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # - Getters
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
 
     @property
     def branch_id(self):
@@ -840,7 +838,7 @@ class CafeBranch:
     def board_games(self):
         return self.__board_games.copy()
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
 
     @property
     def total_tables(self):
@@ -854,9 +852,9 @@ class CafeBranch:
     def total_menu_items(self):
         return len(self.__menu_list.menu_items())
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # - Setters
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
 
     @name.setter
     def name(self, name):
@@ -866,9 +864,9 @@ class CafeBranch:
     def location(self, location):
         self.__location = location
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # - Methods
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # \ TABLE
 
     def add_table(self, capacity):
@@ -885,7 +883,7 @@ class CafeBranch:
                 return table
         return None
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # \ BOARD GAME
 
     def add_board_game(
@@ -920,7 +918,7 @@ class CafeBranch:
             if board_game.board_game_id != board_game_id
         ]
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # \ MENU
 
     def create_menu(self, menu):
@@ -993,7 +991,7 @@ class CafeBranch:
         else:
             raise ValueError("Menu not found")
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # \ ORDER
 
     def get_pending_orders(self):
@@ -1004,7 +1002,7 @@ class CafeBranch:
                     pending_orders.append(order)
         return pending_orders
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # \ PLAY SESSION
 
     def add_play_session(self, play_session):
@@ -1044,7 +1042,7 @@ class CafeBranch:
         else:
             raise ValueError("Invalid ID : Play Session not found")
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # \ STAFF
 
     def add_staff(self, staff):
@@ -1062,7 +1060,7 @@ class CafeBranch:
         else:
             raise ValueError("Invalid ID : ID does not exist")
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # \ MANAGER
 
     def add_manager(self, manager):
@@ -1077,7 +1075,7 @@ class CafeBranch:
     def remove_manager(self):
         self.__manager_id = None
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
     # \ OWNER
 
     def add_owner(self, owner):
@@ -1092,7 +1090,7 @@ class CafeBranch:
     def remove_owner(self):
         self.__owner_id = None
 
-    # / ================================================================
+    # / ════════════════════════════════════════════════════════════════
 
 
-# | ================================================================================================================================
+# | ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
