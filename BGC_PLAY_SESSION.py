@@ -112,7 +112,7 @@ class BoardGame:
 
 class Table:
     __counter = 0
-
+    price_per_hour = 20
     def __init__(self, capacity):
         self.__table_id = "TABLE-" + str(Table.__counter).zfill(5)
         Table.__counter += 1
@@ -221,6 +221,7 @@ class PlaySession:
         if not isinstance(payment, Payment):
             raise ValueError("Invalid payment")
         self.__payment = payment
+        
 
     # / ════════════════════════════════════════════════════════════════
     # - Methods
@@ -242,7 +243,9 @@ class PlaySession:
 
     def remove_players_id(self, player_id):
         self.__current_players_id.remove(player_id)
-
+    
+    def duration(self):
+        return self.end_time - self.start_time
     # / ════════════════════════════════════════════════════════════════
 
 
