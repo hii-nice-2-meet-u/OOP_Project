@@ -171,6 +171,7 @@ class PlaySession:
         self.__current_players_id = []
         self.__current_board_games_id = []
         self.__current_order = []
+        self.__reservation_id = None
         self.__payment = None
 
     # / ════════════════════════════════════════════════════════════════
@@ -204,6 +205,10 @@ class PlaySession:
     @property
     def current_order(self):
         return self.__current_order.copy()
+
+    @property
+    def reservation_id(self):
+        return self.__reservation_id
 
     @property
     def payment(self):
