@@ -151,15 +151,15 @@ class Reservation:
     def to_dict(self):
         """สำหรับแปลงเป็น JSON ส่งผ่าน API / MCP"""
         return {
-            "reservation_id": self.reservation_id,
-            "created_at": str(self.current_reservation_date),
-            "customer_id": self.customer_id,
-            "branch_id": self.branch_id,
-            "table_id": self.table_id,
-            "date": self.date,
-            "start_time": self.start_time,
-            "end_time": self.end_time,  # อัปเดตให้ส่ง end_time กลับไป
-            "status": self.status.value,
+            "reservation_id": self.__reservation_id,
+            "created_at": str(self.__current_reservation_date),
+            "customer_id": self.__customer_id,
+            "branch_id": self.__branch_id,
+            "table_id": self.__table_id,
+            "date": self.__date,
+            "start_time": self.__start_time,
+            "end_time": self.__end_time,  # อัปเดตให้ส่ง end_time กลับไป
+            "status": self.__status.value,
         }
 
 
