@@ -1041,7 +1041,64 @@ class CafeSystem:
 
         return total
 
+    # def check_out_by_session_id(self, play_session_id):
+    #     cafe_branch = self.find_cafe_branch_by_play_session_id(play_session_id)
+    #     if cafe_branch is None:
+    #         raise ValueError("Cafe Branch not found")
 
+    #     play_session = cafe_branch.find_play_session_by_id(play_session_id)
+    #     if play_session is None:
+    #         raise ValueError("Play Session not found")
+
+    #     table = cafe_branch.find_table_by_id(play_session.table_id)
+
+    #     total = 0
+
+    #     for board_game_id in play_session.current_board_games_id:
+    #         board_game = cafe_branch.find_board_game_by_id(board_game_id)
+    #         if board_game:
+    #             board_game.status = BoardGameStatus.AVAILABLE
+
+    #     for order in play_session.current_order:
+    #         if order.status == OrderStatus.SERVED:
+    #             total += order.menu_item.price
+
+    #     cafe_branch.end_play_session(play_session.session_id)
+
+    #     if table:
+    #         table.status = TableStatus.AVAILABLE
+
+    #     total += Table.price_per_hour * play_session.duration()
+    #     return total
+    # / ════════════════════════════════════════════════════════════════
+    # \ PAYMENT
+#kwargs คือรับ parameter หลังจากมันมาทำเป็น dict เช่น
+#create_payment(6969, online, account_email="SKIBIDI")
+#kwrag = [account:SKIBIDI]
+def create_payment(self, total, method_type, **kwargs): 
+
+    if method_type == "cash":
+        payment_method = Cash(kwargs["paid_amount"])
+
+    elif method_type == "card":
+        payment_method = CreditCard(
+            kwargs["card_number"],
+            kwargs["expiry_date"],
+            kwargs["cvv"]
+        )
+
+    elif method_type == "online":
+        payment_method = OnlinePayment(
+            kwargs["email"]
+        )
+
+    else:
+        raise ValueError("Invalid payment method")
+
+    if payment_method.validate_method(): #validate ลาวๆออก true หมด
+        new_payment = Payment(total, payment_method)
+        new_payment.process_payment = True
+        return new_payment
 # | ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 # | #EFFF11
 
