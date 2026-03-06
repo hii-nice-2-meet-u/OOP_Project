@@ -264,7 +264,7 @@ class CafeSystem:
                         available_tables.append(table)
 
             # เช็คว่ามีโต๊ะว่างหรือไม่
-            if available_tables is []:
+            if not available_tables:
                 raise ValueError(
                     "No available tables for the requested capacity and time."
                 )
@@ -629,7 +629,7 @@ class CafeSystem:
             raise ValueError("Board Game not found")
 
     def remove_board_game_by_id(self, board_game_id):
-        validate_id(branch_id, ["BG"])
+        validate_id(board_game_id, ["BG"])
 
         board_game = self.find_board_game_by_id(board_game_id)
         if board_game:
@@ -921,14 +921,14 @@ class CafeSystem:
         if play_session is None:
             raise ValueError("Play Session not found")
 
-        board__game = cafe_branch.find_board_game_by_id(board__game_id)
-        if board__game is None:
+        board_game = cafe_branch.find_board_game_by_id(board_game_id)
+        if board_game is None:
             raise ValueError("Board Game not found")
 
-        board__game.status = BoardGameStatus.AVAILABLE
-        play_session.remove_board_games_id(board__game_id)
+        board_game.status = BoardGameStatus.AVAILABLE
+        play_session.remove_board_games_id(board_game_id)
 
-        return board__game
+        return board_game
 
     def maintenance_board_game(self, board_game_id):
         validate_id(board_game_id, ["BG"])
@@ -941,12 +941,12 @@ class CafeSystem:
         if board_game is None:
             raise ValueError("Board Game not found")
 
-        board__game.status = BoardGameStatus.MAINTENANCE
+        board_game.status = BoardGameStatus.MAINTENANCE
         for session in cafe_branch.get_play_sessions():
             if board_game_id in session.current_board_games_id:
                 raise ValueError("Board Game in use")
 
-        return board__game
+        return board_game
 
     # / ════════════════════════════════════════════════════════════════
     # \ GAME SESSION - ORDER
@@ -1008,7 +1008,22 @@ class CafeSystem:
     # / ════════════════════════════════════════════════════════════════
     # \ GAME SESSION - CHECK-OUT
 
-    def check_out(self, any_id, end_time=datetime.now()):
+    def check_out(self, any_id, _arg2=None, _arg3=None, end_time=None, method_type="cash", **kwargs):
+        # รองรับ 2 รูปแบบการเรียก:
+        # แบบที่ 1: check_out(id, "cash", end_time=..., paid_amount=...)  <- demo_1
+        # แบบที่ 2: check_out(id, datetime(...))                          <- demo_2, demo_3
+        if isinstance(_arg2, str):
+            method_type = _arg2
+            if _arg3 is not None:
+                end_time = _arg3
+        elif isinstance(_arg2, datetime):
+            end_time = _arg2
+            if _arg3 is not None:
+                method_type = _arg3
+
+        if end_time is None:
+            end_time = datetime.now()
+
         validate_id(any_id, ["TABLE", "PS"])
 
         cafe_branch = self.find_cafe_branch_by_id(any_id)
@@ -1016,8 +1031,12 @@ class CafeSystem:
             raise ValueError("Cafe Branch not found")
 
         play_session = cafe_branch.find_play_session_by_id(any_id)
+
         if play_session is None:
             raise ValueError("Play Session not found")
+
+        if play_session.payment is not None:
+            raise ValueError("Already been checked out")
 
         total = 0
 
@@ -1030,6 +1049,7 @@ class CafeSystem:
                 total += order.menu_items.price
 
         self.update_table_status(play_session.table_id, TableStatus.AVAILABLE)
+
         cafe_branch.end_play_session(play_session.session_id, end_time)
 
         total += (
@@ -1037,68 +1057,49 @@ class CafeSystem:
             * play_session.duration()
             * play_session.get_total_players()
         )
-        return total
 
-    # def check_out_by_session_id(self, play_session_id):
-    #     cafe_branch = self.find_cafe_branch_by_play_session_id(play_session_id)
-    #     if cafe_branch is None:
-    #         raise ValueError("Cafe Branch not found")
+        if play_session.reservation_id:
+            reservation = self.find_reservation_by_id(play_session.reservation_id)
+            total -= reservation.deposit
 
-    #     play_session = cafe_branch.find_play_session_by_id(play_session_id)
-    #     if play_session is None:
-    #         raise ValueError("Play Session not found")
+        payment = self.create_payment(total, method_type, **kwargs)
 
-    #     table = cafe_branch.find_table_by_id(play_session.table_id)
+        play_session.payment = payment
 
-    #     total = 0
-
-    #     for board_game_id in play_session.current_board_games_id:
-    #         board_game = cafe_branch.find_board_game_by_id(board_game_id)
-    #         if board_game:
-    #             board_game.status = BoardGameStatus.AVAILABLE
-
-    #     for order in play_session.current_order:
-    #         if order.status == OrderStatus.SERVED:
-    #             total += order.menu_item.price
-
-    #     cafe_branch.end_play_session(play_session.session_id)
-
-    #     if table:
-    #         table.status = TableStatus.AVAILABLE
-
-    #     total += Table.price_per_hour * play_session.duration()
-    #     return total
+        return payment
     # / ════════════════════════════════════════════════════════════════
     # \ PAYMENT
-#kwargs คือรับ parameter หลังจากมันมาทำเป็น dict เช่น
-#create_payment(6969, online, account_email="SKIBIDI")
-#kwrag = [account:SKIBIDI]
-def create_payment(self, total, method_type, **kwargs): 
 
-    if method_type == "cash":
-        if kwarg["paid_amount"] < total
-            raise ValueError("Not enough money")
-        payment_method = Cash(kwargs["paid_amount"])
+    # kwargs คือรับ parameter หลังจากมันมาทำเป็น dict เช่น
+    # create_payment(6969, online, account_email="SKIBIDI")
+    # kwrag = [account:SKIBIDI]
+    def create_payment(self, total, method_type="cash", **kwargs):
 
-    elif method_type == "card":
-        payment_method = CreditCard(
-            kwargs["card_number"],
-            kwargs["expiry_date"],
-            kwargs["cvv"]
-        )
+        if method_type == "cash":
+            paid_amount = kwargs.get("paid_amount", total)  # ← default จ่ายเต็ม
 
-    elif method_type == "online":
-        payment_method = OnlinePayment(
-            kwargs["email"]
-        )
+            if paid_amount < total:
+                raise ValueError("Paid amount is not enough")
 
-    else:
-        raise ValueError("Invalid payment method")
+            change = paid_amount - total
+            payment_method = Cash(paid_amount)
+            payment_method.change = change
 
-    if payment_method.validate_method(): #validate ลาวๆออก true หมด
-        new_payment = Payment(total, payment_method)
-        new_payment.process_payment = True
-        return new_payment
+        elif method_type == "card":
+            payment_method = CreditCard(kwargs["card_number"], kwargs["expiry_date"], kwargs["cvv"])
+
+        elif method_type == "online":
+            payment_method = OnlinePayment(kwargs["email"])
+
+        else:
+            raise ValueError("Invalid payment method")
+
+        if payment_method.validate_method():
+            new_payment = Payment(total, payment_method)
+            new_payment.process_payment = True
+            return new_payment
+
+
 # | ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 # | #EFFF11
 

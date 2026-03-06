@@ -39,10 +39,20 @@ class Payment:
     # - Setters
     # / ════════════════════════════════════════════════════════════════
 
-    @payment_time.setter
+    @property
     def process_payment(self):
-        self.__payment_time = datetime.datetime.now()
+        return self.__payment_time is not None
 
+    @process_payment.setter
+    def process_payment(self, v):
+        if v:
+            self.__payment_time = datetime.datetime.now()
+
+    def __str__(self):
+        return (f"Payment ID: {self.__payment_id} | "
+                f"Amount: {self.__amount:.2f} | "
+                f"Method: {self.__payment_method.__class__.__name__} | "
+                f"Time: {self.__payment_time}")
     # / ════════════════════════════════════════════════════════════════
     # - Methods
     # / ════════════════════════════════════════════════════════════════
@@ -87,7 +97,7 @@ class PaymentMethod(ABC):
 
 class CreditCard(PaymentMethod):
     __counter = 0
-    def __init__(self, card_number, cvv):
+    def __init__(self, card_number, expiry_date, cvv):
         CreditCard.__counter += 1
         method_id = "CREDIT" + str(CreditCard.__counter).zfill(5)
         super().__init__(method_id)
@@ -136,23 +146,26 @@ class Cash(PaymentMethod):
         method_id = "CASH" + str(Cash.__counter).zfill(5)
         super().__init__(method_id)
         self.__paid_amount = paid_amount
+        self.__change = 0
     # / ════════════════════════════════════════════════════════════════
     # - Getters
     # / ════════════════════════════════════════════════════════════════
-
+    @property
+    def change(self):
+        return self.__change
     # / ════════════════════════════════════════════════════════════════
     # - Setters
     # / ════════════════════════════════════════════════════════════════
-
+    @change.setter
+    def change(self, change):
+        self.__change = change
     # / ════════════════════════════════════════════════════════════════
     # - Methods
     # / ════════════════════════════════════════════════════════════════
 
     def validate_method(self):
         return True
-    
-    def change(self, total):
-        return self.__paid_amount - total
+
     # / ════════════════════════════════════════════════════════════════
 
 
@@ -174,7 +187,7 @@ class OnlinePayment(PaymentMethod):
 
     @property
     def email(self):
-        return self.email
+        return self.__email
 
     # / ════════════════════════════════════════════════════════════════
     # - Setters

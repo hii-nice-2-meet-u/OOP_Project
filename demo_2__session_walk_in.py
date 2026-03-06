@@ -1,5 +1,6 @@
 from BGC import *
-
+from datetime import datetime, timedelta
+fake_time = datetime(2026, 3, 9, 15, 5, 0)
 if __name__ == "__main__":
     sys = CafeSystem()
 
@@ -128,10 +129,22 @@ if __name__ == "__main__":
 
     a = sys.check_out(
         "TABLE-00000",
-        datetime.now() + timedelta(hours=2),
+        fake_time + timedelta(hours=2),
     )
     print(f'\n{" TEST - CHECK OUT ":═^64}\n')
     print(f'{"TOTAL":<10}:\t{ a } ')
     print(f'\n{"":═^64}\n')
 
     # / ════════════════════════════════════════════════════════════════
+
+    try:
+        a = sys.check_out(
+            "TABLE-00000",
+            fake_time + timedelta(hours=2),
+        )
+    except ValueError as e:
+        print(f'\n{" TEST - CHECK OUT AGAIN ":═^64}\n')
+        print(f'{"ERROR":<10}:\t{ e } ')
+        print(f'\n{"":═^64}\n')
+
+# / ════════════════════════════════════════════════════════════════
