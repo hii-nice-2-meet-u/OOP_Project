@@ -1068,13 +1068,21 @@ class CafeSystem:
 
         actual_end_time = end_time if end_time is not None else datetime.now()
         cafe_branch.end_play_session(play_session.session_id, actual_end_time)
+        
+        discount = 0
+        for player_id in play_session.current_players_id:
 
+            player = self.find_person_by_id(player_id)
+
+            if isinstance(player, Member):
+                discount = max(discount, player.get_discount())
+        
         total += (
             Table.price_per_hour
             * play_session.duration()
             * play_session.get_total_players()
         )
-
+        total = total * (1 - discount)
         payment = self.create_payment(total, method_type, **kwargs)
 
         play_session.payment = payment

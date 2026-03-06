@@ -144,8 +144,6 @@ class Member(Customer):
             return 0.25
         if self.__member_tier == MemberTier.GOLD:
             return 0.20
-        if self.__is_student:
-            return 0.15
         if self.__member_tier == MemberTier.SILVER:
             return 0.10
         if self.__member_tier == MemberTier.BRONZE:

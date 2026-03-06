@@ -1,5 +1,5 @@
 from BGC import *
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # สมมติว่าคุณจองไว้ตอน 15:00 ของวันที่ 9 มีนาคม 2026
 # เราสร้างเวลาปลอมเป็น 15:05 (ไม่เร็วไป และไม่สายเกิน 15 นาที)
@@ -82,7 +82,6 @@ if __name__ == "__main__":
 
     # / ════════════════════════════════════════════════════════════════
 
-    # try:
     sys.make_reservation(
         "MEMBER-00000",
         "BRCH-00000",
@@ -103,7 +102,7 @@ if __name__ == "__main__":
         "TABLE-00001",
     )
 
-        # / ════════════════════════════════════════════════════════════════
+    # / ════════════════════════════════════════════════════════════════
 
     play_session = sys.check_in_reserved(
         "RESV-00000", "MEMBER-00000", current_time=fake_time
@@ -134,10 +133,10 @@ if __name__ == "__main__":
     sys.borrow_board_game("TABLE-00000", "BG-00000")
     sys.borrow_board_game("TABLE-00000", "BG-00001")
     sys.borrow_board_game("TABLE-00000", "BG-00002")
+    
     print(
         f'{"AFTER":<10}:\t{ play_session.current_board_games_id } ',
     )
-
     print(f'\n{"":═^64}\n')
 
     # / ════════════════════════════════════════════════════════════════
@@ -162,10 +161,32 @@ if __name__ == "__main__":
 
     # / ════════════════════════════════════════════════════════════════
 
-    a = sys.check_out("TABLE-00000", fake_time + timedelta(hours=2))
+    a = sys.check_out(
+        "TABLE-00000",
+        method_type="cash",
+        end_time=fake_time + timedelta(hours=2),
+        paid_amount=9999999999,
+    )
+
     print(f'\n{" TEST - CHECK OUT ":═^64}\n')
-    print(f'{"TOTAL":<10}:\t{ a } ')
+    print(f'{"PAYMENT":<10}:\t{a} ')
     print(f'\n{"":═^64}\n')
+
+    # / ════════════════════════════════════════════════════════════════
+    # TEST CHECK OUT AGAIN (SHOULD ERROR)
+
+    try:
+        a = sys.check_out(
+            "TABLE-00000",
+            method_type="cash",
+            end_time=fake_time + timedelta(hours=2),
+            paid_amount=500,
+        )
+
+    except ValueError as e:
+        print(f'\n{" TEST - CHECK OUT AGAIN ":═^64}\n')
+        print(f'{"ERROR":<10}:\t{ e } ')
+        print(f'\n{"":═^64}\n')
 
     # / ════════════════════════════════════════════════════════════════
 
@@ -182,12 +203,4 @@ if __name__ == "__main__":
     )
     print(f'\n{"":═^64}\n')
 
-    # except ValueError as e:
-    #     print(f'\n{" ERROR ":═^64}\n')
-    #     print(f"❌ ValueError: {e}")
-    #     print(f'\n{"":═^64}\n')
-
-    # except Exception as e:
-    #     print(f'\n{" ERROR ":═^64}\n')
-    #     print(f"❌ {type(e).__name__}: {e}")
-    #     print(f'\n{"":═^64}\n')
+    # / ════════════════════════════════════════════════════════════════

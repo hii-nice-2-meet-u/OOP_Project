@@ -160,8 +160,6 @@ if __name__ == "__main__":
     sys.update_order_preparing("PS-00000", "ORDER-00000")
     sys.update_order_serve("PS-00000", "ORDER-00000")
 
-    except Exception as e:
-        print(f'{"ERROR":<10}:\t{ e }')
 
     # / ════════════════════════════════════════════════════════════════
 
