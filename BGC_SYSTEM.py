@@ -274,7 +274,6 @@ class CafeSystem:
             for t in available_tables:
                 if t.capacity < target_table.capacity:
                     target_table = t
-
         else:
             validate_id(table_id, ["TABLE"])
             target_table = branch.find_table_by_id(table_id)
@@ -324,21 +323,55 @@ class CafeSystem:
         else:
             raise ValueError("Reservation not found")
 
-    def cancel_reservation(self, reservation_id):
+    def cancel_reservation(self, reservation_id, current_time=None):
         validate_id(reservation_id, ["RESV"])
 
         reservation = self.find_reservation_by_id(reservation_id)
 
+        # 1. เช็คว่ามีใบจองนี้ในระบบหรือไม่
         if reservation is None:
-            raise ValueError("Reservation not found")
+            raise ValueError("Reservation not found.")
 
+        # 2. เช็คว่าใบจองนี้ถูกยกเลิกไปแล้วหรือยัง (ป้องกันการยกเลิกซ้ำ)
+        if reservation.status == ReservationStatus.CANCELLED:
+            raise ValueError("Cannot cancel. Reservation is already cancelled.")
+
+        # 3. เช็คสถานะ: ต้องเป็น PENDING เท่านั้นถึงจะยกเลิกได้ (ถ้า COMPLETED ไปแล้วห้ามยกเลิก)
+        if reservation.status != ReservationStatus.PENDING:
+            raise ValueError("Cannot cancel. Reservation is not in PENDING status.")
+
+        # 4. จัดการเวลา (รองรับการจำลองเวลาตอน Test)
+        if current_time is not None:
+            now = current_time
+        else:
+            now = datetime.now()
+
+        # นำวันที่และเวลาจองมาประกอบร่างกันเพื่อใช้เปรียบเทียบ
+        resv_datetime = datetime.strptime(f"{reservation.date} {reservation.start_time}", "%Y-%m-%d %H:%M")
+
+        # 5. เช็คเวลา: ห้ามยกเลิกหากเวลาปัจจุบัน "เลย" เวลาจองไปแล้ว
+        if now > resv_datetime:
+            raise ValueError("Cannot cancel. The reservation time has already passed.")
+
+        # / ════════════════════════════════════════════════════════════════
+        # หากผ่านด่านเงื่อนไขทั้งหมดด้านบนมาได้ ให้ดำเนินการยกเลิก
+        # / ════════════════════════════════════════════════════════════════
+        
+        # เปลี่ยนสถานะใบจองเป็น CANCELLED
         reservation.status = ReservationStatus.CANCELLED
 
+        # ค้นหาสาขาและโต๊ะเพื่อคืนสถานะโต๊ะให้ว่าง
         branch = self.find_cafe_branch_by_id(reservation.branch_id)
-        table = branch.find_table_by_id(reservation.table_id)
-
-        if table.status == TableStatus.RESERVED:
-            table.status = TableStatus.AVAILABLE
+        if branch is None:
+            pass
+        else:
+            table = branch.find_table_by_id(reservation.table_id)
+            if table is None:
+                pass
+            else:
+                # เคลียร์สถานะโต๊ะให้ว่าง (AVAILABLE) หากโต๊ะนั้นถูกล็อกสถานะ RESERVED ไว้ล่วงหน้าแล้ว
+                if table.status == TableStatus.RESERVED:
+                    table.status = TableStatus.AVAILABLE
 
     def update_reservation_status_by_id(self, reservation_id, status):
         validate_id(reservation_id, ["RESV"])
@@ -371,7 +404,8 @@ class CafeSystem:
         )
 
     # / ════════════════════════════════════════════════════════════════
-    # \ PRIVATE HELPER METHODS ( BUSINESS RULES VALIDATION )
+    # \ PRIVATE HELPER METHODS (BUSINESS RULES VALIDATION)
+    # / ════════════════════════════════════════════════════════════════
 
     def __is_table_free(self, table_id, date_str, start_time, end_time):
         new_start = datetime.strptime(start_time, "%H:%M")

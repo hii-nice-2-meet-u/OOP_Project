@@ -14,6 +14,7 @@ if __name__ == "__main__":
     sys.create_manager("MANAGER_A")
     sys.create_staff("STAFF_A")
     sys.create_customer_member("MEMBER_A")
+    sys.create_customer_member("MEMBER_B")
 
     # / ════════════════════════════════════════════════════════════════
 
@@ -91,7 +92,18 @@ if __name__ == "__main__":
         "16:00",
         "TABLE-00000",
     )
-    # / ════════════════════════════════════════════════════════════════
+
+    sys.make_reservation(
+        "MEMBER-00001",
+        "BRCH-00000",
+        4,
+        "2026-03-11",
+        "10:00",
+        "12:00",
+        "TABLE-00001",
+    )
+
+        # / ════════════════════════════════════════════════════════════════
 
     play_session = sys.check_in_reserved(
         "RESV-00000", "MEMBER-00000", current_time=fake_time
@@ -156,6 +168,19 @@ if __name__ == "__main__":
     print(f'\n{"":═^64}\n')
 
     # / ════════════════════════════════════════════════════════════════
+
+    print(f'\n{" TEST - CANCEL RESERVATION ":═^64}\n')
+
+    print(
+        f'{"BEFORE":<10}:\t{ [f"{a.reservation_id} ({a.status.name})" for a in sys.reservations] } ',
+    )
+        
+    sys.cancel_reservation("RESV-00001")
+        
+    print(
+        f'{"AFTER":<10}:\t{ [f"{a.reservation_id} ({a.status.name})" for a in sys.reservations] } ',
+    )
+    print(f'\n{"":═^64}\n')
 
     # except ValueError as e:
     #     print(f'\n{" ERROR ":═^64}\n')
