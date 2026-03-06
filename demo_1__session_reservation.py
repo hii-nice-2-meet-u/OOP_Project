@@ -1,5 +1,5 @@
 from BGC import *
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # สมมติว่าคุณจองไว้ตอน 15:00 ของวันที่ 9 มีนาคม 2026
 # เราสร้างเวลาปลอมเป็น 15:05 (ไม่เร็วไป และไม่สายเกิน 15 นาที)
@@ -160,34 +160,37 @@ if __name__ == "__main__":
     sys.update_order_preparing("PS-00000", "ORDER-00000")
     sys.update_order_serve("PS-00000", "ORDER-00000")
 
+    except Exception as e:
+        print(f'{"ERROR":<10}:\t{ e }')
+
     # / ════════════════════════════════════════════════════════════════
 
-    a = sys.check_out("TABLE-00000", fake_time + timedelta(hours=2))
+
+    a = sys.check_out(
+        "TABLE-00000",
+        method_type="cash",
+        end_time=fake_time + timedelta(hours=2),
+        paid_amount=9999999999,
+    )
+
     print(f'\n{" TEST - CHECK OUT ":═^64}\n')
-    print(f'{"TOTAL":<10}:\t{ a } ')
+    print(f'{"PAYMENT":<10}:\t{a} ')
     print(f'\n{"":═^64}\n')
 
     # / ════════════════════════════════════════════════════════════════
+    # TEST CHECK OUT AGAIN (SHOULD ERROR)
 
-    print(f'\n{" TEST - CANCEL RESERVATION ":═^64}\n')
+    try:
+        a = sys.check_out(
+            "TABLE-00000",
+            method_type="cash",
+            end_time=fake_time + timedelta(hours=2),
+            paid_amount=500,
+        )
 
-    print(
-        f'{"BEFORE":<10}:\t{ [f"{a.reservation_id} ({a.status.name})" for a in sys.reservations] } ',
-    )
-        
-    sys.cancel_reservation("RESV-00001")
-        
-    print(
-        f'{"AFTER":<10}:\t{ [f"{a.reservation_id} ({a.status.name})" for a in sys.reservations] } ',
-    )
-    print(f'\n{"":═^64}\n')
+    except ValueError as e:
+        print(f'\n{" TEST - CHECK OUT AGAIN ":═^64}\n')
+        print(f'{"ERROR":<10}:\t{ e } ')
+        print(f'\n{"":═^64}\n')
 
-    # except ValueError as e:
-    #     print(f'\n{" ERROR ":═^64}\n')
-    #     print(f"❌ ValueError: {e}")
-    #     print(f'\n{"":═^64}\n')
-
-    # except Exception as e:
-    #     print(f'\n{" ERROR ":═^64}\n')
-    #     print(f"❌ {type(e).__name__}: {e}")
-    #     print(f'\n{"":═^64}\n')
+# / ════════════════════════════════════════════════════════════════

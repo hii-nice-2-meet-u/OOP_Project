@@ -1,4 +1,7 @@
 from BGC import *
+from datetime import datetime, timedelta
+
+fake_time = datetime(2026, 3, 9, 15, 5, 0)
 
 if __name__ == "__main__":
     sys = CafeSystem()
@@ -76,7 +79,7 @@ if __name__ == "__main__":
 
     # / ════════════════════════════════════════════════════════════════
 
-    play_session = sys.check_in_walk_in("BRCH-00000", 2)
+    play_session = sys.check_in_walk_in("BRCH-00000", 2, start_time=fake_time)
 
     # / ════════════════════════════════════════════════════════════════
 
@@ -126,12 +129,29 @@ if __name__ == "__main__":
 
     # / ════════════════════════════════════════════════════════════════
 
+    # FIX: ส่ง end_time เป็น keyword arg, เพิ่ม method_type และ paid_amount
     a = sys.check_out(
         "TABLE-00000",
-        datetime.now() + timedelta(hours=2),
+        method_type="cash",
+        end_time=fake_time + timedelta(hours=2),
+        paid_amount=500,
     )
     print(f'\n{" TEST - CHECK OUT ":═^64}\n')
-    print(f'{"TOTAL":<10}:\t{ a } ')
+    print(f'{"PAYMENT":<10}:\t{ a } ')
     print(f'\n{"":═^64}\n')
 
     # / ════════════════════════════════════════════════════════════════
+
+    try:
+        a = sys.check_out(
+            "TABLE-00000",
+            method_type="cash",
+            end_time=fake_time + timedelta(hours=2),
+            paid_amount=500,
+        )
+    except ValueError as e:
+        print(f'\n{" TEST - CHECK OUT AGAIN ":═^64}\n')
+        print(f'{"ERROR":<10}:\t{ e } ')
+        print(f'\n{"":═^64}\n')
+
+# / ════════════════════════════════════════════════════════════════
