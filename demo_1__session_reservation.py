@@ -1,12 +1,13 @@
 from BGC import *
 from datetime import datetime
-# สมมติว่าคุณจองไว้ตอน 15:00 ของวันที่ 9 มีนาคม 2026 
+
+# สมมติว่าคุณจองไว้ตอน 15:00 ของวันที่ 9 มีนาคม 2026
 # เราสร้างเวลาปลอมเป็น 15:05 (ไม่เร็วไป และไม่สายเกิน 15 นาที)
 fake_time = datetime(2026, 3, 9, 15, 5, 0)
 
 if __name__ == "__main__":
     sys = CafeSystem()
-        
+
     # / ════════════════════════════════════════════════════════════════
 
     sys.create_owner("OWNER_A")
@@ -60,16 +61,16 @@ if __name__ == "__main__":
 
     sys.create_menu_to_branch("BRCH-00000")
     sys.create_menu_item_food_to_branch(
-        "BRCH-00000", "ITEM_FOOD_1", 11.11, "DESCRIPTION FOOD TEST 1"
+        "BRCH-00000", "ITEM_FOOD_1", 10, "DESCRIPTION FOOD TEST 1"
     )
     sys.create_menu_item_food_to_branch(
-        "BRCH-00000", "ITEM_FOOD_2", 22.22, "DESCRIPTION FOOD TEST 2"
+        "BRCH-00000", "ITEM_FOOD_2", 20, "DESCRIPTION FOOD TEST 2"
     )
     sys.create_menu_item_drink_to_branch(
-        "BRCH-00000", "ITEM_DRINK_1", 33.33, "DESCRIPTION DRINK TEST 1"
+        "BRCH-00000", "ITEM_DRINK_1", 10, "DESCRIPTION DRINK TEST 1"
     )
     sys.create_menu_item_drink_to_branch(
-        "BRCH-00000", "ITEM_DRINK_2", 44.44, "DESCRIPTION DRINK TEST 2"
+        "BRCH-00000", "ITEM_DRINK_2", 20, "DESCRIPTION DRINK TEST 2"
     )
 
     # / ════════════════════════════════════════════════════════════════
@@ -92,7 +93,9 @@ if __name__ == "__main__":
         )
         # / ════════════════════════════════════════════════════════════════
 
-        play_session = sys.check_in_reserved("RESV-00000", "MEMBER-00000", current_time=fake_time)
+        play_session = sys.check_in_reserved(
+            "RESV-00000", "MEMBER-00000", current_time=fake_time
+        )
 
         # / ════════════════════════════════════════════════════════════════
 
@@ -103,7 +106,7 @@ if __name__ == "__main__":
 
         sys.join_session("PS-00000", "MEMBER-00001")
         sys.join_session("PS-00000")
-        
+
         print(
             f'{"AFTER":<10}:\t{ play_session.current_players_id } ',
         )
@@ -131,7 +134,7 @@ if __name__ == "__main__":
         print(
             f'{"BEFORE":<10}:\t{ [a.menu_items.name for a in play_session.current_order] } ',
         )
-        
+
         sys.take_order("TABLE-00000", "FOOD-00000")
         sys.take_order("TABLE-00000", "DRINK-00000")
 
@@ -145,11 +148,20 @@ if __name__ == "__main__":
         sys.update_order_preparing("PS-00000", "ORDER-00000")
         sys.update_order_serve("PS-00000", "ORDER-00000")
 
+        # / ════════════════════════════════════════════════════════════════
+
+        a = sys.check_out("TABLE-00000")
+        print(f'\n{" TEST - CHECK OUT ":═^64}\n')
+        print(f'{"TOTAL":<10}:\t{ a } ')
+        print(f'\n{"":═^64}\n')
+
+        # / ════════════════════════════════════════════════════════════════
+
     except ValueError as e:
         print(f'\n{" ERROR ":═^64}\n')
         print(f"❌ ValueError: {e}")
         print(f'\n{"":═^64}\n')
-        
+
     except Exception as e:
         print(f'\n{" ERROR ":═^64}\n')
         print(f"❌ {type(e).__name__}: {e}")
