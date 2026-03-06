@@ -736,7 +736,9 @@ class CafeSystem:
     # / ════════════════════════════════════════════════════════════════
     # \ GAME SESSION - CHECK-IN
 
-    def check_in_reserved(self, reservation_id, customer_id, current_time=None):
+    def check_in_reserved(
+        self, reservation_id, customer_id, current_time=datetime.now()
+    ):
         validate_id(reservation_id, ["RESV"])
         validate_id(customer_id, ["MEMBER", "WALK"])
 
@@ -746,16 +748,11 @@ class CafeSystem:
         customer = self.find_person_by_id(customer_id)
         if customer is None:
             raise ValueError("Customer not found")
-        if current_time:
-            now = current_time
-        else:
-            now = datetime.now()
 
-        # ! fix time arrive
-        if now < reservation.reservation_time:
+        if current_time < reservation.reservation_time:
             raise ValueError("Too early to check-in")
         late_limit = reservation.reservation_time + timedelta(minutes=15)
-        if now > late_limit:
+        if current_time > late_limit:
             reservation.status = ReservationStatus.NO_SHOW
             raise ValueError(
                 "Check-in failed: You are more than 15 minutes late. Marked as No-Show."
@@ -776,7 +773,7 @@ class CafeSystem:
             reservation.status = ReservationStatus.COMPLETED
             table.status = TableStatus.OCCUPIED
 
-            session = PlaySession(reservation.table_id, datetime.now())
+            session = PlaySession(reservation.table_id, current_time)
             branch.add_play_session(session)
             session.add_players_id(reservation.customer_id)
             return session
@@ -1037,6 +1034,11 @@ class CafeSystem:
             * play_session.duration()
             * play_session.get_total_players()
         )
+
+        if play_session.reservation_id:
+            reservation = self.find_reservation_by_id(play_session.reservation_id)
+            total -= reservation.deposit
+
         return total
 
 

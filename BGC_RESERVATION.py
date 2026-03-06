@@ -30,6 +30,7 @@ class Reservation:
         self.__start_time = start_time
         self.__end_time = end_time
         self.__status = ReservationStatus.PENDING
+        self.__deposit = 0
 
     # / ════════════════════════════════════════════════════════════════
     # - Getters
@@ -84,17 +85,9 @@ class Reservation:
         return self.__end_time
 
     @property
-    def table_id(self):
-        return self.__table_id
+    def deposit(self):
+        return self.__deposit
 
-    @property
-    def customer_id(self):
-        return self.__customer_id
-
-    @property
-    def branch_id(self):
-        return self.__branch_id
-    
     # / ════════════════════════════════════════════════════════════════
     # - Setters
     # / ════════════════════════════════════════════════════════════════
