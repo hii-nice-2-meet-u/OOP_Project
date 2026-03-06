@@ -10,7 +10,7 @@ class Payment:
     __counter = 0
 
     def __init__(self, amount, payment_method):
-        self.__payment_id = "PAYMENT-" + str(Food.__counter).zfill(5)
+        self.__payment_id = "PAYMENT-" + str(Payment.__counter).zfill(5)
         self.__amount = amount
         self.__payment_method = payment_method
         self.__payment_time = None
@@ -55,8 +55,10 @@ class Payment:
 
 
 class PaymentMethod(ABC):
+
     def __init__(self, method_id):
         self.__method_id = method_id
+
 
     # / ════════════════════════════════════════════════════════════════
     # - Getters
@@ -84,8 +86,8 @@ class PaymentMethod(ABC):
 
 
 class CreditCard(PaymentMethod):
-    def __init__(self, method_id, card_number, expiry_date, cvv):
-        super().__init__(method_id)
+    def __init__(self, card_number, expiry_date, cvv):
+        super().__init__("CARD")
         self.__card_number = card_number
         self.__expiry_date = expiry_date
         self.__cvv = cvv
@@ -125,9 +127,12 @@ class CreditCard(PaymentMethod):
 
 
 class Cash(PaymentMethod):
-    def __init__(self, method_id):
-        super().__init__(method_id)
-
+    __counter = 0
+    def __init__(self, paid_amount):
+        Cash.__counter += 1
+        method_id = "CASH" + str(Cash.__counter).zfill(5)
+        super().__init__.(method_id)
+        self.__paid_amount = paid_amount
     # / ════════════════════════════════════════════════════════════════
     # - Getters
     # / ════════════════════════════════════════════════════════════════
@@ -142,7 +147,9 @@ class Cash(PaymentMethod):
 
     def validate_method(self):
         return True
-
+    
+    def change(self, total):
+        return self.__paid_amount - total
     # / ════════════════════════════════════════════════════════════════
 
 
@@ -151,9 +158,12 @@ class Cash(PaymentMethod):
 
 
 class OnlinePayment(PaymentMethod):
-    def __init__(self, method_id, account_email):
-        super().__init__(method_id)
-        self.__account_email = account_email
+    __counter = 0
+    def __init__(self, paid_amount):
+        Cash.__counter += 1
+        method_id = "CASH" + str(Cash.__counter).zfill(5)
+        super().__init__.(method_id)
+        self.__paid_amount = paid_amount
 
     # / ════════════════════════════════════════════════════════════════
     # - Getters

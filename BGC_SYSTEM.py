@@ -978,8 +978,10 @@ class CafeSystem:
 
     #     total += Table.price_per_hour * play_session.duration()
     #     return total
-
-
+    # / ════════════════════════════════════════════════════════════════
+    # \ PAYMENT
+    def create_payment(self, total, paymetn_method):
+        new_payment = Payment
 # | ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 # | #EFFF11
 
