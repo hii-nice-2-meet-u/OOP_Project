@@ -1076,6 +1076,8 @@ class CafeSystem:
 def create_payment(self, total, method_type, **kwargs): 
 
     if method_type == "cash":
+        if kwarg["paid_amount"] < total
+            raise ValueError("Not enough money")
         payment_method = Cash(kwargs["paid_amount"])
 
     elif method_type == "card":
