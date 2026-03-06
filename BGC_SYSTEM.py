@@ -980,8 +980,33 @@ class CafeSystem:
     #     return total
     # / ════════════════════════════════════════════════════════════════
     # \ PAYMENT
-    def create_payment(self, total, paymetn_method):
-        new_payment = Payment
+#kwargs คือรับ parameter หลังจากมันมาทำเป็น dict เช่น
+#create_payment(6969, online, account_email="SKIBIDI")
+#kwrag = [account:SKIBIDI]
+def create_payment(self, total, method_type, **kwargs): 
+
+    if method_type == "cash":
+        payment_method = Cash(kwargs["paid_amount"])
+
+    elif method_type == "card":
+        payment_method = CreditCard(
+            kwargs["card_number"],
+            kwargs["expiry_date"],
+            kwargs["cvv"]
+        )
+
+    elif method_type == "online":
+        payment_method = OnlinePayment(
+            kwargs["email"]
+        )
+
+    else:
+        raise ValueError("Invalid payment method")
+
+    if payment_method.validate_method(): #validate ลาวๆออก true หมด
+        new_payment = Payment(total, payment_method)
+        new_payment.process_payment = True
+        return new_payment
 # | ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 # | #EFFF11
 

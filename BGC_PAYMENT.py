@@ -86,8 +86,11 @@ class PaymentMethod(ABC):
 
 
 class CreditCard(PaymentMethod):
-    def __init__(self, card_number, expiry_date, cvv):
-        super().__init__("CARD")
+    __counter = 0
+    def __init__(self, card_number, cvv):
+        CreditCard.__counter += 1
+        method_id = "CREDIT" + str(CreditCard.__counter).zfill(5)
+        super().__init__(method_id)
         self.__card_number = card_number
         self.__expiry_date = expiry_date
         self.__cvv = cvv
@@ -131,7 +134,7 @@ class Cash(PaymentMethod):
     def __init__(self, paid_amount):
         Cash.__counter += 1
         method_id = "CASH" + str(Cash.__counter).zfill(5)
-        super().__init__.(method_id)
+        super().__init__(method_id)
         self.__paid_amount = paid_amount
     # / ════════════════════════════════════════════════════════════════
     # - Getters
@@ -159,19 +162,19 @@ class Cash(PaymentMethod):
 
 class OnlinePayment(PaymentMethod):
     __counter = 0
-    def __init__(self, paid_amount):
-        Cash.__counter += 1
-        method_id = "CASH" + str(Cash.__counter).zfill(5)
-        super().__init__.(method_id)
-        self.__paid_amount = paid_amount
+    def __init__(self, email):
+        OnlinePayment.__counter += 1
+        method_id = "ONLINE" + str(OnlinePayment.__counter).zfill(5)
+        super().__init__(method_id)
+        self.__email = email
 
     # / ════════════════════════════════════════════════════════════════
     # - Getters
     # / ════════════════════════════════════════════════════════════════
 
     @property
-    def account_email(self):
-        return self.__account_email
+    def email(self):
+        return self.email
 
     # / ════════════════════════════════════════════════════════════════
     # - Setters
