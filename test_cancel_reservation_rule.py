@@ -10,90 +10,310 @@ if __name__ == "__main__":
     sys.create_cafe_branch("Cafe - A", "A 123/456")
     sys.create_table_to_branch("BRCH-00000", 2)
     sys.create_table_to_branch("BRCH-00000", 4)
+    sys.create_table_to_branch("BRCH-00000", 6)
+    sys.create_table_to_branch("BRCH-00000", 8)
+    sys.create_table_to_branch("BRCH-00000", 10)
 
-    # สร้างสมาชิกระดับ Platinum เพื่อให้โควตาจองได้ 3 คิวพร้อมกัน
-    member_cancel = Member("Cancel Tester")
-    member_cancel.member_tier = MemberTier.PLATINUM
-    sys.add_person(member_cancel)
+    # สร้างสมาชิกระดับต่างๆ เพื่อใช้เทสกฎ
+    member_bronze = Member("Bronze User")
+    member_bronze.member_tier = MemberTier.BRONZE
+    sys.add_person(member_bronze)
 
-    # / ════════════════════════════════════════════════════════════════
-    # PREPARE DATA: สร้างใบจอง 3 ใบเพื่อนำมาใช้ทดสอบ
-    # / ════════════════════════════════════════════════════════════════
-    now = datetime.now()
-    
-    # ใช้วันที่ 5 วันล่วงหน้า เพื่อให้ผ่านกฎการจองทั้งหมด
-    test_date = (now + timedelta(days=5)).strftime("%Y-%m-%d")
+    member_silver = Member("Silver User")
+    member_silver.member_tier = MemberTier.SILVER
+    sys.add_person(member_silver)
 
-    # คิวที่ 1: เตรียมไว้ทดสอบ "ยกเลิกคิวที่กินเสร็จแล้ว (COMPLETED)"
-    resv_1 = sys.make_reservation(member_cancel.user_id, "BRCH-00000", 2, test_date, "10:00", "12:00")
-    
-    # คิวที่ 2: เตรียมไว้ทดสอบ "ยกเลิกคิวที่เลยเวลาจองไปแล้ว (LATE)"
-    resv_2 = sys.make_reservation(member_cancel.user_id, "BRCH-00000", 2, test_date, "14:00", "16:00")
-    
-    # คิวที่ 3: เตรียมไว้ทดสอบ "ยกเลิกแบบถูกต้อง (VALID)" และ "ยกเลิกซ้ำ (ALREADY CANCELLED)"
-    resv_3 = sys.make_reservation(member_cancel.user_id, "BRCH-00000", 2, test_date, "18:00", "20:00")
+    member_gold = Member("Gold User")
+    member_gold.member_tier = MemberTier.GOLD
+    sys.add_person(member_gold)
+
+    member_platinum = Member("Platinum User")
+    member_platinum.member_tier = MemberTier.PLATINUM
+    sys.add_person(member_platinum)
+
+    # ลูกค้าพิเศษสำหรับเทส Double Booking
+    member_db = Member("DB Tester")
+    member_db.member_tier = MemberTier.PLATINUM
+    sys.add_person(member_db)
 
     # / ════════════════════════════════════════════════════════════════
     # HELPER FUNCTION: ตัวช่วยปริ้นท์ผลการทดสอบ
     # / ════════════════════════════════════════════════════════════════
-    def test_cancel(description, resv_id, fake_current_time=None):
+    now = datetime.now()
+
+    def test_reservation(
+        description,
+        customer_id,
+        branch_id,
+        total_player,
+        resv_date,
+        start_t,
+        end_t,
+        table_id="auto"
+    ):
+
         print(f"\n{'-'*64}")
         print(f" TEST     : {description}")
-        
-        if fake_current_time is not None:
-            print(f" NOW      : {fake_current_time.strftime('%Y-%m-%d %H:%M')} (Simulated)")
-        else:
-            print(f" NOW      : {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-            
+        print(f" NOW      : {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+        print(f" BOOK FOR : {resv_date} at {start_t} - {end_t}")
         print(f"{'-'*64}")
         
         try:
-            sys.cancel_reservation(resv_id, current_time=fake_current_time)
-            resv = sys.find_reservation_by_id(resv_id)
-            print(f" ✅ SUCCESS -> Resv ID: {resv_id} | Status: {resv.status.name}")
+            resv = sys.make_reservation(
+                customer_id,
+                branch_id,
+                total_player,
+                resv_date,
+                start_t,
+                end_t,
+                table_id
+            )
+            print(f" ✅ SUCCESS -> Resv ID: {resv.reservation_id} | Table: {resv.table_id} | Status: {resv.status.name}")
         except Exception as e:
             print(f" ❌ FAILED  -> {type(e).__name__}: {str(e)}")
 
 
-    print(f'\n{" COMPREHENSIVE CANCEL RESERVATION TESTS ":═^64}\n')
-
-    # โชว์สถานะเริ่มต้น
-    print(f'{"INITIAL":<10}:\t{ [f"{a.reservation_id} ({a.status.name})" for a in sys.reservations] } \n')
+    print(f'\n{" COMPREHENSIVE RESERVATION RULE TESTS ":═^64}\n')
 
     # ==================================================================
-    # TEST 1: ยกเลิกใบจองที่กินเสร็จไปแล้ว (COMPLETED) [EXPECT FAIL]
+    # 1. TEST MINIMUM LEAD TIME (ทุกระดับต้องจองล่วงหน้า 1 ชม.)
     # ==================================================================
-    # เช็คอินคิวที่ 1 ให้กลายเป็น COMPLETED ก่อน
-    fake_checkin_time = datetime.strptime(f"{resv_1.date} {resv_1.start_time}", "%Y-%m-%d %H:%M")
-    sys.check_in_reserved(resv_1.reservation_id, member_cancel.user_id, current_time=fake_checkin_time)
+    time_30m = now + timedelta(minutes=30)
+    time_2h_30m = time_30m + timedelta(hours=2)
     
-    # ลองกดยกเลิก
-    test_cancel("CANCEL COMPLETED [EXPECT FAIL]", resv_1.reservation_id)
+    test_reservation(
+        "LEAD TIME (< 1 Hour) [EXPECT FAIL]",
+        member_bronze.user_id,
+        "BRCH-00000",
+        2,
+        time_30m.strftime("%Y-%m-%d"),
+        time_30m.strftime("%H:%M"),
+        time_2h_30m.strftime("%H:%M")
+    )
 
     # ==================================================================
-    # TEST 2: ยกเลิกเมื่อเลยเวลาจองไปแล้ว (LATE) [EXPECT FAIL]
+    # 2. TEST MAX DURATION (เทสใช้วันพรุ่งนี้ เพื่อหลีกเลี่ยงกฎ Lead Time)
     # ==================================================================
-    # จำลองเวลาปัจจุบันให้เลยเวลา 14:00 ไปแล้ว (เป็น 14:30)
-    fake_late_time = datetime.strptime(f"{resv_2.date} 14:30", "%Y-%m-%d %H:%M")
+    tmr = (now + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    test_reservation(
+        "DURATION - Bronze (> 2 Hrs) [EXPECT FAIL]",
+        member_bronze.user_id,
+        "BRCH-00000",
+        2,
+        tmr,
+        "10:00",
+        "13:00"
+    )
+
+    test_reservation(
+        "DURATION - Silver (> 3.5 Hrs) [EXPECT FAIL]",
+        member_silver.user_id,
+        "BRCH-00000",
+        2,
+        tmr,
+        "10:00",
+        "14:00"
+    )
+
+    test_reservation(
+        "DURATION - Gold (> 7 Hrs) [EXPECT FAIL]",
+        member_gold.user_id,
+        "BRCH-00000",
+        2,
+        tmr,
+        "10:00",
+        "18:00"
+    )
+
+    test_reservation(
+        "DURATION - Platinum (12 Hrs) [EXPECT SUCCESS]",
+        member_platinum.user_id,
+        "BRCH-00000",
+        2,
+        tmr,
+        "08:00",
+        "20:00"
+    )
+
+    # ==================================================================
+    # 3. TEST ADVANCE BOOKING LIMITS (วันจองล่วงหน้าสูงสุด)
+    # ==================================================================
+    test_reservation(
+        "ADVANCE - Bronze (6 Days) [EXPECT FAIL]",
+        member_bronze.user_id,
+        "BRCH-00000",
+        2,
+        (now + timedelta(days=6)).strftime("%Y-%m-%d"),
+        "14:00",
+        "16:00"
+    )
+
+    test_reservation(
+        "ADVANCE - Silver (15 Days) [EXPECT FAIL]",
+        member_silver.user_id,
+        "BRCH-00000",
+        2,
+        (now + timedelta(days=15)).strftime("%Y-%m-%d"),
+        "14:00",
+        "16:00"
+    )
+
+    test_reservation(
+        "ADVANCE - Gold (22 Days) [EXPECT FAIL]",
+        member_gold.user_id,
+        "BRCH-00000",
+        2,
+        (now + timedelta(days=22)).strftime("%Y-%m-%d"),
+        "14:00",
+        "16:00"
+    )
+
+    test_reservation(
+        "ADVANCE - Platinum (31 Days) [EXPECT FAIL]",
+        member_platinum.user_id,
+        "BRCH-00000",
+        2,
+        (now + timedelta(days=31)).strftime("%Y-%m-%d"),
+        "14:00",
+        "16:00"
+    )
+
+    test_reservation(
+        "ADVANCE - Platinum (28 Days) [EXPECT SUCCESS]",
+        member_platinum.user_id,
+        "BRCH-00000",
+        2,
+        (now + timedelta(days=28)).strftime("%Y-%m-%d"),
+        "14:00",
+        "16:00"
+    )
+
+    # ==================================================================
+    # 4. TEST ACTIVE QUOTA (โควตาการจองค้างในระบบ - อิงกฎใหม่ของเพื่อน)
+    # ==================================================================
     
-    # ลองกดยกเลิก
-    test_cancel("CANCEL LATE (After Time) [EXPECT FAIL]", resv_2.reservation_id, fake_current_time=fake_late_time)
+    # --- Silver: Quota 2 ---
+    test_reservation(
+        "QUOTA - Silver (1st Booking) [EXPECT SUCCESS]",
+        member_silver.user_id,
+        "BRCH-00000",
+        2,
+        (now + timedelta(days=2)).strftime("%Y-%m-%d"),
+        "10:00",
+        "12:00"
+    )
+    test_reservation(
+        "QUOTA - Silver (2nd Booking) [EXPECT SUCCESS]",
+        member_silver.user_id,
+        "BRCH-00000",
+        2,
+        (now + timedelta(days=3)).strftime("%Y-%m-%d"),
+        "10:00",
+        "12:00"
+    )
+    test_reservation(
+        "QUOTA - Silver (3rd Booking) [EXPECT FAIL]",
+        member_silver.user_id,
+        "BRCH-00000",
+        2,
+        (now + timedelta(days=4)).strftime("%Y-%m-%d"),
+        "10:00",
+        "12:00"
+    )
+
+    # --- Gold: Quota 3 ---
+    test_reservation(
+        "QUOTA - Gold (1st Booking) [EXPECT SUCCESS]",
+        member_gold.user_id,
+        "BRCH-00000",
+        2,
+        (now + timedelta(days=2)).strftime("%Y-%m-%d"),
+        "10:00",
+        "12:00"
+    )
+    test_reservation(
+        "QUOTA - Gold (2nd Booking) [EXPECT SUCCESS]",
+        member_gold.user_id,
+        "BRCH-00000",
+        2,
+        (now + timedelta(days=3)).strftime("%Y-%m-%d"),
+        "10:00",
+        "12:00"
+    )
+    test_reservation(
+        "QUOTA - Gold (3rd Booking) [EXPECT SUCCESS]",
+        member_gold.user_id,
+        "BRCH-00000",
+        2,
+        (now + timedelta(days=4)).strftime("%Y-%m-%d"),
+        "10:00",
+        "12:00"
+    )
+    test_reservation(
+        "QUOTA - Gold (4th Booking) [EXPECT FAIL]",
+        member_gold.user_id,
+        "BRCH-00000",
+        2,
+        (now + timedelta(days=5)).strftime("%Y-%m-%d"),
+        "10:00",
+        "12:00"
+    )
+
+    # --- Platinum: Quota 4 (มีจองสำเร็จจากข้อ 2 และ 3 ไปแล้ว 2 อัน) ---
+    test_reservation(
+        "QUOTA - Platinum (3rd Booking) [EXPECT SUCCESS]",
+        member_platinum.user_id,
+        "BRCH-00000",
+        2,
+        (now + timedelta(days=2)).strftime("%Y-%m-%d"),
+        "10:00",
+        "12:00"
+    )
+    test_reservation(
+        "QUOTA - Platinum (4th Booking) [EXPECT SUCCESS]",
+        member_platinum.user_id,
+        "BRCH-00000",
+        2,
+        (now + timedelta(days=3)).strftime("%Y-%m-%d"),
+        "10:00",
+        "12:00"
+    )
+    test_reservation(
+        "QUOTA - Platinum (5th Booking) [EXPECT FAIL]",
+        member_platinum.user_id,
+        "BRCH-00000",
+        2,
+        (now + timedelta(days=4)).strftime("%Y-%m-%d"),
+        "10:00",
+        "12:00"
+    )
 
     # ==================================================================
-    # TEST 3: ยกเลิกแบบถูกต้อง (ก่อนเวลา) [EXPECT SUCCESS]
+    # 5. TEST DOUBLE BOOKING ON SAME TABLE AND TIME
     # ==================================================================
-    # จำลองเวลาปัจจุบันให้อยู่ก่อน 18:00 (เป็น 16:00)
-    fake_valid_time = datetime.strptime(f"{resv_3.date} 17:00", "%Y-%m-%d %H:%M")
-    
-    # ลองกดยกเลิก
-    test_cancel("VALID CANCEL [EXPECT SUCCESS]", resv_3.reservation_id, fake_current_time=fake_valid_time)
+    test_date_db = (now + timedelta(days=4)).strftime("%Y-%m-%d")
 
-    # ==================================================================
-    # TEST 4: ยกเลิกซ้ำ (ALREADY CANCELLED) [EXPECT FAIL]
-    # ==================================================================
-    # พยายามยกเลิกคิวที่ 3 (ที่เพิ่งยกเลิกสำเร็จไปเมื่อสักครู่) อีกรอบ
-    test_cancel("CANCEL ALREADY CANCELLED [EXPECT FAIL]", resv_3.reservation_id, fake_current_time=fake_valid_time)
+    test_reservation(
+        "DOUBLE BOOK - 1st Valid Booking [EXPECT SUCCESS]",
+        member_db.user_id,
+        "BRCH-00000",
+        2,
+        test_date_db,
+        "14:00",
+        "16:00",
+        "TABLE-00000"
+    )
 
-    # ==================================================================
-    print(f'\n{"FINAL":<10}:\t{ [f"{a.reservation_id} ({a.status.name})" for a in sys.reservations] } ')
+    test_reservation(
+        "DOUBLE BOOK - Overlap Time [EXPECT FAIL]",
+        member_db.user_id,
+        "BRCH-00000",
+        2,
+        test_date_db,
+        "15:00",
+        "17:00",
+        "TABLE-00000"
+    )
+
     print(f'\n{"":═^64}\n')

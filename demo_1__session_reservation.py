@@ -83,25 +83,25 @@ if __name__ == "__main__":
     # / ════════════════════════════════════════════════════════════════
 
     # try:
-        sys.make_reservation(
-            "MEMBER-00000",
-            "BRCH-00000",
-            2,
-            "2026-03-09",
-            "15:00",
-            "16:00",
-            "TABLE-00000",
-        )
+    sys.make_reservation(
+        "MEMBER-00000",
+        "BRCH-00000",
+        2,
+        "2026-03-09",
+        "15:00",
+        "16:00",
+        "TABLE-00000",
+    )
 
-        sys.make_reservation(
-            "MEMBER-00001",
-            "BRCH-00000",
-            4,
-            "2026-03-11",
-            "10:00",
-            "12:00",
-            "TABLE-00001",
-        )
+    sys.make_reservation(
+        "MEMBER-00001",
+        "BRCH-00000",
+        4,
+        "2026-03-11",
+        "10:00",
+        "12:00",
+        "TABLE-00001",
+    )
 
         # / ════════════════════════════════════════════════════════════════
 
@@ -155,23 +155,6 @@ if __name__ == "__main__":
     )
     print(f'\n{"":═^64}\n')
 
-        # / ════════════════════════════════════════════════════════════════
-
-        # / ════════════════════════════════════════════════════════════════
-
-        print(f'\n{" TEST - CANCEL RESERVATION ":═^64}\n')
-
-        print(
-            f'{"BEFORE":<10}:\t{ [f"{a.reservation_id} ({a.status.name})" for a in sys.reservations] } ',
-        )
-        
-        sys.cancel_reservation("RESV-00001")
-        
-        print(
-            f'{"AFTER":<10}:\t{ [f"{a.reservation_id} ({a.status.name})" for a in sys.reservations] } ',
-        )
-        print(f'\n{"":═^64}\n')
-
     # / ════════════════════════════════════════════════════════════════
 
     sys.update_order_preparing("PS-00000", "ORDER-00000")
@@ -185,6 +168,19 @@ if __name__ == "__main__":
     print(f'\n{"":═^64}\n')
 
     # / ════════════════════════════════════════════════════════════════
+
+    print(f'\n{" TEST - CANCEL RESERVATION ":═^64}\n')
+
+    print(
+        f'{"BEFORE":<10}:\t{ [f"{a.reservation_id} ({a.status.name})" for a in sys.reservations] } ',
+    )
+        
+    sys.cancel_reservation("RESV-00001")
+        
+    print(
+        f'{"AFTER":<10}:\t{ [f"{a.reservation_id} ({a.status.name})" for a in sys.reservations] } ',
+    )
+    print(f'\n{"":═^64}\n')
 
     # except ValueError as e:
     #     print(f'\n{" ERROR ":═^64}\n')
