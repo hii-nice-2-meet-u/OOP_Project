@@ -126,7 +126,10 @@ if __name__ == "__main__":
 
     # / ════════════════════════════════════════════════════════════════
 
-    a = sys.check_out_by_table_id("TABLE-00000")
+    a = sys.check_out(
+        "TABLE-00000",
+        datetime.now() + timedelta(hours=2),
+    )
     print(f'\n{" TEST - CHECK OUT ":═^64}\n')
     print(f'{"TOTAL":<10}:\t{ a } ')
     print(f'\n{"":═^64}\n')
