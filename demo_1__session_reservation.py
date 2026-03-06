@@ -148,34 +148,35 @@ if __name__ == "__main__":
         sys.update_order_preparing("PS-00000", "ORDER-00000")
         sys.update_order_serve("PS-00000", "ORDER-00000")
 
+    except Exception as e:
+        print(f'{"ERROR":<10}:\t{ e }')
+
     # / ════════════════════════════════════════════════════════════════
-# / ════════════════════════════════════════════════════════════════
+
 
     a = sys.check_out(
         "TABLE-00000",
-        "cash",
-        end_time=fake_time + timedelta(hours=2),  # ← explicit keyword
-        paid_amount=500
+        method_type="cash",
+        end_time=fake_time + timedelta(hours=2),
+        paid_amount=9999999999,
     )
 
     print(f'\n{" TEST - CHECK OUT ":═^64}\n')
     print(f'{"PAYMENT":<10}:\t{a} ')
     print(f'\n{"":═^64}\n')
 
-# / ════════════════════════════════════════════════════════════════
-# TEST CHECK OUT AGAIN (SHOULD ERROR)
+    # / ════════════════════════════════════════════════════════════════
+    # TEST CHECK OUT AGAIN (SHOULD ERROR)
 
     try:
-
         a = sys.check_out(
             "TABLE-00000",
-            "cash",
+            method_type="cash",
             end_time=fake_time + timedelta(hours=2),
-            paid_amount=500
+            paid_amount=500,
         )
 
     except ValueError as e:
-
         print(f'\n{" TEST - CHECK OUT AGAIN ":═^64}\n')
         print(f'{"ERROR":<10}:\t{ e } ')
         print(f'\n{"":═^64}\n')
