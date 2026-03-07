@@ -49,10 +49,13 @@ class Payment:
             self.__payment_time = datetime.datetime.now()
 
     def __str__(self):
-        return (f"Payment ID: {self.__payment_id} | "
-                f"Amount: {self.__amount:.2f} | "
-                f"Method: {self.__payment_method.__class__.__name__} | "
-                f"Time: {self.__payment_time}")
+        return (
+            f"Payment ID: {self.__payment_id} | "
+            f"Amount: {self.__amount:.2f} | "
+            f"Method: {self.__payment_method.__class__.__name__} | "
+            f"Time: {self.__payment_time}"
+        )
+
     # / ════════════════════════════════════════════════════════════════
     # - Methods
     # / ════════════════════════════════════════════════════════════════
@@ -69,7 +72,6 @@ class PaymentMethod(ABC):
     def __init__(self, method_id):
         self.__method_id = method_id
 
-
     # / ════════════════════════════════════════════════════════════════
     # - Getters
     # / ════════════════════════════════════════════════════════════════
@@ -85,8 +87,10 @@ class PaymentMethod(ABC):
     # / ════════════════════════════════════════════════════════════════
     # - Methods
     # / ════════════════════════════════════════════════════════════════
+
+    @abstractmethod
     def validate_method(self):
-        return True
+        pass
 
     # / ════════════════════════════════════════════════════════════════
 
@@ -97,6 +101,7 @@ class PaymentMethod(ABC):
 
 class CreditCard(PaymentMethod):
     __counter = 0
+
     def __init__(self, card_number, expiry_date, cvv):
         CreditCard.__counter += 1
         method_id = "CREDIT" + str(CreditCard.__counter).zfill(5)
@@ -141,24 +146,28 @@ class CreditCard(PaymentMethod):
 
 class Cash(PaymentMethod):
     __counter = 0
+
     def __init__(self, paid_amount):
         Cash.__counter += 1
         method_id = "CASH" + str(Cash.__counter).zfill(5)
         super().__init__(method_id)
         self.__paid_amount = paid_amount
         self.__change = 0
+
     # / ════════════════════════════════════════════════════════════════
     # - Getters
     # / ════════════════════════════════════════════════════════════════
     @property
     def change(self):
         return self.__change
+
     # / ════════════════════════════════════════════════════════════════
     # - Setters
     # / ════════════════════════════════════════════════════════════════
     @change.setter
     def change(self, change):
         self.__change = change
+
     # / ════════════════════════════════════════════════════════════════
     # - Methods
     # / ════════════════════════════════════════════════════════════════
@@ -175,6 +184,7 @@ class Cash(PaymentMethod):
 
 class OnlinePayment(PaymentMethod):
     __counter = 0
+
     def __init__(self, email):
         OnlinePayment.__counter += 1
         method_id = "ONLINE" + str(OnlinePayment.__counter).zfill(5)

@@ -287,10 +287,7 @@ class CafeSystem:
         if customer is None:
             raise ValueError("Customer not found.")
 
-        if hasattr(customer, "member_tier"):
-            tier = customer.member_tier
-        else:
-            tier = MemberTier.NONE_TIER
+        tier = customer.get_member_tier()
 
         # 🟢 ด่านที่ 1: ตรวจสอบกฎเวลาและระยะเวลา
         try:
@@ -298,7 +295,7 @@ class CafeSystem:
             self.__validate_advance_booking(date, tier)
             self.__validate_duration(start_time, end_time, tier)
         except ValueError:
-            raise
+            raise ValueError("Failed to make reservation.")
 
         branch = self.find_cafe_branch_by_id(branch_id)
         if branch is None:
@@ -315,7 +312,9 @@ class CafeSystem:
                         available_tables.append(table)
 
             if not available_tables:
-                raise ValueError("No available tables for the requested capacity and time.")
+                raise ValueError(
+                    "No available tables for the requested capacity and time."
+                )
 
             target_table = available_tables[0]
             for t in available_tables:
@@ -331,8 +330,12 @@ class CafeSystem:
                 raise ValueError("The specified table is not found.")
             if target_table.capacity < total_player:
                 raise ValueError("The specified table does not have enough capacity.")
-            if not self.__is_table_free(target_table.table_id, date, start_time, end_time):
-                raise ValueError("The specified table is already booked for this time slot.")
+            if not self.__is_table_free(
+                target_table.table_id, date, start_time, end_time
+            ):
+                raise ValueError(
+                    "The specified table is already booked for this time slot."
+                )
 
         # 🟢 ด่านที่ 3: ตรวจสอบโควตาการจองของสมาชิก
         self.__validate_active_quota(customer_id, tier)
@@ -340,7 +343,12 @@ class CafeSystem:
         # 🟢 ด่านที่ 4: สร้างการจอง
         try:
             new_resv = Reservation(
-                customer_id, branch_id, target_table.table_id, date, start_time, end_time
+                customer_id,
+                branch_id,
+                target_table.table_id,
+                date,
+                start_time,
+                end_time,
             )
             new_resv.status = ReservationStatus.PENDING
             self.add_reservation(new_resv)
@@ -426,13 +434,17 @@ class CafeSystem:
         reservation.status = status
 
     def set_reservation_cancel_by_id(self, reservation_id):
-        self.update_reservation_status_by_id(reservation_id, ReservationStatus.CANCELLED)
+        self.update_reservation_status_by_id(
+            reservation_id, ReservationStatus.CANCELLED
+        )
 
     def set_reservation_no_show_by_id(self, reservation_id):
         self.update_reservation_status_by_id(reservation_id, ReservationStatus.NO_SHOW)
 
     def set_reservation_complete_by_id(self, reservation_id):
-        self.update_reservation_status_by_id(reservation_id, ReservationStatus.COMPLETED)
+        self.update_reservation_status_by_id(
+            reservation_id, ReservationStatus.COMPLETED
+        )
 
     # / ════════════════════════════════════════════════════════════════
     # \ PRIVATE HELPER METHODS (BUSINESS RULES VALIDATION)
@@ -534,14 +546,18 @@ class CafeSystem:
             max_dur_hrs = 999
 
         if duration_hrs > max_dur_hrs:
-            limit_str = "Unlimited" if tier == MemberTier.PLATINUM else f"{max_dur_hrs} hours"
+            limit_str = (
+                "Unlimited" if tier == MemberTier.PLATINUM else f"{max_dur_hrs} hours"
+            )
             raise ValueError(
                 f"Maximum duration exceeded. Your tier allows up to {limit_str} per session."
             )
 
     def __validate_minimum_lead_time(self, date_str, start_time):
         try:
-            resv_datetime = datetime.strptime(f"{date_str} {start_time}", "%Y-%m-%d %H:%M")
+            resv_datetime = datetime.strptime(
+                f"{date_str} {start_time}", "%Y-%m-%d %H:%M"
+            )
         except ValueError:
             raise ValueError("Invalid date/time format. Expected YYYY-MM-DD and HH:MM.")
 
@@ -591,7 +607,9 @@ class CafeSystem:
                 if timedelta(hours=0) <= time_diff <= timedelta(hours=1):
                     self.update_table_status(reservation.table_id, TableStatus.RESERVED)
                 elif time_diff < timedelta(hours=0):
-                    self.update_table_status(reservation.table_id, TableStatus.AVAILABLE)
+                    self.update_table_status(
+                        reservation.table_id, TableStatus.AVAILABLE
+                    )
             except (ValueError, TypeError):
                 continue  # ข้ามการจองที่มีข้อมูลผิดพลาด
 
@@ -649,7 +667,9 @@ class CafeSystem:
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
         try:
-            return cafe_branch.add_board_game(name, genre, price, min_players, max_players, description)
+            return cafe_branch.add_board_game(
+                name, genre, price, min_players, max_players, description
+            )
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to add board game: {e}")
 
@@ -737,7 +757,9 @@ class CafeSystem:
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to create food item: {e}")
 
-    def create_menu_item_drink_to_branch(self, branch_id, name, price, cup_size="S", description=""):
+    def create_menu_item_drink_to_branch(
+        self, branch_id, name, price, cup_size="S", description=""
+    ):
         try:
             validate_id(branch_id, ["BRCH"])
         except ValueError:
@@ -746,7 +768,9 @@ class CafeSystem:
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
         try:
-            return cafe_branch.create_menu_item_drink(name, price, cup_size, description)
+            return cafe_branch.create_menu_item_drink(
+                name, price, cup_size, description
+            )
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to create drink item: {e}")
 
@@ -826,7 +850,9 @@ class CafeSystem:
     # / ════════════════════════════════════════════════════════════════
     # \ GAME SESSION - CHECK-IN
 
-    def check_in_reserved(self, reservation_id, customer_id, current_time=datetime.now()):
+    def check_in_reserved(
+        self, reservation_id, customer_id, current_time=datetime.now()
+    ):
         try:
             validate_id(reservation_id, ["RESV"])
             validate_id(customer_id, ["MEMBER", "WALK"])
@@ -848,7 +874,9 @@ class CafeSystem:
         late_limit = reservation.reservation_time + timedelta(minutes=15)
         if now > late_limit:
             reservation.status = ReservationStatus.NO_SHOW
-            raise ValueError("Check-in failed: You are more than 15 minutes late. Marked as No-Show.")
+            raise ValueError(
+                "Check-in failed: You are more than 15 minutes late. Marked as No-Show."
+            )
 
         if reservation.status != ReservationStatus.PENDING:
             raise ValueError("Can't check in reservation that already completed")
@@ -874,7 +902,9 @@ class CafeSystem:
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to create play session: {e}")
 
-    def check_in_walk_in(self, branch_id, player_amount, table_id="auto", start_time=None):
+    def check_in_walk_in(
+        self, branch_id, player_amount, table_id="auto", start_time=None
+    ):
         try:
             validate_id(branch_id, ["BRCH"])
         except ValueError:
@@ -916,7 +946,9 @@ class CafeSystem:
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to create walk-in session: {e}")
 
-    def check_in_member(self, branch_id, player_amount, member_id, table_id="auto", start_time=None):
+    def check_in_member(
+        self, branch_id, player_amount, member_id, table_id="auto", start_time=None
+    ):
         try:
             validate_id(branch_id, ["BRCH"])
             validate_id(member_id, ["MEMBER"])
@@ -1259,7 +1291,9 @@ class CafeSystem:
                 raise ValueError(f"Invalid online payment details: {e}")
 
         else:
-            raise ValueError(f"Invalid payment method: '{method_type}'. Allowed: 'cash', 'card', 'online'")
+            raise ValueError(
+                f"Invalid payment method: '{method_type}'. Allowed: 'cash', 'card', 'online'"
+            )
 
         try:
             if payment_method.validate_method():
@@ -1361,8 +1395,12 @@ class CafeBranch:
     # / ════════════════════════════════════════════════════════════════
     # \ BOARD GAME
 
-    def add_board_game(self, name, genre, price, min_players, max_players, description=""):
-        new_board_game = BoardGame(name, genre, price, min_players, max_players, description)
+    def add_board_game(
+        self, name, genre, price, min_players, max_players, description=""
+    ):
+        new_board_game = BoardGame(
+            name, genre, price, min_players, max_players, description
+        )
         self.__board_games.append(new_board_game)
         return new_board_game
 
