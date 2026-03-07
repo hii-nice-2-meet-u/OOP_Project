@@ -115,6 +115,7 @@ class CafeSystem:
         owner = self.find_person_by_id(owner_id)
         if owner is None:
             raise ValueError("Owner not found")
+
         try:
             cafe_branch.add_owner(owner)
         except TypeError as e:
@@ -163,10 +164,6 @@ class CafeSystem:
         return [person for person in self.__person if isinstance(person, person_type)]
 
     def find_person_by_id(self, user_id):
-        try:
-            validate_id(user_id, ["OWNER", "MANAGER", "STAFF", "MEMBER", "WALK"])
-        except ValueError:
-            raise
         for person in self.__person:
             if person.user_id == user_id:
                 return person
@@ -174,18 +171,21 @@ class CafeSystem:
 
     def remove_person_by_id(self, user_id):
         try:
-            person = self.find_person_by_id(user_id)
+            validate_id(user_id, ["OWNER", "MANAGER", "STAFF", "MEMBER", "WALK"])
         except ValueError:
             raise
+            person = self.find_person_by_id(user_id)
         if person is None:
             raise ValueError("Invalid ID : Person not found")
         self.__person.remove(person)
 
     def update_person_by_id(self, user_id, name):
         try:
-            person = self.find_person_by_id(user_id)
+            validate_id(user_id, ["OWNER", "MANAGER", "STAFF", "MEMBER", "WALK"])
         except ValueError:
             raise
+
+            person = self.find_person_by_id(user_id)
         if person is None:
             raise ValueError("Invalid ID : Person not found")
         try:
@@ -200,9 +200,11 @@ class CafeSystem:
         try:
             if not isinstance(cafe_branch_name, str) or not cafe_branch_name.strip():
                 raise ValueError("Branch name must be a non-empty string")
+
             new_cafe_branch = CafeBranch(cafe_branch_name, cafe_branch_location)
             self.__cafe_branches.append(new_cafe_branch)
             return new_cafe_branch
+
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to create cafe branch: {e}")
 
@@ -210,32 +212,29 @@ class CafeSystem:
         return self.cafe_branches
 
     def find_cafe_branch_by_id(self, _id):
-        try:
-            if not isinstance(_id, str):
-                return None
-            if _id.startswith("BRCH-"):
-                for cafe_branch in self.__cafe_branches:
-                    if cafe_branch.branch_id == _id:
-                        return cafe_branch
-            elif _id.startswith("PS-"):
-                for cafe_branch in self.__cafe_branches:
-                    if cafe_branch.find_play_session_by_id(_id):
-                        return cafe_branch
-            elif _id.startswith("TABLE-"):
-                for cafe_branch in self.__cafe_branches:
-                    if cafe_branch.find_table_by_id(_id):
-                        return cafe_branch
-            elif _id.startswith("BG-"):
-                for cafe_branch in self.__cafe_branches:
-                    if cafe_branch.find_board_game_by_id(_id):
-                        return cafe_branch
-            elif _id.startswith("FOOD-") or _id.startswith("DRINK-"):
-                for cafe_branch in self.__cafe_branches:
-                    if cafe_branch.find_menu_item_by_id(_id):
-                        return cafe_branch
+        if not isinstance(_id, str):
             return None
-        except Exception:
-            return None
+        if _id.startswith("BRCH-"):
+            for cafe_branch in self.__cafe_branches:
+                if cafe_branch.branch_id == _id:
+                    return cafe_branch
+        elif _id.startswith("PS-"):
+            for cafe_branch in self.__cafe_branches:
+                if cafe_branch.find_play_session_by_id(_id):
+                    return cafe_branch
+        elif _id.startswith("TABLE-"):
+            for cafe_branch in self.__cafe_branches:
+                if cafe_branch.find_table_by_id(_id):
+                    return cafe_branch
+        elif _id.startswith("BG-"):
+            for cafe_branch in self.__cafe_branches:
+                if cafe_branch.find_board_game_by_id(_id):
+                    return cafe_branch
+        elif _id.startswith("FOOD-") or _id.startswith("DRINK-"):
+            for cafe_branch in self.__cafe_branches:
+                if cafe_branch.find_menu_item_by_id(_id):
+                    return cafe_branch
+        return None
 
     def remove_cafe_branch_by_id(self, cafe_branch_id):
         try:
@@ -295,7 +294,7 @@ class CafeSystem:
             self.__validate_advance_booking(date, tier)
             self.__validate_duration(start_time, end_time, tier)
         except ValueError:
-            raise ValueError("Failed to make reservation: {e}")
+            raise
 
         branch = self.find_cafe_branch_by_id(branch_id)
         if branch is None:
