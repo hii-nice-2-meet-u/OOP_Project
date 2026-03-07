@@ -1,4 +1,4 @@
-from BGC import *
+from src.BGC import *
 from datetime import datetime, timedelta
 
 fake_time = datetime(2026, 3, 9, 15, 5, 0)
@@ -59,16 +59,16 @@ if __name__ == "__main__":
 
     sys.create_menu_to_branch("BRCH-00000")
     sys.create_menu_item_food_to_branch(
-        "BRCH-00000", "ITEM_FOOD_1", 10, "DESCRIPTION FOOD TEST 1"
+        "BRCH-00000", "ITEM_FOOD_1", 10.00, "DESCRIPTION FOOD TEST 1"
     )
     sys.create_menu_item_food_to_branch(
-        "BRCH-00000", "ITEM_FOOD_2", 20, "DESCRIPTION FOOD TEST 2"
+        "BRCH-00000", "ITEM_FOOD_2", 20.00, "DESCRIPTION FOOD TEST 2"
     )
     sys.create_menu_item_drink_to_branch(
-        "BRCH-00000", "ITEM_DRINK_1", 10, "DESCRIPTION DRINK TEST 1"
+        "BRCH-00000", "ITEM_DRINK_1", 10.00, "DESCRIPTION DRINK TEST 1"
     )
     sys.create_menu_item_drink_to_branch(
-        "BRCH-00000", "ITEM_DRINK_2", 20, "DESCRIPTION DRINK TEST 2"
+        "BRCH-00000", "ITEM_DRINK_2", 20.00, "DESCRIPTION DRINK TEST 2"
     )
 
     # / ════════════════════════════════════════════════════════════════
@@ -79,7 +79,7 @@ if __name__ == "__main__":
 
     # / ════════════════════════════════════════════════════════════════
 
-    play_session = sys.check_in_walk_in("BRCH-00000", 2, start_time=fake_time)
+    play_session = sys.check_in_member("BRCH-00000", 2, "MEMBER-00000", start_time=fake_time)
 
     # / ════════════════════════════════════════════════════════════════
 
@@ -88,7 +88,6 @@ if __name__ == "__main__":
         f'{"BEFORE":<10}:\t{ play_session.current_players_id } ',
     )
     sys.join_session("PS-00000", "MEMBER-00001")
-    sys.join_session("PS-00000")
     sys.join_session("PS-00000")
     print(
         f'{"AFTER":<10}:\t{ play_session.current_players_id } ',
@@ -132,7 +131,7 @@ if __name__ == "__main__":
 
     # / ════════════════════════════════════════════════════════════════
 
-    # FIX: ส่ง end_time เป็น keyword arg, เพิ่ม method_type และ paid_amount
+
     a = sys.check_out(
         "TABLE-00000",
         method_type="cash",
@@ -144,17 +143,3 @@ if __name__ == "__main__":
     print(f'\n{"":═^64}\n')
 
     # / ════════════════════════════════════════════════════════════════
-
-    try:
-        a = sys.check_out(
-            "TABLE-00000",
-            method_type="cash",
-            end_time=fake_time + timedelta(hours=2),
-            paid_amount=500,
-        )
-    except ValueError as e:
-        print(f'\n{" TEST - CHECK OUT AGAIN ":═^64}\n')
-        print(f'{"ERROR":<10}:\t{ e } ')
-        print(f'\n{"":═^64}\n')
-
-# / ════════════════════════════════════════════════════════════════

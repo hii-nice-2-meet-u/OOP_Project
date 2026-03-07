@@ -1,4 +1,4 @@
-from BGC import *
+from src.BGC import *
 from datetime import datetime, timedelta
 from ENUM_STATUS import MemberTier
 
