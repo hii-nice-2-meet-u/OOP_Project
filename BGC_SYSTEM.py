@@ -206,7 +206,7 @@ class CafeSystem:
     def find_cafe_branch_by_id(self, _id):
         if not isinstance(_id, str):
             return None
-
+        
         if _id.startswith("BRCH-"):
             for cafe_branch in self.__cafe_branches:
                 if cafe_branch.branch_id == _id:
@@ -230,6 +230,14 @@ class CafeSystem:
 
         return None
 
+    def find_cafe_branch_by_name(self, name):
+        if not isinstance(name, str):
+            return None
+        for cafe_branch in self.__cafe_branches:
+            if cafe_branch.name == name:
+                return cafe_branch
+        return None
+    
     def remove_cafe_branch_by_id(self, cafe_branch_id):
         validate_id(cafe_branch_id, ["BRCH"])
 
