@@ -1,4 +1,4 @@
-from src.BGC import *
+from BGC import *
 from datetime import datetime, timedelta
 
 fake_time = datetime(2026, 3, 9, 15, 5, 0)
@@ -100,12 +100,9 @@ if __name__ == "__main__":
     print(
         f'{"BEFORE":<10}:\t{ play_session.current_board_games_id } ',
     )
-    try:
-        sys.borrow_board_game("TABLE-00000", "BG-00000")
-        sys.borrow_board_game("TABLE-00000", "BG-00001")
-        sys.borrow_board_game("TABLE-00000", "BG-00002")
-    except ValueError as e:
-        print(f"  [Borrow limit] {e}")
+    sys.borrow_board_game("TABLE-00000", "BG-00000")
+    sys.borrow_board_game("TABLE-00000", "BG-00001")
+    sys.borrow_board_game("TABLE-00000", "BG-00002")
     print(
         f'{"AFTER":<10}:\t{ play_session.current_board_games_id } ',
     )

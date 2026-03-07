@@ -8,10 +8,6 @@ from ENUM_STATUS import OrderStatus
 
 class MenuItem(ABC):
     def __init__(self, item_id, name, price, is_available=None, description=""):
-        if not isinstance(name, str) or not name.strip():
-            raise ValueError("Menu item name must be a non-empty string")
-        if not isinstance(price, (int, float)) or price < 0:
-            raise ValueError("Price must be a non-negative number")
         self.__item_id = item_id
         self.__name = name
         self.__price = price
@@ -48,18 +44,14 @@ class MenuItem(ABC):
 
     @name.setter
     def name(self, name):
-        if not isinstance(name, str) or not name.strip():
-            raise ValueError("Name must be a non-empty string")
         self.__name = name
 
     @price.setter
     def price(self, price):
-        if not isinstance(price, (int, float)) or price < 0:
-            raise ValueError("Price must be a non-negative number")
         self.__price = price
 
     @is_available.setter
-    def is_available(self, is_available):
+    def availability(self, is_available):
         self.__is_available = is_available
 
     @description.setter
@@ -67,13 +59,8 @@ class MenuItem(ABC):
         self.__description = description
 
     # / ════════════════════════════════════════════════════════════════
-    # - Abstract Methods (Polymorphism)
+    # - Methods
     # / ════════════════════════════════════════════════════════════════
-
-    @abstractmethod
-    def get_category(self) -> str:
-        """คืนประเภทของ menu item"""
-        pass
 
     # / ════════════════════════════════════════════════════════════════
 
@@ -91,11 +78,16 @@ class Food(MenuItem):
         super().__init__(temp_id, name, price, is_available, description)
 
     # / ════════════════════════════════════════════════════════════════
-    # - Methods
+    # - Getters
     # / ════════════════════════════════════════════════════════════════
 
-    def get_category(self) -> str:
-        return "Food"
+    # / ════════════════════════════════════════════════════════════════
+    # - Setters
+    # / ════════════════════════════════════════════════════════════════
+
+    # / ════════════════════════════════════════════════════════════════
+    # - Methods
+    # / ════════════════════════════════════════════════════════════════
 
     # / ════════════════════════════════════════════════════════════════
 
@@ -133,13 +125,10 @@ class Drink(MenuItem):
     # - Methods
     # / ════════════════════════════════════════════════════════════════
 
-    def get_category(self) -> str:
-        return "Drink"
-
-    # / ════════════════════════════════════════════════════════════════
+    # / ================================================================
 
 
-# | ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+# | ================================================================================================================================
 # | #EFFF11
 
 
@@ -147,22 +136,32 @@ class MenuList:
     def __init__(self):
         self.__menu_items = []
 
-    # / ════════════════════════════════════════════════════════════════
+    # / ================================================================
     # - Getters
-    # / ════════════════════════════════════════════════════════════════
+    # / ================================================================
 
     @property
     def menu_items(self):
         return self.__menu_items.copy()
 
-    # / ════════════════════════════════════════════════════════════════
+    # / ================================================================
+    # - Setters
+    # / ================================================================
+
+    # / ================================================================
     # - Methods
-    # / ════════════════════════════════════════════════════════════════
+    # / ================================================================
 
     def add_menu_item(self, menu_item):
         if not isinstance(menu_item, MenuItem):
             raise ValueError("Invalid menu item")
         self.__menu_items.append(menu_item)
+
+    def get_menu_item(self, item_id):
+        for item in self.__menu_items:
+            if item.item_id == item_id:
+                return item
+        return None
 
     def get_menu_item_food(self):
         return [item for item in self.__menu_items if isinstance(item, Food)]
@@ -184,10 +183,10 @@ class MenuList:
             item for item in self.__menu_items if item.item_id != item_id
         ]
 
-    # / ════════════════════════════════════════════════════════════════
+    # / ================================================================
 
 
-# | ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+# | ================================================================================================================================
 # | #EFFF11
 
 
@@ -221,16 +220,22 @@ class Order:
         return self.__menu_items.price
 
     # / ════════════════════════════════════════════════════════════════
+    # - Setters
+    # / ════════════════════════════════════════════════════════════════
+
+    @status.setter
+    def status(self, status):
+        self.__status = status
+
+    # / ════════════════════════════════════════════════════════════════
     # - Methods
     # / ════════════════════════════════════════════════════════════════
 
     def set_order_status(self, status):
-        if not isinstance(status, OrderStatus):
-            raise ValueError("Status must be an OrderStatus enum value")
         self.__status = status
 
     def set_order_preparing(self):
-        self.__status = OrderStatus.PREPARING
+        self.__status = OrderStatus.CANCELLED
 
     def set_order_serve(self):
         self.__status = OrderStatus.SERVED

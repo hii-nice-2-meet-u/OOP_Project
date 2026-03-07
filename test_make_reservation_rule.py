@@ -228,7 +228,6 @@ if __name__ == "__main__":
         "10:00",
         "12:00",
     )
-
     test_reservation(
         "QUOTA - Gold (3rd Booking) [EXPECT FAIL]",
         member_gold.user_id,

@@ -29,25 +29,15 @@ class Person(ABC):
 
     @name.setter
     def name(self, value):
-        if not isinstance(value, str) or not value.strip():
-            raise ValueError("Name must be a non-empty string")
         self.__name = value
 
-    # / ════════════════════════════════════════════════════════════════
-    # - Abstract Methods (Polymorphism — subclass ทุกตัวต้อง override)
-    # / ════════════════════════════════════════════════════════════════
-
-    @abstractmethod
-    def get_role(self) -> str:
-        """คืนชื่อ role ของ person นั้นๆ"""
-        pass
+    @user_id.setter
+    def user_id(self, value):
+        self.__user_id = value
 
     # / ════════════════════════════════════════════════════════════════
     # - Methods
     # / ════════════════════════════════════════════════════════════════
-
-    def __repr__(self):
-        return f"<{self.get_role()} id={self.__user_id} name='{self.__name}'>"
 
     # / ════════════════════════════════════════════════════════════════
 
@@ -61,12 +51,16 @@ class Customer(Person):
         super().__init__(name, user_id)
 
     # / ════════════════════════════════════════════════════════════════
-    # - Abstract Methods
+    # - Getters
     # / ════════════════════════════════════════════════════════════════
 
-    @abstractmethod
-    def get_role(self) -> str:
-        pass
+    # / ════════════════════════════════════════════════════════════════
+    # - Setters
+    # / ════════════════════════════════════════════════════════════════
+
+    # / ════════════════════════════════════════════════════════════════
+    # - Methods
+    # / ════════════════════════════════════════════════════════════════
 
     # / ════════════════════════════════════════════════════════════════
 
@@ -86,6 +80,7 @@ class Member(Customer):
         self.__total_spent = 0
         self.__member_tier = MemberTier.NONE_TIER
         self.__birth_date = ""
+        # self.__is_student = False
 
     # / ════════════════════════════════════════════════════════════════
     # - Getters
@@ -103,33 +98,34 @@ class Member(Customer):
     def birth_date(self):
         return self.__birth_date
 
+    @property
+    def is_student(self):
+        return self.__is_student
+
     # / ════════════════════════════════════════════════════════════════
     # - Setters
     # / ════════════════════════════════════════════════════════════════
 
     @total_spent.setter
     def total_spent(self, amount):
-        if not isinstance(amount, (int, float)) or amount < 0:
-            raise ValueError("Amount must be a non-negative number")
         self.__total_spent += amount
         self.__update_member_tier()
 
     @member_tier.setter
     def member_tier(self, tier):
-        if not isinstance(tier, MemberTier):
-            raise ValueError("Tier must be a MemberTier enum value")
         self.__member_tier = tier
 
     @birth_date.setter
     def birth_date(self, date):
         self.__birth_date = date
 
+    @is_student.setter
+    def is_student(self, value):
+        self.__is_student = value
+
     # / ════════════════════════════════════════════════════════════════
     # - Methods
     # / ════════════════════════════════════════════════════════════════
-
-    def get_role(self) -> str:
-        return "Member"
 
     def __update_member_tier(self):
         if self.__total_spent >= 2000:
@@ -170,11 +166,16 @@ class WalkInCustomer(Customer):
         super().__init__("J-doe", temp_id)
 
     # / ════════════════════════════════════════════════════════════════
-    # - Methods
+    # - Getters
     # / ════════════════════════════════════════════════════════════════
 
-    def get_role(self) -> str:
-        return "WalkInCustomer"
+    # / ════════════════════════════════════════════════════════════════
+    # - Setters
+    # / ════════════════════════════════════════════════════════════════
+
+    # / ════════════════════════════════════════════════════════════════
+    # - Methods
+    # / ════════════════════════════════════════════════════════════════
 
     # / ════════════════════════════════════════════════════════════════
 
@@ -202,17 +203,11 @@ class NonCustomer(Person):
 
     @salary.setter
     def salary(self, amount):
-        if not isinstance(amount, (int, float)) or amount < 0:
-            raise ValueError("Salary must be a non-negative number")
         self.__salary = amount
 
     # / ════════════════════════════════════════════════════════════════
-    # - Abstract Methods
+    # - Methods
     # / ════════════════════════════════════════════════════════════════
-
-    @abstractmethod
-    def get_role(self) -> str:
-        pass
 
     # / ════════════════════════════════════════════════════════════════
 
@@ -228,30 +223,27 @@ class Manager(NonCustomer):
         temp_id = "MANAGER-" + str(Manager.__counter).zfill(5)
         Manager.__counter += 1
         super().__init__(name, temp_id)
-        self.__managed_branch = None
+        self.__managed_branches = None
 
     # / ════════════════════════════════════════════════════════════════
     # - Getters
     # / ════════════════════════════════════════════════════════════════
 
     @property
-    def managed_branch(self):
-        return self.__managed_branch
+    def managed_branches(self):
+        return self.__managed_branches
 
     # / ════════════════════════════════════════════════════════════════
     # - Setters
     # / ════════════════════════════════════════════════════════════════
 
-    @managed_branch.setter
-    def managed_branch(self, branch):
-        self.__managed_branch = branch
+    @managed_branches.setter
+    def managed_branches(self, branches):
+        self.__managed_branches = branches
 
     # / ════════════════════════════════════════════════════════════════
     # - Methods
     # / ════════════════════════════════════════════════════════════════
-
-    def get_role(self) -> str:
-        return "Manager"
 
     # / ════════════════════════════════════════════════════════════════
 
@@ -278,11 +270,16 @@ class Owner(NonCustomer):
         return self.__owned_branches.copy()
 
     # / ════════════════════════════════════════════════════════════════
-    # - Methods
+    # - Setters
     # / ════════════════════════════════════════════════════════════════
 
-    def get_role(self) -> str:
-        return "Owner"
+    @owned_branches.setter
+    def owned_branches(self, branches):
+        self.__owned_branches = branches
+
+    # / ════════════════════════════════════════════════════════════════
+    # - Methods
+    # / ════════════════════════════════════════════════════════════════
 
     # / ════════════════════════════════════════════════════════════════
 
@@ -319,9 +316,6 @@ class Staff(NonCustomer):
     # / ════════════════════════════════════════════════════════════════
     # - Methods
     # / ════════════════════════════════════════════════════════════════
-
-    def get_role(self) -> str:
-        return "Staff"
 
     # / ════════════════════════════════════════════════════════════════
 

@@ -1,6 +1,8 @@
-from src.BGC import *
+from BGC import *
 from datetime import datetime, timedelta
 
+# สมมติว่าคุณจองไว้ตอน 15:00 ของวันที่ 9 มีนาคม 2026
+# เราสร้างเวลาปลอมเป็น 15:05 (ไม่เร็วไป และไม่สายเกิน 15 นาที)
 fake_time = datetime(2026, 3, 9, 15, 5, 0)
 
 if __name__ == "__main__":
@@ -12,6 +14,7 @@ if __name__ == "__main__":
     sys.create_manager("MANAGER_A")
     sys.create_staff("STAFF_A")
     sys.create_customer_member("MEMBER_A")
+    sys.create_customer_member("MEMBER_B")
 
     # / ════════════════════════════════════════════════════════════════
 
@@ -79,19 +82,45 @@ if __name__ == "__main__":
 
     # / ════════════════════════════════════════════════════════════════
 
-    play_session = sys.check_in_walk_in("BRCH-00000", 2, start_time=fake_time)
+    # try:
+    sys.make_reservation(
+        "MEMBER-00000",
+        "BRCH-00000",
+        2,
+        "2026-03-09",
+        "15:00",
+        "16:00",
+        "TABLE-00000",
+    )
+
+    sys.make_reservation(
+        "MEMBER-00001",
+        "BRCH-00000",
+        4,
+        "2026-03-11",
+        "10:00",
+        "12:00",
+        "TABLE-00001",
+    )
+
+    # / ════════════════════════════════════════════════════════════════
+
+    play_session = sys.check_in_reserved(
+        "RESV-00000", "MEMBER-00000", current_time=fake_time
+    )
 
     # / ════════════════════════════════════════════════════════════════
 
     print(f'\n{" TEST - ADD CUSTOMER TO SESSION ":═^64}\n')
     print(
-        f'{"BEFORE":<10}:\t{ play_session.current_players_id } ',
+        f'{"BEFORE":<10}:\t{play_session.current_players_id} ',
     )
+
     sys.join_session("PS-00000", "MEMBER-00001")
     sys.join_session("PS-00000")
-    sys.join_session("PS-00000")
+
     print(
-        f'{"AFTER":<10}:\t{ play_session.current_players_id } ',
+        f'{"AFTER":<10}:\t{play_session.current_players_id} ',
     )
     print(f'\n{"":═^64}\n')
 
@@ -99,29 +128,30 @@ if __name__ == "__main__":
 
     print(f'\n{" TEST - BORROW BOARD GAME ":═^64}\n')
     print(
-        f'{"BEFORE":<10}:\t{ play_session.current_board_games_id } ',
+        f'{"BEFORE":<10}:\t{play_session.current_board_games_id} ',
     )
-    try:
-        sys.borrow_board_game("TABLE-00000", "BG-00000")
-        sys.borrow_board_game("TABLE-00000", "BG-00001")
-        sys.borrow_board_game("TABLE-00000", "BG-00002")
-    except ValueError as e:
-        print(f"  [Borrow limit] {e}")
+
+    sys.borrow_board_game("TABLE-00000", "BG-00000")
+    sys.borrow_board_game("TABLE-00000", "BG-00001")
+    sys.borrow_board_game("TABLE-00000", "BG-00002")
     print(
-        f'{"AFTER":<10}:\t{ play_session.current_board_games_id } ',
+        f'{"AFTER":<10}:\t{play_session.current_board_games_id} ',
     )
+
     print(f'\n{"":═^64}\n')
 
     # / ════════════════════════════════════════════════════════════════
 
     print(f'\n{" TEST - TAKE ORDER ":═^64}\n')
     print(
-        f'{"BEFORE":<10}:\t{ [a.menu_items.name for a in play_session.current_order] } ',
+        f'{"BEFORE":<10}:\t{[a.menu_items.name for a in play_session.current_order]} ',
     )
+
     sys.take_order("TABLE-00000", "FOOD-00000")
     sys.take_order("TABLE-00000", "DRINK-00000")
+
     print(
-        f'{"AFTER":<10}:\t{ [a.menu_items.name for a in play_session.current_order] } ',
+        f'{"AFTER":<10}:\t{[a.menu_items.name for a in play_session.current_order]} ',
     )
     print(f'\n{"":═^64}\n')
 
@@ -132,18 +162,19 @@ if __name__ == "__main__":
 
     # / ════════════════════════════════════════════════════════════════
 
-    # FIX: ส่ง end_time เป็น keyword arg, เพิ่ม method_type และ paid_amount
     a = sys.check_out(
         "TABLE-00000",
         method_type="cash",
         end_time=fake_time + timedelta(hours=2),
-        paid_amount=500,
+        paid_amount=9999999999,
     )
+
     print(f'\n{" TEST - CHECK OUT ":═^64}\n')
-    print(f'{"PAYMENT":<10}:\t{ a } ')
+    print(f'{"PAYMENT":<10}:\t{a} ')
     print(f'\n{"":═^64}\n')
 
     # / ════════════════════════════════════════════════════════════════
+    # TEST CHECK OUT AGAIN (SHOULD ERROR)
 
     try:
         a = sys.check_out(
@@ -152,9 +183,10 @@ if __name__ == "__main__":
             end_time=fake_time + timedelta(hours=2),
             paid_amount=500,
         )
+
     except ValueError as e:
         print(f'\n{" TEST - CHECK OUT AGAIN ":═^64}\n')
-        print(f'{"ERROR":<10}:\t{ e } ')
+        print(f'{"ERROR":<10}:\t{e} ')
         print(f'\n{"":═^64}\n')
 
 # / ════════════════════════════════════════════════════════════════
