@@ -1,4 +1,4 @@
-from src.BGC import *
+from BGC import *
 from datetime import datetime, timedelta
 
 if __name__ == "__main__":

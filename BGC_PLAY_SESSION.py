@@ -102,8 +102,7 @@ class BoardGame:
     # / ════════════════════════════════════════════════════════════════
     # - Methods
     # / ════════════════════════════════════════════════════════════════
-    def __repr__(self):
-        return f"<BoardGame {self.__board_game_id} '{self.__name}' ฿{self.__price} [{self.__status.value}]>"
+
     # / ════════════════════════════════════════════════════════════════
 
 
@@ -215,7 +214,7 @@ class PlaySession:
     @property
     def payment(self):
         return self.__payment
-    
+
     @property
     def game_penalty(self):
         return self.__game_penalty.copy()
@@ -237,15 +236,15 @@ class PlaySession:
     # / ════════════════════════════════════════════════════════════════
     # - Methods
     # / ════════════════════════════════════════════════════════════════
-    
+
     def add_players_id(self, player_id):
         self.__current_players_id.append(player_id)
 
     def add_board_games_id(self, board_game_id):
         self.__current_board_games_id.append(board_game_id)
-        
-    def add_game_penalty(self, board_game_id):
-        self.__game_penalty.append(board_game_id)
+
+    def add_game_penalty(self, game_id):
+        self.__game_penalty.append(game_id)
 
     def get_total_players(self):
         return len(self.__current_players_id)
