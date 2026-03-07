@@ -236,6 +236,14 @@ class CafeSystem:
             return None
         except Exception:
             return None
+    
+    def find_cafe_branch_by_name(self, name):
+        if not isinstance(name, str):
+            return None
+        for cafe_branch in self.__cafe_branches:
+            if cafe_branch.name == name:
+                return cafe_branch
+        return None
 
     def remove_cafe_branch_by_id(self, cafe_branch_id):
         try:
