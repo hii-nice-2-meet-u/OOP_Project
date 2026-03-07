@@ -983,14 +983,14 @@ class CafeSystem:
             raise ValueError("Play Session not found")
 
         if len(play_session.current_board_games_id) + 1 > 2:
-            return None
+            raise ValueError("Maximum 2 board games per session")
 
         board_game = cafe_branch.find_board_game_by_id(board_game_id)
         if board_game is None:
             raise ValueError("Board Game not found")
 
         if board_game.status != BoardGameStatus.AVAILABLE:
-            return None
+            raise ValueError("Board Game is not available")
 
         try:
             play_session.add_board_games_id(board_game_id)
@@ -999,12 +999,9 @@ class CafeSystem:
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to borrow board game: {e}")
 
-    def return_board_game(self, any_id, board_game_id, is_damaged=False):
+    def return_board_game(self, any_id, board_game_id):
         validate_id(any_id, ["TABLE", "PS"])
         validate_id(board_game_id, ["BG"])
-
-        if not isinstance(is_damaged, bool):
-            raise ValueError("is_damaged must be a boolean value")
 
         cafe_branch = self.find_cafe_branch_by_id(any_id)
         if cafe_branch is None:
@@ -1019,7 +1016,7 @@ class CafeSystem:
             raise ValueError("Board Game not found")
 
         try:
-            if is_damaged:
+            if self.check_board_game_damage():
                 board_game.status = BoardGameStatus.MAINTENANCE
                 play_session.add_game_penalty(board_game_id)
             else:
@@ -1028,6 +1025,10 @@ class CafeSystem:
             return board_game
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to return board game: {e}")
+
+    # 10% chance of damage : simulate chance of damage in real life situation
+    def check_board_game_damage(self):
+        return random.random() < 0.1
 
     def maintenance_board_game(self, board_game_id):
         validate_id(board_game_id, ["BG"])
