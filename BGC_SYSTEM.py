@@ -20,6 +20,8 @@ def get_validate_id(_id, list_type_id):
 
 
 def validate_id(_id, list_type_id):
+    if not isinstance(_id, str) or not _id.strip():
+        raise ValueError("Invalid ID : ID must be a non-empty string")
     if not get_validate_id(_id, list_type_id):
         raise ValueError(f"Invalid ID : ID must be start with {list_type_id}")
 
@@ -51,86 +53,108 @@ class CafeSystem:
         return self.__reservations.copy()
 
     # / ════════════════════════════════════════════════════════════════
-    # - Setters
-    # / ════════════════════════════════════════════════════════════════
-
-    # / ════════════════════════════════════════════════════════════════
     # - Methods
     # / ════════════════════════════════════════════════════════════════
     # \ PERSON METHOD
 
     def add_person(self, person):
-        if isinstance(person, Person):
-            self.__person.append(person)
-        else:
+        if not isinstance(person, Person):
             raise TypeError("Type Error : must be an instance of Person")
+        self.__person.append(person)
 
     def create_owner(self, name):
-        new_owner = Owner(name)
-        self.add_person(new_owner)
-        return new_owner
+        try:
+            new_owner = Owner(name)
+            self.add_person(new_owner)
+            return new_owner
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Failed to create owner: {e}")
 
     def create_manager(self, name):
-        new_manager = Manager(name)
-        self.add_person(new_manager)
-        return new_manager
+        try:
+            new_manager = Manager(name)
+            self.add_person(new_manager)
+            return new_manager
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Failed to create manager: {e}")
 
     def create_staff(self, name):
-        new_staff = Staff(name)
-        self.add_person(new_staff)
-        return new_staff
+        try:
+            new_staff = Staff(name)
+            self.add_person(new_staff)
+            return new_staff
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Failed to create staff: {e}")
 
     def create_customer_member(self, name):
-        new_customer = Member(name)
-        self.add_person(new_customer)
-        return new_customer
+        try:
+            new_customer = Member(name)
+            self.add_person(new_customer)
+            return new_customer
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Failed to create member: {e}")
 
     def create_customer_walk_in(self):
-        new_walk_in = WalkInCustomer()
-        self.add_person(new_walk_in)
-        return new_walk_in
+        try:
+            new_walk_in = WalkInCustomer()
+            self.add_person(new_walk_in)
+            return new_walk_in
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Failed to create walk-in customer: {e}")
 
     def add_owner_to_branch(self, branch_id, owner_id):
-        validate_id(branch_id, ["BRCH"])
-        validate_id(owner_id, ["OWNER"])
+        try:
+            validate_id(branch_id, ["BRCH"])
+            validate_id(owner_id, ["OWNER"])
+        except ValueError:
+            raise
 
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
-        if cafe_branch:
-            owner = self.find_person_by_id(owner_id)
-            if owner:
-                cafe_branch.add_owner(owner)
-            else:
-                raise ValueError("Owner not found")
-        else:
+        if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
+        owner = self.find_person_by_id(owner_id)
+        if owner is None:
+            raise ValueError("Owner not found")
+        try:
+            cafe_branch.add_owner(owner)
+        except TypeError as e:
+            raise ValueError(f"Cannot add owner: {e}")
 
     def add_manager_to_branch(self, branch_id, manager_id):
-        validate_id(branch_id, ["BRCH"])
-        validate_id(manager_id, ["MANAGER"])
+        try:
+            validate_id(branch_id, ["BRCH"])
+            validate_id(manager_id, ["MANAGER"])
+        except ValueError:
+            raise
 
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
-        if cafe_branch:
-            manager = self.find_person_by_id(manager_id)
-            if manager:
-                cafe_branch.add_manager(manager)
-            else:
-                raise ValueError("Manager not found")
-        else:
+        if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
+        manager = self.find_person_by_id(manager_id)
+        if manager is None:
+            raise ValueError("Manager not found")
+        try:
+            cafe_branch.add_manager(manager)
+        except TypeError as e:
+            raise ValueError(f"Cannot add manager: {e}")
 
     def add_staff_to_branch(self, branch_id, staff_id):
-        validate_id(branch_id, ["BRCH"])
-        validate_id(staff_id, ["STAFF"])
+        try:
+            validate_id(branch_id, ["BRCH"])
+            validate_id(staff_id, ["STAFF"])
+        except ValueError:
+            raise
 
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
-        if cafe_branch:
-            staff = self.find_person_by_id(staff_id)
-            if staff:
-                cafe_branch.add_staff(staff)
-            else:
-                raise ValueError("Staff not found")
-        else:
+        if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
+        staff = self.find_person_by_id(staff_id)
+        if staff is None:
+            raise ValueError("Staff not found")
+        try:
+            cafe_branch.add_staff(staff)
+        except TypeError as e:
+            raise ValueError(f"Cannot add staff: {e}")
 
     def get_person(self):
         return self.__person.copy()
@@ -139,34 +163,48 @@ class CafeSystem:
         return [person for person in self.__person if isinstance(person, person_type)]
 
     def find_person_by_id(self, user_id):
-        validate_id(user_id, ["OWNER", "MANAGER", "STAFF", "MEMBER", "WALK"])
-
+        try:
+            validate_id(user_id, ["OWNER", "MANAGER", "STAFF", "MEMBER", "WALK"])
+        except ValueError:
+            raise
         for person in self.__person:
             if person.user_id == user_id:
                 return person
         return None
 
     def remove_person_by_id(self, user_id):
-        person = self.find_person_by_id(user_id)
-        if person:
-            self.__person.remove(person)
-        else:
+        try:
+            person = self.find_person_by_id(user_id)
+        except ValueError:
+            raise
+        if person is None:
             raise ValueError("Invalid ID : Person not found")
+        self.__person.remove(person)
 
     def update_person_by_id(self, user_id, name):
-        person = self.find_person_by_id(user_id)
-        if person:
-            person.name = name
-        else:
+        try:
+            person = self.find_person_by_id(user_id)
+        except ValueError:
+            raise
+        if person is None:
             raise ValueError("Invalid ID : Person not found")
+        try:
+            person.name = name
+        except ValueError as e:
+            raise ValueError(f"Cannot update name: {e}")
 
     # / ════════════════════════════════════════════════════════════════
     # \ CAFE BRANCH
 
     def create_cafe_branch(self, cafe_branch_name, cafe_branch_location=""):
-        new_cafe_branch = CafeBranch(cafe_branch_name, cafe_branch_location)
-        self.__cafe_branches.append(new_cafe_branch)
-        return new_cafe_branch
+        try:
+            if not isinstance(cafe_branch_name, str) or not cafe_branch_name.strip():
+                raise ValueError("Branch name must be a non-empty string")
+            new_cafe_branch = CafeBranch(cafe_branch_name, cafe_branch_location)
+            self.__cafe_branches.append(new_cafe_branch)
+            return new_cafe_branch
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Failed to create cafe branch: {e}")
 
     def get_cafe_branches(self):
         return self.cafe_branches
@@ -175,48 +213,53 @@ class CafeSystem:
         try:
             if not isinstance(_id, str):
                 return None
+            if _id.startswith("BRCH-"):
+                for cafe_branch in self.__cafe_branches:
+                    if cafe_branch.branch_id == _id:
+                        return cafe_branch
+            elif _id.startswith("PS-"):
+                for cafe_branch in self.__cafe_branches:
+                    if cafe_branch.find_play_session_by_id(_id):
+                        return cafe_branch
+            elif _id.startswith("TABLE-"):
+                for cafe_branch in self.__cafe_branches:
+                    if cafe_branch.find_table_by_id(_id):
+                        return cafe_branch
+            elif _id.startswith("BG-"):
+                for cafe_branch in self.__cafe_branches:
+                    if cafe_branch.find_board_game_by_id(_id):
+                        return cafe_branch
+            elif _id.startswith("FOOD-") or _id.startswith("DRINK-"):
+                for cafe_branch in self.__cafe_branches:
+                    if cafe_branch.find_menu_item_by_id(_id):
+                        return cafe_branch
+            return None
         except Exception:
             return None
-        if _id.startswith("BRCH-"):
-            for cafe_branch in self.__cafe_branches:
-                if cafe_branch.branch_id == _id:
-                    return cafe_branch
-        elif _id.startswith("PS-"):
-            for cafe_branch in self.__cafe_branches:
-                if cafe_branch.find_play_session_by_id(_id):
-                    return cafe_branch
-        elif _id.startswith("TABLE-"):
-            for cafe_branch in self.__cafe_branches:
-                if cafe_branch.find_table_by_id(_id):
-                    return cafe_branch
-        elif _id.startswith("BG-"):
-            for cafe_branch in self.__cafe_branches:
-                if cafe_branch.find_board_game_by_id(_id):
-                    return cafe_branch
-        elif _id.startswith("FOOD-") or _id.startswith("DRINK-"):
-            for cafe_branch in self.__cafe_branches:
-                if cafe_branch.find_menu_item_by_id(_id):
-                    return cafe_branch
-        return None
 
     def remove_cafe_branch_by_id(self, cafe_branch_id):
-        validate_id(cafe_branch_id, ["BRCH"])
-
+        try:
+            validate_id(cafe_branch_id, ["BRCH"])
+        except ValueError:
+            raise
         cafe_branch = self.find_cafe_branch_by_id(cafe_branch_id)
-        if cafe_branch:
-            self.__cafe_branches.remove(cafe_branch)
-        else:
+        if cafe_branch is None:
             raise ValueError("Invalid ID : Cafe Branch not found")
+        self.__cafe_branches.remove(cafe_branch)
 
     def update_cafe_branch_by_id(self, branch_id, name, location):
-        validate_id(branch_id, ["BRCH"])
-
+        try:
+            validate_id(branch_id, ["BRCH"])
+        except ValueError:
+            raise
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
-        if cafe_branch:
+        if cafe_branch is None:
+            raise ValueError("Invalid ID : Cafe Branch not found")
+        try:
             cafe_branch.name = name
             cafe_branch.location = location
-        else:
-            raise ValueError("Invalid ID : Cafe Branch not found")
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Cannot update branch: {e}")
 
     # / ════════════════════════════════════════════════════════════════
     # \ RESERVATION
@@ -231,23 +274,31 @@ class CafeSystem:
         end_time,
         table_id="auto",
     ):
-        validate_id(customer_id, ["MEMBER", "WALK"])
-        validate_id(branch_id, ["BRCH"])
+        try:
+            validate_id(customer_id, ["MEMBER", "WALK"])
+            validate_id(branch_id, ["BRCH"])
+        except ValueError:
+            raise
+
+        if not isinstance(total_player, int) or total_player <= 0:
+            raise ValueError("total_player must be a positive integer")
 
         customer = self.find_person_by_id(customer_id)
         if customer is None:
             raise ValueError("Customer not found.")
 
-        # ดึงระดับสมาชิกแบบเต็มบล็อก (หลีกเลี่ยงการเขียนแบบย่อ)
         if hasattr(customer, "member_tier"):
             tier = customer.member_tier
         else:
             tier = MemberTier.NONE_TIER
 
         # 🟢 ด่านที่ 1: ตรวจสอบกฎเวลาและระยะเวลา
-        self.__validate_minimum_lead_time(date, start_time)
-        self.__validate_advance_booking(date, tier)
-        self.__validate_duration(start_time, end_time, tier)
+        try:
+            self.__validate_minimum_lead_time(date, start_time)
+            self.__validate_advance_booking(date, tier)
+            self.__validate_duration(start_time, end_time, tier)
+        except ValueError:
+            raise
 
         branch = self.find_cafe_branch_by_id(branch_id)
         if branch is None:
@@ -258,53 +309,44 @@ class CafeSystem:
 
         if table_id == "auto":
             available_tables = []
-
             for table in branch.tables:
                 if table.capacity >= total_player:
-                    if (
-                        self.__is_table_free(table.table_id, date, start_time, end_time)
-                        == True
-                    ):
+                    if self.__is_table_free(table.table_id, date, start_time, end_time):
                         available_tables.append(table)
 
-            # เช็คว่ามีโต๊ะว่างหรือไม่
             if not available_tables:
-                raise ValueError(
-                    "No available tables for the requested capacity and time."
-                )
+                raise ValueError("No available tables for the requested capacity and time.")
 
-            # ค้นหาโต๊ะที่มีความจุน้อยที่สุด (พอดีกับจำนวนคน ) ด้วย Loop ธรรมดาแทนการใช้ lambda
             target_table = available_tables[0]
             for t in available_tables:
                 if t.capacity < target_table.capacity:
                     target_table = t
         else:
-            validate_id(table_id, ["TABLE"])
+            try:
+                validate_id(table_id, ["TABLE"])
+            except ValueError:
+                raise
             target_table = branch.find_table_by_id(table_id)
             if target_table is None:
                 raise ValueError("The specified table is not found.")
             if target_table.capacity < total_player:
                 raise ValueError("The specified table does not have enough capacity.")
-            if (
-                self.__is_table_free(target_table.table_id, date, start_time, end_time)
-                == False
-            ):
-                raise ValueError(
-                    "The specified table is already booked for this time slot."
-                )
+            if not self.__is_table_free(target_table.table_id, date, start_time, end_time):
+                raise ValueError("The specified table is already booked for this time slot.")
 
         # 🟢 ด่านที่ 3: ตรวจสอบโควตาการจองของสมาชิก
         self.__validate_active_quota(customer_id, tier)
 
         # 🟢 ด่านที่ 4: สร้างการจอง
-        new_resv = Reservation(
-            customer_id, branch_id, target_table.table_id, date, start_time, end_time
-        )
-
-        new_resv.status = ReservationStatus.PENDING
-        self.add_reservation(new_resv)
-
-        return new_resv
+        try:
+            new_resv = Reservation(
+                customer_id, branch_id, target_table.table_id, date, start_time, end_time
+            )
+            new_resv.status = ReservationStatus.PENDING
+            self.add_reservation(new_resv)
+            return new_resv
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Failed to create reservation: {e}")
 
     def add_reservation(self, reservation):
         if not isinstance(reservation, Reservation):
@@ -315,129 +357,112 @@ class CafeSystem:
         return self.reservations
 
     def find_reservation_by_id(self, reservation_id):
-        validate_id(reservation_id, ["RESV"])
+        try:
+            validate_id(reservation_id, ["RESV"])
+        except ValueError:
+            raise
         for reservation in self.__reservations:
             if reservation.reservation_id == reservation_id:
                 return reservation
         return None
 
     def remove_reservation_by_id(self, reservation_id):
-        validate_id(reservation_id, ["RESV"])
-
+        try:
+            validate_id(reservation_id, ["RESV"])
+        except ValueError:
+            raise
         reservation = self.find_reservation_by_id(reservation_id)
-        if reservation:
-            self.__reservations.remove(reservation)
-        else:
+        if reservation is None:
             raise ValueError("Reservation not found")
+        self.__reservations.remove(reservation)
 
     def cancel_reservation(self, reservation_id, current_time=None):
-        validate_id(reservation_id, ["RESV"])
+        try:
+            validate_id(reservation_id, ["RESV"])
+        except ValueError:
+            raise
 
         reservation = self.find_reservation_by_id(reservation_id)
-
-        # 1. เช็คว่ามีใบจองนี้ในระบบหรือไม่
         if reservation is None:
             raise ValueError("Reservation not found.")
-
-        # 2. เช็คว่าใบจองนี้ถูกยกเลิกไปแล้วหรือยัง (ป้องกันการยกเลิกซ้ำ)
         if reservation.status == ReservationStatus.CANCELLED:
             raise ValueError("Cannot cancel. Reservation is already cancelled.")
-
-        # 3. เช็คสถานะ: ต้องเป็น PENDING เท่านั้นถึงจะยกเลิกได้ (ถ้า COMPLETED ไปแล้วห้ามยกเลิก)
         if reservation.status != ReservationStatus.PENDING:
             raise ValueError("Cannot cancel. Reservation is not in PENDING status.")
 
-        # 4. จัดการเวลา (รองรับการจำลองเวลาตอน Test)
-        if current_time is not None:
-            now = current_time
-        else:
-            now = datetime.now()
+        now = current_time if current_time is not None else datetime.now()
 
-        # นำวันที่และเวลาจองมาประกอบร่างกันเพื่อใช้เปรียบเทียบ
-        resv_datetime = datetime.strptime(f"{reservation.date} {reservation.start_time}", "%Y-%m-%d %H:%M")
+        try:
+            resv_datetime = datetime.strptime(
+                f"{reservation.date} {reservation.start_time}", "%Y-%m-%d %H:%M"
+            )
+        except ValueError as e:
+            raise ValueError(f"Invalid reservation date/time format: {e}")
 
-        # 5. เช็คเวลา: ห้ามยกเลิกหากเวลาปัจจุบัน "เลย" เวลาจองไปแล้ว
         if now > resv_datetime:
             raise ValueError("Cannot cancel. The reservation time has already passed.")
 
-        # / ════════════════════════════════════════════════════════════════
-        # หากผ่านด่านเงื่อนไขทั้งหมดด้านบนมาได้ ให้ดำเนินการยกเลิก
-        # / ════════════════════════════════════════════════════════════════
-        
-        # เปลี่ยนสถานะใบจองเป็น CANCELLED
         reservation.status = ReservationStatus.CANCELLED
 
-        # ค้นหาสาขาและโต๊ะเพื่อคืนสถานะโต๊ะให้ว่าง
-        branch = self.find_cafe_branch_by_id(reservation.branch_id)
-        if branch is None:
-            pass
-        else:
-            table = branch.find_table_by_id(reservation.table_id)
-            if table is None:
-                pass
-            else:
-                # เคลียร์สถานะโต๊ะให้ว่าง (AVAILABLE) หากโต๊ะนั้นถูกล็อกสถานะ RESERVED ไว้ล่วงหน้าแล้ว
-                if table.status == TableStatus.RESERVED:
+        try:
+            branch = self.find_cafe_branch_by_id(reservation.branch_id)
+            if branch is not None:
+                table = branch.find_table_by_id(reservation.table_id)
+                if table is not None and table.status == TableStatus.RESERVED:
                     table.status = TableStatus.AVAILABLE
+        except Exception:
+            pass  # ไม่ block การยกเลิกหากหาโต๊ะไม่เจอ
 
     def update_reservation_status_by_id(self, reservation_id, status):
-        validate_id(reservation_id, ["RESV"])
-
+        try:
+            validate_id(reservation_id, ["RESV"])
+        except ValueError:
+            raise
         if not isinstance(status, ReservationStatus):
             raise TypeError("Status must be ReservationStatus")
-
         reservation = self.find_reservation_by_id(reservation_id)
-        if reservation:
-            reservation.status = status
-        else:
+        if reservation is None:
             raise ValueError("Invalid ID : Reservation not found")
+        reservation.status = status
 
     def set_reservation_cancel_by_id(self, reservation_id):
-        self.update_reservation_status_by_id(
-            reservation_id,
-            ReservationStatus.CANCELLED,
-        )
+        self.update_reservation_status_by_id(reservation_id, ReservationStatus.CANCELLED)
 
     def set_reservation_no_show_by_id(self, reservation_id):
-        self.update_reservation_status_by_id(
-            reservation_id,
-            ReservationStatus.NO_SHOW,
-        )
+        self.update_reservation_status_by_id(reservation_id, ReservationStatus.NO_SHOW)
 
     def set_reservation_complete_by_id(self, reservation_id):
-        self.update_reservation_status_by_id(
-            reservation_id,
-            ReservationStatus.COMPLETED,
-        )
+        self.update_reservation_status_by_id(reservation_id, ReservationStatus.COMPLETED)
 
     # / ════════════════════════════════════════════════════════════════
     # \ PRIVATE HELPER METHODS (BUSINESS RULES VALIDATION)
     # / ════════════════════════════════════════════════════════════════
 
     def __is_table_free(self, table_id, date_str, start_time, end_time):
-        new_start = datetime.strptime(start_time, "%H:%M")
-        new_end = datetime.strptime(end_time, "%H:%M")
+        try:
+            new_start = datetime.strptime(start_time, "%H:%M")
+            new_end = datetime.strptime(end_time, "%H:%M")
+        except ValueError as e:
+            raise ValueError(f"Invalid time format (expected HH:MM): {e}")
 
         for reservation in self.__reservations:
             if reservation.date == date_str and reservation.table_id == table_id:
                 if reservation.status == ReservationStatus.PENDING:
-                    exist_start = datetime.strptime(reservation.start_time, "%H:%M")
-                    exist_end = datetime.strptime(reservation.end_time, "%H:%M")
-
-                    # เช็คเวลาทับซ้อน
+                    try:
+                        exist_start = datetime.strptime(reservation.start_time, "%H:%M")
+                        exist_end = datetime.strptime(reservation.end_time, "%H:%M")
+                    except ValueError:
+                        continue  # ข้ามการจองที่มี format ผิด
                     if new_start < exist_end and new_end > exist_start:
                         return False
-
         return True
 
     def __validate_active_quota(self, customer_id, tier):
         active_count = 0
-
-        # นับจำนวนคิวที่ยังค้างอยู่
         for reservation in self.__reservations:
             if reservation.customer_id == customer_id:
                 if reservation.status == ReservationStatus.PENDING:
-                    active_count = active_count + 1
+                    active_count += 1
 
         # กำหนดโควตาตามระดับสมาชิก (Bronze=1, Silver=1, Gold=2, Platinum=3)
         max_quota = 1
@@ -450,23 +475,23 @@ class CafeSystem:
         elif tier == MemberTier.PLATINUM:
             max_quota = 3
 
-        # ตรวจสอบโควตา
         if active_count >= max_quota:
             raise ValueError(
                 f"Active booking quota exceeded. Maximum allowed for your tier is {max_quota}."
             )
 
     def __validate_advance_booking(self, date_str, tier):
-        resv_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-        today = datetime.now().date()
+        try:
+            resv_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            raise ValueError("Invalid date format. Expected YYYY-MM-DD.")
 
-        # คำนวณวันล่วงหน้า
+        today = datetime.now().date()
         days_advance = (resv_date - today).days
 
         if days_advance < 0:
             raise ValueError("Cannot make a reservation in the past.")
 
-        # กำหนดวันล่วงหน้าตามระดับสมาชิก
         max_adv_days = 5
         if tier == MemberTier.NONE_TIER:
             max_adv_days = 5
@@ -485,20 +510,19 @@ class CafeSystem:
             )
 
     def __validate_duration(self, start_time, end_time, tier):
-        start_dt = datetime.strptime(start_time, "%H:%M")
-        end_dt = datetime.strptime(end_time, "%H:%M")
+        try:
+            start_dt = datetime.strptime(start_time, "%H:%M")
+            end_dt = datetime.strptime(end_time, "%H:%M")
+        except ValueError:
+            raise ValueError("Invalid time format. Expected HH:MM.")
 
-        # คำนวณระยะเวลา (ชั่วโมง)
         duration_hrs = (end_dt - start_dt).total_seconds() / 3600
-
-        # กรณีข้ามคืน (เช่น 23:00 ถึง 02:00)
         if duration_hrs <= 0:
-            duration_hrs = duration_hrs + 24
+            duration_hrs += 24
 
         if duration_hrs <= 0 or duration_hrs > 24:
             raise ValueError("End time must be after start time or within 24 hours.")
 
-        # กำหนดชั่วโมงสูงสุดตามระดับสมาชิก
         max_dur_hrs = 2
         if tier == MemberTier.BRONZE:
             max_dur_hrs = 2
@@ -510,22 +534,18 @@ class CafeSystem:
             max_dur_hrs = 999
 
         if duration_hrs > max_dur_hrs:
-            if tier == MemberTier.PLATINUM:
-                limit_str = "Unlimited"
-            else:
-                limit_str = f"{max_dur_hrs} hours"
-
+            limit_str = "Unlimited" if tier == MemberTier.PLATINUM else f"{max_dur_hrs} hours"
             raise ValueError(
                 f"Maximum duration exceeded. Your tier allows up to {limit_str} per session."
             )
 
     def __validate_minimum_lead_time(self, date_str, start_time):
-        resv_datetime = datetime.strptime(f"{date_str} {start_time}", "%Y-%m-%d %H:%M")
+        try:
+            resv_datetime = datetime.strptime(f"{date_str} {start_time}", "%Y-%m-%d %H:%M")
+        except ValueError:
+            raise ValueError("Invalid date/time format. Expected YYYY-MM-DD and HH:MM.")
 
-        # คำนวณเวลาที่เหลือก่อนถึงคิว (ลบด้วยเวลาปัจจุบัน)
         lead_time = resv_datetime - datetime.now()
-
-        # กำหนดเวลา 1 ชั่วโมง ให้เป็นตัวแปรแบบตรงไปตรงมา
         one_hour = timedelta(hours=1)
 
         if lead_time < one_hour:
@@ -537,48 +557,50 @@ class CafeSystem:
     # \ TABLE
 
     def create_table_to_branch(self, branch_id, capacity):
-        validate_id(branch_id, ["BRCH"])
+        try:
+            validate_id(branch_id, ["BRCH"])
+        except ValueError:
+            raise
         if not isinstance(capacity, int) or capacity <= 0:
             raise ValueError("Capacity must be a positive integer")
 
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
-        if cafe_branch:
-            return cafe_branch.add_table(capacity)
-        else:
+        if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
+        try:
+            return cafe_branch.add_table(capacity)
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Failed to add table: {e}")
 
     def get_branch_tables(self, branch_id):
-        validate_id(branch_id, ["BRCH"])
-
+        try:
+            validate_id(branch_id, ["BRCH"])
+        except ValueError:
+            raise
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
-        if cafe_branch:
-            return cafe_branch.tables
-        else:
+        if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
+        return cafe_branch.tables
 
     def update_reserved_tables(self):
         now = datetime.now()
-
         for reservation in self.__reservations:
-            reservation_time = reservation.reservation_time
-            time_diff = reservation_time - now
-
-            if timedelta(hours=0) <= time_diff <= timedelta(hours=1):
-                self.update_table_status(
-                    reservation.table_id,
-                    TableStatus.RESERVED,
-                )
-            elif time_diff < timedelta(hours=0):
-                self.update_table_status(
-                    reservation.table_id,
-                    TableStatus.AVAILABLE,
-                )
+            try:
+                reservation_time = reservation.reservation_time
+                time_diff = reservation_time - now
+                if timedelta(hours=0) <= time_diff <= timedelta(hours=1):
+                    self.update_table_status(reservation.table_id, TableStatus.RESERVED)
+                elif time_diff < timedelta(hours=0):
+                    self.update_table_status(reservation.table_id, TableStatus.AVAILABLE)
+            except (ValueError, TypeError):
+                continue  # ข้ามการจองที่มีข้อมูลผิดพลาด
 
     def search_available_table(self, branch_id, required_capacity=0):
-        validate_id(branch_id, ["BRCH"])
-
+        try:
+            validate_id(branch_id, ["BRCH"])
+        except ValueError:
+            raise
         self.update_reserved_tables()
-
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
@@ -589,201 +611,227 @@ class CafeSystem:
                 continue
             if table.capacity >= required_capacity:
                 available_tables.append(table)
-
         return available_tables
 
     def update_table_status(self, table_id, status):
-        validate_id(table_id, ["TABLE"])
-
+        try:
+            validate_id(table_id, ["TABLE"])
+        except ValueError:
+            raise
         if not isinstance(status, TableStatus):
             raise TypeError("Status must be TableStatus")
-
         cafe_branch = self.find_cafe_branch_by_id(table_id)
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
-
         table = cafe_branch.find_table_by_id(table_id)
         if table is None:
             raise ValueError("Table not found")
-
         table.status = status
 
     # / ════════════════════════════════════════════════════════════════
     # \ BOARD GAME
 
     def create_board_game_to_branch(
-        self,
-        branch_id,
-        name,
-        genre,
-        price,
-        min_players,
-        max_players,
-        description="",
+        self, branch_id, name, genre, price, min_players, max_players, description=""
     ):
-        validate_id(branch_id, ["BRCH"])
+        try:
+            validate_id(branch_id, ["BRCH"])
+        except ValueError:
+            raise
+        if not isinstance(price, (int, float)) or price < 0:
+            raise ValueError("Price must be a non-negative number")
+        if not isinstance(min_players, int) or min_players <= 0:
+            raise ValueError("min_players must be a positive integer")
+        if not isinstance(max_players, int) or max_players < min_players:
+            raise ValueError("max_players must be >= min_players")
 
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
-        if cafe_branch:
-            return cafe_branch.add_board_game(
-                name, genre, price, min_players, max_players, description
-            )
-        else:
+        if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
+        try:
+            return cafe_branch.add_board_game(name, genre, price, min_players, max_players, description)
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Failed to add board game: {e}")
 
     def get_branch_board_games(self, branch_id):
-        validate_id(branch_id, ["BRCH"])
-
+        try:
+            validate_id(branch_id, ["BRCH"])
+        except ValueError:
+            raise
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
-        if cafe_branch:
-            return cafe_branch.board_games
-        else:
+        if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
+        return cafe_branch.board_games
 
     def find_board_game_by_id(self, board_game_id):
-        validate_id(board_game_id, ["BG"])
-
+        try:
+            validate_id(board_game_id, ["BG"])
+        except ValueError:
+            raise
         cafe_branch = self.find_cafe_branch_by_id(board_game_id)
-        if cafe_branch:
-            board_game = cafe_branch.find_board_game_by_id(board_game_id)
-            if board_game:
-                return board_game
-        raise ValueError("Board Game not found")
+        if cafe_branch is None:
+            raise ValueError("Board Game not found")
+        board_game = cafe_branch.find_board_game_by_id(board_game_id)
+        if board_game is None:
+            raise ValueError("Board Game not found")
+        return board_game
 
     def search_board_game_by_min_players(self, branch_id, min_players):
-        validate_id(branch_id, ["BRCH"])
-
+        try:
+            validate_id(branch_id, ["BRCH"])
+        except ValueError:
+            raise
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
-        if cafe_branch:
-            return cafe_branch.search_board_game_by_min_players(min_players)
-        else:
+        if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
+        return cafe_branch.search_board_game_by_min_players(min_players)
 
     def update_board_game_status(self, board_game_id, status):
-        validate_id(board_game_id, ["BG"])
-
+        try:
+            validate_id(board_game_id, ["BG"])
+        except ValueError:
+            raise
         if not isinstance(status, BoardGameStatus):
             raise TypeError("Status must be BoardGameStatus")
-
         board_game = self.find_board_game_by_id(board_game_id)
-        if board_game:
-            board_game.status = status
-        else:
-            raise ValueError("Board Game not found")
+        board_game.status = status
 
     def remove_board_game_by_id(self, board_game_id):
-        validate_id(board_game_id, ["BG"])
-
-        board_game = self.find_board_game_by_id(board_game_id)
-        if board_game:
-            cafe_branch = self.find_cafe_branch_by_id(board_game_id)
-            cafe_branch.remove_board_game_by_id(board_game_id)
-        else:
+        try:
+            validate_id(board_game_id, ["BG"])
+        except ValueError:
+            raise
+        cafe_branch = self.find_cafe_branch_by_id(board_game_id)
+        if cafe_branch is None:
             raise ValueError("Board Game not found")
+        cafe_branch.remove_board_game_by_id(board_game_id)
 
     # / ════════════════════════════════════════════════════════════════
     # \ MENU
 
     def create_menu_to_branch(self, branch_id):
-        validate_id(branch_id, ["BRCH"])
-
+        try:
+            validate_id(branch_id, ["BRCH"])
+        except ValueError:
+            raise
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
-        if cafe_branch:
+        if cafe_branch is None:
+            raise ValueError("Cafe Branch not found")
+        try:
             new_menu = MenuList()
             cafe_branch.create_menu(new_menu)
             return new_menu
-        else:
-            raise ValueError("Cafe Branch not found")
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Failed to create menu: {e}")
 
     def create_menu_item_food_to_branch(self, branch_id, name, price, description=""):
-        validate_id(branch_id, ["BRCH"])
-
+        try:
+            validate_id(branch_id, ["BRCH"])
+        except ValueError:
+            raise
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
-        if cafe_branch:
+        if cafe_branch is None:
+            raise ValueError("Cafe Branch not found")
+        try:
             return cafe_branch.create_menu_item_food(name, price, description)
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Failed to create food item: {e}")
 
-    def create_menu_item_drink_to_branch(
-        self, branch_id, name, price, cup_size="S", description=""
-    ):
-        validate_id(branch_id, ["BRCH"])
-
+    def create_menu_item_drink_to_branch(self, branch_id, name, price, cup_size="S", description=""):
+        try:
+            validate_id(branch_id, ["BRCH"])
+        except ValueError:
+            raise
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
-        if cafe_branch:
-            return cafe_branch.create_menu_item_drink(
-                name, price, cup_size, description
-            )
+        if cafe_branch is None:
+            raise ValueError("Cafe Branch not found")
+        try:
+            return cafe_branch.create_menu_item_drink(name, price, cup_size, description)
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Failed to create drink item: {e}")
 
     def get_branch_menu(self, branch_id):
-        validate_id(branch_id, ["BRCH"])
-
+        try:
+            validate_id(branch_id, ["BRCH"])
+        except ValueError:
+            raise
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
-        if cafe_branch:
-            return cafe_branch.get_menu()
-        else:
+        if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
+        return cafe_branch.get_menu()
 
     def get_branch_menu_item(self, branch_id):
-        validate_id(branch_id, ["BRCH"])
-
+        try:
+            validate_id(branch_id, ["BRCH"])
+        except ValueError:
+            raise
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
-        if cafe_branch:
-            return cafe_branch.get_menu_item()
-        else:
+        if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
+        return cafe_branch.get_menu_item()
 
     def get_branch_menu_item_food(self, branch_id):
-        validate_id(branch_id, ["BRCH"])
-
+        try:
+            validate_id(branch_id, ["BRCH"])
+        except ValueError:
+            raise
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
-        if cafe_branch:
-            return cafe_branch.get_menu_item_food()
-        else:
+        if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
+        return cafe_branch.get_menu_item_food()
 
     def get_branch_menu_item_drink(self, branch_id):
-        validate_id(branch_id, ["BRCH"])
-
+        try:
+            validate_id(branch_id, ["BRCH"])
+        except ValueError:
+            raise
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
-        if cafe_branch:
-            return cafe_branch.get_menu_item_drink()
-        else:
+        if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
+        return cafe_branch.get_menu_item_drink()
 
     def find_menu_item_by_id(self, menu_item_id):
-        validate_id(menu_item_id, ["FOOD", "DRINK"])
-
+        try:
+            validate_id(menu_item_id, ["FOOD", "DRINK"])
+        except ValueError:
+            raise
         cafe_branch = self.find_cafe_branch_by_id(menu_item_id)
-        if cafe_branch:
-            return cafe_branch.find_menu_item_by_id(menu_item_id)
-        else:
+        if cafe_branch is None:
             raise ValueError("Menu Item not found")
+        return cafe_branch.find_menu_item_by_id(menu_item_id)
 
     def remove_menu_item_by_id(self, menu_item_id):
-        validate_id(menu_item_id, ["FOOD", "DRINK"])
-
+        try:
+            validate_id(menu_item_id, ["FOOD", "DRINK"])
+        except ValueError:
+            raise
         cafe_branch = self.find_cafe_branch_by_id(menu_item_id)
-        if cafe_branch:
-            cafe_branch.remove_menu_item_by_id(menu_item_id)
-        else:
+        if cafe_branch is None:
             raise ValueError("Menu Item not found")
+        cafe_branch.remove_menu_item_by_id(menu_item_id)
 
     def update_menu_item_by_id(self, menu_item_id, name, price, description=""):
-        validate_id(menu_item_id, ["FOOD", "DRINK"])
-
+        try:
+            validate_id(menu_item_id, ["FOOD", "DRINK"])
+        except ValueError:
+            raise
         cafe_branch = self.find_cafe_branch_by_id(menu_item_id)
-        if cafe_branch:
-            cafe_branch.update_menu_item_by_id(menu_item_id, name, price, description)
-        else:
+        if cafe_branch is None:
             raise ValueError("Menu Item not found")
+        try:
+            cafe_branch.update_menu_item_by_id(menu_item_id, name, price, description)
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Failed to update menu item: {e}")
 
     # / ════════════════════════════════════════════════════════════════
     # \ GAME SESSION - CHECK-IN
 
-    def check_in_reserved(
-        self, reservation_id, customer_id, current_time=datetime.now()
-    ):
-        validate_id(reservation_id, ["RESV"])
-        validate_id(customer_id, ["MEMBER", "WALK"])
+    def check_in_reserved(self, reservation_id, customer_id, current_time=datetime.now()):
+        try:
+            validate_id(reservation_id, ["RESV"])
+            validate_id(customer_id, ["MEMBER", "WALK"])
+        except ValueError:
+            raise
 
         reservation = self.find_reservation_by_id(reservation_id)
         if reservation is None:
@@ -791,21 +839,20 @@ class CafeSystem:
         customer = self.find_person_by_id(customer_id)
         if customer is None:
             raise ValueError("Customer not found")
-        if current_time: #เอาไว้ test
-            now = current_time
-        else:
-            now = datetime.now()
+
+        now = current_time if current_time else datetime.now()
 
         if now < reservation.reservation_time:
             raise ValueError("Too early to check-in")
+
         late_limit = reservation.reservation_time + timedelta(minutes=15)
-        if current_time > late_limit:
+        if now > late_limit:
             reservation.status = ReservationStatus.NO_SHOW
-            raise ValueError(
-                "Check-in failed: You are more than 15 minutes late. Marked as No-Show."
-            )
+            raise ValueError("Check-in failed: You are more than 15 minutes late. Marked as No-Show.")
+
         if reservation.status != ReservationStatus.PENDING:
             raise ValueError("Can't check in reservation that already completed")
+
         branch = self.find_cafe_branch_by_id(reservation.branch_id)
         if branch is None:
             raise ValueError("Branch not found")
@@ -816,19 +863,25 @@ class CafeSystem:
 
         if customer.user_id != reservation.customer_id:
             raise ValueError("Wrong personal ID")
-        else:
+
+        try:
             reservation.status = ReservationStatus.COMPLETED
             table.status = TableStatus.OCCUPIED
-
             session = PlaySession(reservation.table_id, now)
             branch.add_play_session(session)
             session.add_players_id(reservation.customer_id)
             return session
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Failed to create play session: {e}")
 
     def check_in_walk_in(self, branch_id, player_amount, table_id="auto", start_time=None):
-        validate_id(branch_id, ["BRCH"])
+        try:
+            validate_id(branch_id, ["BRCH"])
+        except ValueError:
+            raise
         if not isinstance(player_amount, int) or player_amount <= 0:
             raise ValueError("player_amount must be a positive integer")
+
         self.update_reserved_tables()
 
         branch = self.find_cafe_branch_by_id(branch_id)
@@ -840,32 +893,37 @@ class CafeSystem:
             if not tables:
                 raise ValueError("No available table")
             table = min(tables, key=lambda t: t.capacity)
-
         else:
-            validate_id(table_id, ["TABLE"])
-
+            try:
+                validate_id(table_id, ["TABLE"])
+            except ValueError:
+                raise
             table = branch.find_table_by_id(table_id)
             if table is None:
                 raise ValueError("Table not found")
-
             if table.status != TableStatus.AVAILABLE:
                 raise ValueError("Table is not available")
-
             if table.capacity < player_amount:
                 raise ValueError("Table capacity not enough")
 
-        table.status = TableStatus.OCCUPIED
-
-        actual_start = start_time if start_time is not None else datetime.now() #เอาไว้ test
-        session = PlaySession(table.table_id, actual_start)
-        session.add_players_id(self.create_customer_walk_in().user_id)
-        branch.add_play_session(session)
-
-        return session
+        try:
+            table.status = TableStatus.OCCUPIED
+            actual_start = start_time if start_time is not None else datetime.now()
+            session = PlaySession(table.table_id, actual_start)
+            session.add_players_id(self.create_customer_walk_in().user_id)
+            branch.add_play_session(session)
+            return session
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Failed to create walk-in session: {e}")
 
     def check_in_member(self, branch_id, player_amount, member_id, table_id="auto", start_time=None):
-        validate_id(branch_id, ["BRCH"])
-        validate_id(member_id, ["MEMBER"])
+        try:
+            validate_id(branch_id, ["BRCH"])
+            validate_id(member_id, ["MEMBER"])
+        except ValueError:
+            raise
+        if not isinstance(player_amount, int) or player_amount <= 0:
+            raise ValueError("player_amount must be a positive integer")
 
         self.update_reserved_tables()
 
@@ -878,56 +936,65 @@ class CafeSystem:
             if not tables:
                 raise ValueError("No available table")
             table = min(tables, key=lambda t: t.capacity)
-
         else:
-            validate_id(table_id, ["TABLE"])
-
+            try:
+                validate_id(table_id, ["TABLE"])
+            except ValueError:
+                raise
             table = branch.find_table_by_id(table_id)
             if table is None:
                 raise ValueError("Table not found")
-
             if table.status != TableStatus.AVAILABLE:
                 raise ValueError("Table is not available")
-
             if table.capacity < player_amount:
                 raise ValueError("Table capacity not enough")
 
-        table.status = TableStatus.OCCUPIED
-
-        actual_start = start_time if start_time is not None else datetime.now() #เอาไว้ test
-        session = PlaySession(table.table_id, actual_start)
-        session.add_players_id(member_id)
-        branch.add_play_session(session)
-        return session
+        try:
+            table.status = TableStatus.OCCUPIED
+            actual_start = start_time if start_time is not None else datetime.now()
+            session = PlaySession(table.table_id, actual_start)
+            session.add_players_id(member_id)
+            branch.add_play_session(session)
+            return session
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Failed to create member session: {e}")
 
     # / ════════════════════════════════════════════════════════════════
     # \ GAME SESSION - JOIN
 
     def join_session(self, any_id, customer_id="walk_in"):
-        validate_id(any_id, ["TABLE", "PS"])
-        if customer_id != "walk_in":
-            validate_id(customer_id, ["MEMBER", "WALK"])
+        try:
+            validate_id(any_id, ["TABLE", "PS"])
+            if customer_id != "walk_in":
+                validate_id(customer_id, ["MEMBER", "WALK"])
+        except ValueError:
+            raise
 
         cafe_branch = self.find_cafe_branch_by_id(any_id)
-        play_session = cafe_branch.find_play_session_by_id(any_id)
-
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
-        if play_session:
+        play_session = cafe_branch.find_play_session_by_id(any_id)
+        if play_session is None:
+            raise ValueError("Play Session not found")
+
+        try:
             if customer_id == "walk_in":
                 play_session.add_players_id(self.create_customer_walk_in().user_id)
             else:
                 play_session.add_players_id(customer_id)
-        else:
-            raise ValueError("Play Session not found")
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Failed to join session: {e}")
 
     # / ════════════════════════════════════════════════════════════════
     # \ GAME SESSION - BORROW BOARD GAME
 
     def borrow_board_game(self, any_id, board_game_id):
-        validate_id(any_id, ["TABLE", "PS"])
-        validate_id(board_game_id, ["BG"])
+        try:
+            validate_id(any_id, ["TABLE", "PS"])
+            validate_id(board_game_id, ["BG"])
+        except ValueError:
+            raise
 
         cafe_branch = self.find_cafe_branch_by_id(any_id)
         if cafe_branch is None:
@@ -947,14 +1014,22 @@ class CafeSystem:
         if board_game.status != BoardGameStatus.AVAILABLE:
             raise ValueError(f"Board game '{board_game.name}' is not available (status: {board_game.status.value})")
 
-        play_session.add_board_games_id(board_game_id)
-        board_game.status = BoardGameStatus.IN_USE
-        return board_game
+        try:
+            play_session.add_board_games_id(board_game_id)
+            board_game.status = BoardGameStatus.IN_USE
+            return board_game
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Failed to borrow board game: {e}")
 
     def return_board_game(self, any_id, board_game_id, is_damaged=False):
-        
-        validate_id(any_id, ["TABLE", "PS"])
-        validate_id(board_game_id, ["BG"])
+        try:
+            validate_id(any_id, ["TABLE", "PS"])
+            validate_id(board_game_id, ["BG"])
+        except ValueError:
+            raise
+
+        if not isinstance(is_damaged, bool):
+            raise ValueError("is_damaged must be a boolean value")
 
         cafe_branch = self.find_cafe_branch_by_id(any_id)
         if cafe_branch is None:
@@ -968,17 +1043,22 @@ class CafeSystem:
         if board_game is None:
             raise ValueError("Board Game not found")
 
-        if is_damaged:
-            board_game.status = BoardGameStatus.MAINTENANCE
-            play_session.add_game_penalty(board_game_id)
-        else:
-            board_game.status = BoardGameStatus.AVAILABLE
-        play_session.remove_board_games_id(board_game_id)
-
-        return board_game
+        try:
+            if is_damaged:
+                board_game.status = BoardGameStatus.MAINTENANCE
+                play_session.add_game_penalty(board_game_id)
+            else:
+                board_game.status = BoardGameStatus.AVAILABLE
+            play_session.remove_board_games_id(board_game_id)
+            return board_game
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Failed to return board game: {e}")
 
     def maintenance_board_game(self, board_game_id):
-        validate_id(board_game_id, ["BG"])
+        try:
+            validate_id(board_game_id, ["BG"])
+        except ValueError:
+            raise
 
         cafe_branch = self.find_cafe_branch_by_id(board_game_id)
         if cafe_branch is None:
@@ -988,59 +1068,74 @@ class CafeSystem:
         if board_game is None:
             raise ValueError("Board Game not found")
 
-        board_game.status = BoardGameStatus.MAINTENANCE
         for session in cafe_branch.get_play_sessions():
             if board_game_id in session.current_board_games_id:
-                raise ValueError("Board Game in use")
+                raise ValueError("Board Game is currently in use")
 
+        board_game.status = BoardGameStatus.MAINTENANCE
         return board_game
+
     # / ════════════════════════════════════════════════════════════════
     # \ GAME SESSION - ORDER
 
     def take_order(self, any_id, menu_item_id):
-        validate_id(any_id, ["TABLE", "PS"])
-        validate_id(menu_item_id, ["FOOD", "DRINK"])
+        try:
+            validate_id(any_id, ["TABLE", "PS"])
+            validate_id(menu_item_id, ["FOOD", "DRINK"])
+        except ValueError:
+            raise
 
         cafe_branch = self.find_cafe_branch_by_id(any_id)
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
         play_session = cafe_branch.find_play_session_by_id(any_id)
-        if play_session:
-            menu_item = cafe_branch.find_menu_item_by_id(menu_item_id)
-            if menu_item:
-                play_session.take_order(menu_item)
-            else:
-                raise ValueError("Menu Item not found")
-        else:
+        if play_session is None:
             raise ValueError("Play Session not found")
 
-    def get_pending_orders(self, branch_id):
-        validate_id(branch_id, ["BRCH"])
+        menu_item = cafe_branch.find_menu_item_by_id(menu_item_id)
+        if menu_item is None:
+            raise ValueError("Menu Item not found")
 
+        try:
+            play_session.take_order(menu_item)
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Failed to take order: {e}")
+
+    def get_pending_orders(self, branch_id):
+        try:
+            validate_id(branch_id, ["BRCH"])
+        except ValueError:
+            raise
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
-        if cafe_branch:
-            return cafe_branch.get_pending_orders()
-        else:
+        if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
+        return cafe_branch.get_pending_orders()
 
     def update_order(self, play_session_id, order_id, session_status):
-        validate_id(play_session_id, ["PS"])
-        validate_id(order_id, ["ORDER"])
+        try:
+            validate_id(play_session_id, ["PS"])
+            validate_id(order_id, ["ORDER"])
+        except ValueError:
+            raise
 
         cafe_branch = self.find_cafe_branch_by_id(play_session_id)
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
         play_session = cafe_branch.find_play_session_by_id(play_session_id)
-        if play_session:
-            for order in play_session.current_order:
-                if order.order_id == order_id:
-                    order.set_order_status(session_status)
-                    return
-            raise ValueError("Order not found")
-        else:
+        if play_session is None:
             raise ValueError("Play Session not found")
+
+        for order in play_session.current_order:
+            if order.order_id == order_id:
+                try:
+                    order.set_order_status(session_status)
+                except (TypeError, ValueError) as e:
+                    raise ValueError(f"Failed to update order: {e}")
+                return
+
+        raise ValueError("Order not found")
 
     def update_order_preparing(self, play_session_id, order_id):
         self.update_order(play_session_id, order_id, OrderStatus.PREPARING)
@@ -1055,15 +1150,16 @@ class CafeSystem:
     # \ GAME SESSION - CHECK-OUT
 
     def check_out(self, any_id, method_type="cash", end_time=None, **kwargs):
-
-        validate_id(any_id, ["TABLE", "PS"])
+        try:
+            validate_id(any_id, ["TABLE", "PS"])
+        except ValueError:
+            raise
 
         cafe_branch = self.find_cafe_branch_by_id(any_id)
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
         play_session = cafe_branch.find_play_session_by_id(any_id)
-
         if play_session is None:
             if cafe_branch.find_play_session_in_history(any_id) is not None:
                 raise ValueError("This session already checked out")
@@ -1074,53 +1170,69 @@ class CafeSystem:
 
         total = 0
 
-        for board_game_id in play_session.current_board_games_id:
-            board_game = cafe_branch.find_board_game_by_id(board_game_id)
-            board_game.status = BoardGameStatus.AVAILABLE
+        try:
+            for board_game_id in play_session.current_board_games_id:
+                board_game = cafe_branch.find_board_game_by_id(board_game_id)
+                if board_game:
+                    board_game.status = BoardGameStatus.AVAILABLE
 
-        for order in play_session.current_order:
-            if order.status == OrderStatus.SERVED:
-                total += order.menu_items.price
+            for order in play_session.current_order:
+                if order.status == OrderStatus.SERVED:
+                    total += order.menu_items.price
 
-        self.update_table_status(play_session.table_id, TableStatus.AVAILABLE)
+            self.update_table_status(play_session.table_id, TableStatus.AVAILABLE)
 
-        actual_end_time = end_time if end_time is not None else datetime.now()
-        cafe_branch.end_play_session(play_session.session_id, actual_end_time)
+            actual_end_time = end_time if end_time is not None else datetime.now()
+            cafe_branch.end_play_session(play_session.session_id, actual_end_time)
 
-        discount = 0
-        for player_id in play_session.current_players_id:
-            player = self.find_person_by_id(player_id)
-            if isinstance(player, Member):
-                discount = max(discount, player.get_discount())
+            discount = 0
+            for player_id in play_session.current_players_id:
+                try:
+                    player = self.find_person_by_id(player_id)
+                    if isinstance(player, Member):
+                        discount = max(discount, player.get_discount())
+                except ValueError:
+                    continue  # ข้าม player ที่หาไม่เจอ
 
-        total += (
-            Table.price_per_hour
-            * play_session.duration()
-            * play_session.get_total_players()
-        )
+            total += (
+                Table.price_per_hour
+                * play_session.duration()
+                * play_session.get_total_players()
+            )
 
-        penalty_fee = 0
-        for game_id in play_session.game_penalty:
-            _board_game = cafe_branch.find_board_game_by_id(game_id)
-            if _board_game:
-                penalty_fee += _board_game.price
+            penalty_fee = 0
+            for game_id in play_session.game_penalty:
+                try:
+                    _board_game = cafe_branch.find_board_game_by_id(game_id)
+                    if _board_game:
+                        penalty_fee += _board_game.price
+                except ValueError:
+                    continue  # ข้ามเกมที่หาไม่เจอ
 
-        total = (total * (1 - discount)) + penalty_fee
+            total = (total * (1 - discount)) + penalty_fee
+
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Error calculating checkout total: {e}")
 
         payment = self.create_payment(total, method_type, **kwargs)
         play_session.payment = payment
-
         return payment
+
     # / ════════════════════════════════════════════════════════════════
     # \ PAYMENT
 
-    # kwargs คือรับ parameter หลังจากมันมาทำเป็น dict เช่น
-    # create_payment(6969, online, account_email="SKIBIDI")
-    # kwrag = [account:SKIBIDI]
     def create_payment(self, total, method_type="cash", **kwargs):
+        if not isinstance(total, (int, float)) or total < 0:
+            raise ValueError("Total must be a non-negative number")
+        if not isinstance(method_type, str):
+            raise ValueError("method_type must be a string")
 
         if method_type == "cash":
-            paid_amount = kwargs.get("paid_amount", total)  # ← default จ่ายเต็ม
+            try:
+                paid_amount = kwargs.get("paid_amount", total)
+                paid_amount = float(paid_amount)
+            except (TypeError, ValueError):
+                raise ValueError("paid_amount must be a valid number")
 
             if paid_amount < total:
                 raise ValueError("Paid amount is not enough")
@@ -1131,23 +1243,32 @@ class CafeSystem:
 
         elif method_type == "card":
             try:
-                payment_method = CreditCard(kwargs["card_number"], kwargs["expiry_date"], kwargs["cvv"])
+                payment_method = CreditCard(
+                    kwargs["card_number"], kwargs["expiry_date"], kwargs["cvv"]
+                )
             except KeyError as e:
                 raise ValueError(f"Missing required field for card payment: {e}")
+            except (TypeError, ValueError) as e:
+                raise ValueError(f"Invalid card payment details: {e}")
 
         elif method_type == "online":
             try:
                 payment_method = OnlinePayment(kwargs["email"])
             except KeyError:
                 raise ValueError("Missing required field for online payment: email")
+            except (TypeError, ValueError) as e:
+                raise ValueError(f"Invalid online payment details: {e}")
 
         else:
-            raise ValueError("Invalid payment method")
+            raise ValueError(f"Invalid payment method: '{method_type}'. Allowed: 'cash', 'card', 'online'")
 
-        if payment_method.validate_method():
-            new_payment = Payment(total, payment_method)
-            new_payment.process_payment = True
-            return new_payment
+        try:
+            if payment_method.validate_method():
+                new_payment = Payment(total, payment_method)
+                new_payment.process_payment = True
+                return new_payment
+        except Exception as e:
+            raise ValueError(f"Payment validation failed: {e}")
 
 
 # | ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
@@ -1199,8 +1320,6 @@ class CafeBranch:
     def board_games(self):
         return self.__board_games.copy()
 
-    # / ════════════════════════════════════════════════════════════════
-
     @property
     def total_tables(self):
         return len(self.__tables)
@@ -1208,10 +1327,6 @@ class CafeBranch:
     @property
     def total_board_games(self):
         return len(self.__board_games)
-
-    @property
-    def total_menu_items(self):
-        return len(self.__menu_list.menu_items())
 
     # / ════════════════════════════════════════════════════════════════
     # - Setters
@@ -1247,12 +1362,8 @@ class CafeBranch:
     # / ════════════════════════════════════════════════════════════════
     # \ BOARD GAME
 
-    def add_board_game(
-        self, name, genre, price, min_players, max_players, description=""
-    ):
-        new_board_game = BoardGame(
-            name, genre, price, min_players, max_players, description
-        )
+    def add_board_game(self, name, genre, price, min_players, max_players, description=""):
+        new_board_game = BoardGame(name, genre, price, min_players, max_players, description)
         self.__board_games.append(new_board_game)
         return new_board_game
 
@@ -1276,81 +1387,73 @@ class CafeBranch:
         self.__board_games = [
             board_game
             for board_game in self.__board_games
-            if board_game.board_game_id != board_game_id
+            if board_game.game_id != board_game_id
         ]
 
     # / ════════════════════════════════════════════════════════════════
     # \ MENU
 
     def create_menu(self, menu):
-        if isinstance(menu, MenuList):
-            self.__menu_list = menu
-        else:
+        if not isinstance(menu, MenuList):
             raise TypeError("Type Error : must be an instance of Menu")
+        self.__menu_list = menu
 
     def create_menu_item_food(self, name, price, description=""):
-        if self.__menu_list is not None:
-            new_menu_item = Food(name, price, description)
-            self.__menu_list.add_menu_item(new_menu_item)
-            return new_menu_item
-        else:
+        if self.__menu_list is None:
             raise ValueError("Menu not found")
+        new_menu_item = Food(name, price, description)
+        self.__menu_list.add_menu_item(new_menu_item)
+        return new_menu_item
 
     def create_menu_item_drink(self, name, price, cup_size="S", description=""):
-        if self.__menu_list is not None:
-            new_menu_item = Drink(name, price, description, cup_size=cup_size)
-            self.__menu_list.add_menu_item(new_menu_item)
-            return new_menu_item
-        else:
+        if self.__menu_list is None:
             raise ValueError("Menu not found")
+        new_menu_item = Drink(name, price, description, cup_size=cup_size)
+        self.__menu_list.add_menu_item(new_menu_item)
+        return new_menu_item
 
     def get_menu(self):
-        if self.__menu_list is not None:
-            return self.__menu_list
-        else:
+        if self.__menu_list is None:
             raise ValueError("Menu not found")
+        return self.__menu_list
 
     def get_menu_item(self):
-        if self.__menu_list is not None:
-            return self.__menu_list.menu_items
-        else:
+        if self.__menu_list is None:
             raise ValueError("Menu not found")
+        return self.__menu_list.menu_items
 
     def get_menu_item_food(self):
-        if self.__menu_list is not None:
-            return self.__menu_list.get_menu_item_food()
-        else:
+        if self.__menu_list is None:
             raise ValueError("Menu not found")
+        return self.__menu_list.get_menu_item_food()
 
     def get_menu_item_drink(self):
-        if self.__menu_list is not None:
-            return self.__menu_list.get_menu_item_drink()
-        else:
+        if self.__menu_list is None:
             raise ValueError("Menu not found")
+        return self.__menu_list.get_menu_item_drink()
 
     def find_menu_item_by_id(self, menu_item_id):
-        if self.__menu_list is not None:
-            return self.__menu_list.find_menu_item_by_id(menu_item_id)
-        else:
+        if self.__menu_list is None:
             raise ValueError("Menu not found")
+        return self.__menu_list.find_menu_item_by_id(menu_item_id)
 
     def remove_menu_item_by_id(self, menu_item_id):
-        if self.__menu_list is not None:
-            self.__menu_list.remove_menu_item(menu_item_id)
-        else:
+        if self.__menu_list is None:
             raise ValueError("Menu not found")
+        self.__menu_list.remove_menu_item(menu_item_id)
 
     def update_menu_item_by_id(self, menu_item_id, name, price, description=""):
-        if self.__menu_list is not None:
-            menu_item = self.__menu_list.find_menu_item_by_id(menu_item_id)
-            if menu_item is not None:
-                menu_item.name = name
-                menu_item.price = price
-                menu_item.description = description
-            else:
-                raise ValueError("Menu Item not found")
-        else:
+        if self.__menu_list is None:
             raise ValueError("Menu not found")
+        menu_item = self.__menu_list.find_menu_item_by_id(menu_item_id)
+        if menu_item is None:
+            raise ValueError("Menu Item not found")
+        try:
+            menu_item.name = name
+            menu_item.price = price
+            menu_item.description = description
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Cannot update menu item: {e}")
 
     # / ════════════════════════════════════════════════════════════════
     # \ ORDER
@@ -1365,82 +1468,87 @@ class CafeBranch:
 
     # / ════════════════════════════════════════════════════════════════
     # \ PLAY SESSION
+
     def find_play_session_in_history(self, any_id):
-        if any_id.startswith("PS-"):
-            for ps in self.__play_sessions_history:
-                if ps.session_id == any_id:
-                    return ps
-        elif any_id.startswith("TABLE-"):
-            for ps in self.__play_sessions_history:
-                if ps.table_id == any_id:
-                    return ps
-        return None
+        try:
+            if any_id.startswith("PS-"):
+                for ps in self.__play_sessions_history:
+                    if ps.session_id == any_id:
+                        return ps
+            elif any_id.startswith("TABLE-"):
+                for ps in self.__play_sessions_history:
+                    if ps.table_id == any_id:
+                        return ps
+            return None
+        except (AttributeError, TypeError):
+            return None
+
     def add_play_session(self, play_session):
-        if isinstance(play_session, PlaySession):
-            self.__play_sessions.append(play_session)
-        else:
+        if not isinstance(play_session, PlaySession):
             raise TypeError("Type Error : must be an instance of PlaySession")
+        self.__play_sessions.append(play_session)
 
     def get_play_sessions(self):
         return self.__play_sessions.copy()
 
     def find_play_session_by_id(self, any_id):
-        if any_id.startswith("PS-"):
-            for play_session in self.__play_sessions:
-                if play_session.session_id == any_id:
-                    return play_session
-        elif any_id.startswith("TABLE-"):
-            for play_session in self.__play_sessions:
-                if play_session.table_id == any_id:
-                    return play_session
-        else:
-            raise ValueError("Invalid ID")
-        return None
+        try:
+            if any_id.startswith("PS-"):
+                for play_session in self.__play_sessions:
+                    if play_session.session_id == any_id:
+                        return play_session
+            elif any_id.startswith("TABLE-"):
+                for play_session in self.__play_sessions:
+                    if play_session.table_id == any_id:
+                        return play_session
+            else:
+                raise ValueError("Invalid ID")
+            return None
+        except AttributeError:
+            raise ValueError("Invalid ID format")
 
     def remove_play_session_by_id(self, play_session_id):
         play_session = self.find_play_session_by_id(play_session_id)
-        if play_session:
-            self.__play_sessions.remove(play_session)
-        else:
+        if play_session is None:
             raise ValueError("Invalid ID : Play Session not found")
+        self.__play_sessions.remove(play_session)
 
     def end_play_session(self, play_session_id, end_time=None):
         if end_time is None:
             end_time = datetime.now()
         play_session = self.find_play_session_by_id(play_session_id)
-        if play_session:
+        if play_session is None:
+            raise ValueError("Invalid ID : Play Session not found")
+        try:
             play_session.end_time = end_time
             self.__play_sessions_history.append(play_session)
             self.__play_sessions.remove(play_session)
-        else:
-            raise ValueError("Invalid ID : Play Session not found")
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Failed to end play session: {e}")
 
     # / ════════════════════════════════════════════════════════════════
     # \ STAFF
 
     def add_staff(self, staff):
-        if isinstance(staff, Staff):
-            self.__staff_id.append(staff.user_id)
-        else:
+        if not isinstance(staff, Staff):
             raise TypeError("Type Error : must be an instance of Staff")
+        self.__staff_id.append(staff.user_id)
 
     def get_staff(self):
         return self.__staff_id.copy()
 
     def remove_staff_by_id(self, staff_id):
-        if staff_id in self.__staff_id:
-            self.__staff_id.remove(staff_id)
-        else:
+        if staff_id not in self.__staff_id:
             raise ValueError("Invalid ID : ID does not exist")
+        self.__staff_id.remove(staff_id)
 
     # / ════════════════════════════════════════════════════════════════
     # \ MANAGER
 
     def add_manager(self, manager):
-        if isinstance(manager, Manager):
-            self.__manager_id = manager.user_id
-        else:
+        if not isinstance(manager, Manager):
             raise TypeError("Type Error : must be an instance of Manager")
+        self.__manager_id = manager.user_id
 
     def get_manager(self):
         return self.__manager_id
@@ -1452,10 +1560,9 @@ class CafeBranch:
     # \ OWNER
 
     def add_owner(self, owner):
-        if isinstance(owner, Owner):
-            self.__owner_id = owner.user_id
-        else:
+        if not isinstance(owner, Owner):
             raise TypeError("Type Error : must be an instance of Owner")
+        self.__owner_id = owner.user_id
 
     def get_owner(self):
         return self.__owner_id
