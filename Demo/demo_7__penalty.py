@@ -1,4 +1,4 @@
-from BGC import *
+from src.BGC import *
 from datetime import datetime, timedelta
 
 fake_time = datetime(2026, 3, 9, 15, 5, 0)

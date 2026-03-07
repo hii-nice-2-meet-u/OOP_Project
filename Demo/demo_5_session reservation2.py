@@ -1,4 +1,4 @@
-from BGC import *
+from src.BGC import *
 from datetime import datetime, timedelta
 
 # สมมติว่าคุณจองไว้ตอน 15:00 ของวันที่ 9 มีนาคม 2026
