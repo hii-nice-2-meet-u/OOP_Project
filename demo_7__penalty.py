@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
     # / ════════════════════════════════════════════════════════════════
 
-    play_session = sys.check_in_walk_in("BRCH-00000", 2, start_time=fake_time)
+    play_session = sys.check_in("BRCH-00000", 2, start_time=fake_time)
 
     # / ════════════════════════════════════════════════════════════════
 

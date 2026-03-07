@@ -206,7 +206,7 @@ class CafeSystem:
     def find_cafe_branch_by_id(self, _id):
         if not isinstance(_id, str):
             return None
-        
+
         if _id.startswith("BRCH-"):
             for cafe_branch in self.__cafe_branches:
                 if cafe_branch.branch_id == _id:
@@ -237,7 +237,7 @@ class CafeSystem:
             if cafe_branch.name == name:
                 return cafe_branch
         return None
-    
+
     def remove_cafe_branch_by_id(self, cafe_branch_id):
         validate_id(cafe_branch_id, ["BRCH"])
 
@@ -869,10 +869,17 @@ class CafeSystem:
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to create play session: {e}")
 
-    def check_in_walk_in(
-        self, branch_id, player_amount, table_id="auto", start_time=None
+    def check_in(
+        self,
+        branch_id,
+        player_amount,
+        customer_id="walk_in",
+        table_id="auto",
+        start_time=None,
     ):
         validate_id(branch_id, ["BRCH"])
+        if customer_id != "walk_in":
+            validate_id(customer_id, ["MEMBER"])
 
         if not isinstance(player_amount, int) or player_amount <= 0:
             raise ValueError("player_amount must be a positive integer")
@@ -903,52 +910,15 @@ class CafeSystem:
             table.status = TableStatus.OCCUPIED
             actual_start = start_time if start_time is not None else datetime.now()
             session = PlaySession(table.table_id, actual_start)
-            session.add_players_id(self.create_customer_walk_in().user_id)
+
+            if customer_id == "walk_in":
+                customer_id = self.create_customer_walk_in().user_id
+            session.add_players_id(customer_id)
+
             branch.add_play_session(session)
             return session
         except (TypeError, ValueError) as e:
-            raise ValueError(f"Failed to create walk-in session: {e}")
-
-    def check_in_member(
-        self, branch_id, player_amount, member_id, table_id="auto", start_time=None
-    ):
-        validate_id(branch_id, ["BRCH"])
-        validate_id(member_id, ["MEMBER"])
-
-        if not isinstance(player_amount, int) or player_amount <= 0:
-            raise ValueError("player_amount must be a positive integer")
-
-        self.update_reserved_tables()
-
-        branch = self.find_cafe_branch_by_id(branch_id)
-        if branch is None:
-            raise ValueError("Cafe Branch not found")
-
-        if table_id == "auto":
-            tables = self.search_available_table(branch_id, player_amount)
-            if not tables:
-                raise ValueError("No available table")
-            table = min(tables, key=lambda t: t.capacity)
-        else:
-            validate_id(table_id, ["TABLE"])
-
-            table = branch.find_table_by_id(table_id)
-            if table is None:
-                raise ValueError("Table not found")
-            if table.status != TableStatus.AVAILABLE:
-                raise ValueError("Table is not available")
-            if table.capacity < player_amount:
-                raise ValueError("Table capacity not enough")
-
-        try:
-            table.status = TableStatus.OCCUPIED
-            actual_start = start_time if start_time is not None else datetime.now()
-            session = PlaySession(table.table_id, actual_start)
-            session.add_players_id(member_id)
-            branch.add_play_session(session)
-            return session
-        except (TypeError, ValueError) as e:
-            raise ValueError(f"Failed to create member session: {e}")
+            raise ValueError(f"Failed to create check-in session: {e}")
 
     # / ════════════════════════════════════════════════════════════════
     # \ GAME SESSION - JOIN
@@ -992,6 +962,7 @@ class CafeSystem:
 
         if len(play_session.current_board_games_id) + 1 > 2:
             raise ValueError("Maximum 2 board games per session")
+            # return None
 
         board_game = cafe_branch.find_board_game_by_id(board_game_id)
         if board_game is None:
