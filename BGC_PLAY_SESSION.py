@@ -173,6 +173,7 @@ class PlaySession:
         self.__current_order = []
         self.__reservation_id = None
         self.__payment = None
+        self.__game_penalty = []
 
     # / ════════════════════════════════════════════════════════════════
     # - Getters
@@ -214,6 +215,10 @@ class PlaySession:
     def payment(self):
         return self.__payment
 
+    @property
+    def game_penalty(self):
+        return self.__game_penalty.copy()
+
     # / ════════════════════════════════════════════════════════════════
     # - Setters
     # / ════════════════════════════════════════════════════════════════
@@ -237,6 +242,9 @@ class PlaySession:
 
     def add_board_games_id(self, board_game_id):
         self.__current_board_games_id.append(board_game_id)
+
+    def add_game_penalty(self, game_id):
+        self.__game_penalty.append(game_id)
 
     def get_total_players(self):
         return len(self.__current_players_id)
