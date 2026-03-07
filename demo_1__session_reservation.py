@@ -131,9 +131,12 @@ if __name__ == "__main__":
         f'{"BEFORE":<10}:\t{play_session.current_board_games_id} ',
     )
 
-    sys.borrow_board_game("TABLE-00000", "BG-00000")
-    sys.borrow_board_game("TABLE-00000", "BG-00001")
-    sys.borrow_board_game("TABLE-00000", "BG-00002")
+    try:
+        sys.borrow_board_game("TABLE-00000", "BG-00000")
+        sys.borrow_board_game("TABLE-00000", "BG-00001")
+        sys.borrow_board_game("TABLE-00000", "BG-00002")
+    except ValueError as e:
+        print(f"  [Borrow limit] {e}")
     print(
         f'{"AFTER":<10}:\t{play_session.current_board_games_id} ',
     )
