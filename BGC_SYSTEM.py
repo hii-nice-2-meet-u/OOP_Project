@@ -172,6 +172,11 @@ class CafeSystem:
         return self.cafe_branches
 
     def find_cafe_branch_by_id(self, _id):
+        try:
+            if not isinstance(_id, str):
+                return None
+        except Exception:
+            return None
         if _id.startswith("BRCH-"):
             for cafe_branch in self.__cafe_branches:
                 if cafe_branch.branch_id == _id:
@@ -239,17 +244,16 @@ class CafeSystem:
         else:
             tier = MemberTier.NONE_TIER
 
-        # 🟢 ด่านที่ 1: ตรวจสอบกฎธุรกิจทั้งหมด
-        self.__validate_active_quota(customer_id, tier)
+        # 🟢 ด่านที่ 1: ตรวจสอบกฎเวลาและระยะเวลา
+        self.__validate_minimum_lead_time(date, start_time)
         self.__validate_advance_booking(date, tier)
         self.__validate_duration(start_time, end_time, tier)
-        self.__validate_minimum_lead_time(date, start_time)
 
         branch = self.find_cafe_branch_by_id(branch_id)
         if branch is None:
             raise ValueError("Cafe branch not found.")
 
-        # 🟢 ด่านที่ 2: ค้นหาและตรวจสอบโต๊ะ
+        # 🟢 ด่านที่ 2: ค้นหาและตรวจสอบโต๊ะ (double-booking check)
         target_table = None
 
         if table_id == "auto":
@@ -289,7 +293,10 @@ class CafeSystem:
                     "The specified table is already booked for this time slot."
                 )
 
-        # 🟢 ด่านที่ 3: สร้างการจอง
+        # 🟢 ด่านที่ 3: ตรวจสอบโควตาการจองของสมาชิก
+        self.__validate_active_quota(customer_id, tier)
+
+        # 🟢 ด่านที่ 4: สร้างการจอง
         new_resv = Reservation(
             customer_id, branch_id, target_table.table_id, date, start_time, end_time
         )
@@ -432,16 +439,16 @@ class CafeSystem:
                 if reservation.status == ReservationStatus.PENDING:
                     active_count = active_count + 1
 
-        # กำหนดโควตาตามระดับสมาชิก
+        # กำหนดโควตาตามระดับสมาชิก (Bronze=1, Silver=1, Gold=2, Platinum=3)
         max_quota = 1
         if tier == MemberTier.BRONZE:
             max_quota = 1
         elif tier == MemberTier.SILVER:
-            max_quota = 2
+            max_quota = 1
         elif tier == MemberTier.GOLD:
-            max_quota = 3
+            max_quota = 2
         elif tier == MemberTier.PLATINUM:
-            max_quota = 4
+            max_quota = 3
 
         # ตรวจสอบโควตา
         if active_count >= max_quota:
@@ -531,6 +538,8 @@ class CafeSystem:
 
     def create_table_to_branch(self, branch_id, capacity):
         validate_id(branch_id, ["BRCH"])
+        if not isinstance(capacity, int) or capacity <= 0:
+            raise ValueError("Capacity must be a positive integer")
 
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
         if cafe_branch:
@@ -818,6 +827,8 @@ class CafeSystem:
 
     def check_in_walk_in(self, branch_id, player_amount, table_id="auto", start_time=None):
         validate_id(branch_id, ["BRCH"])
+        if not isinstance(player_amount, int) or player_amount <= 0:
+            raise ValueError("player_amount must be a positive integer")
         self.update_reserved_tables()
 
         branch = self.find_cafe_branch_by_id(branch_id)
@@ -926,21 +937,22 @@ class CafeSystem:
         if play_session is None:
             raise ValueError("Play Session not found")
 
-        if len(play_session.current_board_games_id) + 1 > 2:
-            return None
+        if len(play_session.current_board_games_id) >= 2:
+            raise ValueError("Borrow limit exceeded: a session can borrow at most 2 board games at a time")
 
         board_game = cafe_branch.find_board_game_by_id(board_game_id)
         if board_game is None:
             raise ValueError("Board Game not found")
 
         if board_game.status != BoardGameStatus.AVAILABLE:
-            return None
+            raise ValueError(f"Board game '{board_game.name}' is not available (status: {board_game.status.value})")
 
         play_session.add_board_games_id(board_game_id)
         board_game.status = BoardGameStatus.IN_USE
         return board_game
 
-    def return_board_game(self, any_id, board_game_id):
+    def return_board_game(self, any_id, board_game_id, is_damaged=False):
+        
         validate_id(any_id, ["TABLE", "PS"])
         validate_id(board_game_id, ["BG"])
 
@@ -956,7 +968,11 @@ class CafeSystem:
         if board_game is None:
             raise ValueError("Board Game not found")
 
-        board_game.status = BoardGameStatus.AVAILABLE
+        if is_damaged:
+            board_game.status = BoardGameStatus.MAINTENANCE
+            play_session.add_game_penalty(board_game_id)
+        else:
+            board_game.status = BoardGameStatus.AVAILABLE
         play_session.remove_board_games_id(board_game_id)
 
         return board_game
@@ -1049,6 +1065,8 @@ class CafeSystem:
         play_session = cafe_branch.find_play_session_by_id(any_id)
 
         if play_session is None:
+            if cafe_branch.find_play_session_in_history(any_id) is not None:
+                raise ValueError("This session already checked out")
             raise ValueError("Play Session not found")
 
         if play_session.payment is not None:
@@ -1068,23 +1086,28 @@ class CafeSystem:
 
         actual_end_time = end_time if end_time is not None else datetime.now()
         cafe_branch.end_play_session(play_session.session_id, actual_end_time)
-        
+
         discount = 0
         for player_id in play_session.current_players_id:
-
             player = self.find_person_by_id(player_id)
-
             if isinstance(player, Member):
                 discount = max(discount, player.get_discount())
-        
+
         total += (
             Table.price_per_hour
             * play_session.duration()
             * play_session.get_total_players()
         )
-        total = total * (1 - discount)
-        payment = self.create_payment(total, method_type, **kwargs)
 
+        penalty_fee = 0
+        for game_id in play_session.game_penalty:
+            _board_game = cafe_branch.find_board_game_by_id(game_id)
+            if _board_game:
+                penalty_fee += _board_game.price
+
+        total = (total * (1 - discount)) + penalty_fee
+
+        payment = self.create_payment(total, method_type, **kwargs)
         play_session.payment = payment
 
         return payment
@@ -1107,10 +1130,16 @@ class CafeSystem:
             payment_method.change = change
 
         elif method_type == "card":
-            payment_method = CreditCard(kwargs["card_number"], kwargs["expiry_date"], kwargs["cvv"])
+            try:
+                payment_method = CreditCard(kwargs["card_number"], kwargs["expiry_date"], kwargs["cvv"])
+            except KeyError as e:
+                raise ValueError(f"Missing required field for card payment: {e}")
 
         elif method_type == "online":
-            payment_method = OnlinePayment(kwargs["email"])
+            try:
+                payment_method = OnlinePayment(kwargs["email"])
+            except KeyError:
+                raise ValueError("Missing required field for online payment: email")
 
         else:
             raise ValueError("Invalid payment method")
@@ -1336,7 +1365,16 @@ class CafeBranch:
 
     # / ════════════════════════════════════════════════════════════════
     # \ PLAY SESSION
-
+    def find_play_session_in_history(self, any_id):
+        if any_id.startswith("PS-"):
+            for ps in self.__play_sessions_history:
+                if ps.session_id == any_id:
+                    return ps
+        elif any_id.startswith("TABLE-"):
+            for ps in self.__play_sessions_history:
+                if ps.table_id == any_id:
+                    return ps
+        return None
     def add_play_session(self, play_session):
         if isinstance(play_session, PlaySession):
             self.__play_sessions.append(play_session)
