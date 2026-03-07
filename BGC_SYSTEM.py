@@ -295,7 +295,7 @@ class CafeSystem:
             self.__validate_advance_booking(date, tier)
             self.__validate_duration(start_time, end_time, tier)
         except ValueError:
-            raise ValueError("Failed to make reservation.")
+            raise ValueError("Failed to make reservation: {e}")
 
         branch = self.find_cafe_branch_by_id(branch_id)
         if branch is None:
