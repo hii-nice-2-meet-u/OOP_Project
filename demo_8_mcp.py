@@ -14,6 +14,8 @@ mcp = FastMCP("BoardGameCafe")
 # --- STEP 3: โหลดระบบ (ดัก Error การ Import) ---
 try:
     from demo__instance import system
+    print("Dooloading Demo_instance....", file=sys.stderr)
+
 except Exception as e:
     # พิมพ์ Error ลง stderr เท่านั้น (ห้าม print ลง stdout)
     print(f"Server Setup Error: {e}", file=sys.stderr)
@@ -72,6 +74,7 @@ def get_person_by_type(person_type: str) -> str:
         person_module = sys.modules.get('BGC_PERSON')
         target_class = getattr(person_module, person_type)
         persons = system.get_person_by_type(target_class)
+
         def format_person(p):
             if person_type == 'Member':
                 tier_name = p.get_member_tier().value if hasattr(p, 'get_member_tier') else 'None'
@@ -154,6 +157,7 @@ def search_board_game_by_min_players(branch_id: str, min_players: int) -> str:
     except Exception as e:
         return f"Error: {e}"
 
+
 @mcp.tool()
 def search_board_game_by_max_players(branch_id: str, max_players: int) -> str:
     """Search for board games by maximum players required"""
@@ -167,6 +171,7 @@ def search_board_game_by_max_players(branch_id: str, max_players: int) -> str:
         )
     except Exception as e:
         return f"Error: {e}"
+
 
 @mcp.tool()
 def get_branch_menu(branch_id: str) -> str:
@@ -193,7 +198,7 @@ def get_pending_orders(branch_id: str) -> str:
     try:
         orders = system.get_pending_orders(branch_id)
         branch = system.find_cafe_branch_by_id(branch_id)
-            
+
         return (
             "\n".join(
                 [
@@ -248,7 +253,8 @@ def check_in(
 def check_in_reserved(reservation_id: str, customer_id: str, current_time: datetime) -> str:
     """Check in a reserved session"""
     try:
-        session = system.check_in_reserved(reservation_id, customer_id, current_time)
+        session = system.check_in_reserved(
+            reservation_id, customer_id, current_time)
         return f"Check in reserved successful! Session ID: {session.session_id}"
     except Exception as e:
         return f"Error: {e}"
@@ -280,7 +286,8 @@ def return_board_game(play_session_id: str, board_game_id: str, is_damaged: bool
     Set is_damaged to true to flag the board game as broken (MAINTENANCE)
     """
     try:
-        system.return_board_game(play_session_id, board_game_id, is_damaged=is_damaged)
+        system.return_board_game(
+            play_session_id, board_game_id, is_damaged=is_damaged)
         return "คืนสำเร็จ"
     except Exception as e:
         return f"Error: {e}"
@@ -328,12 +335,114 @@ def check_out(play_session_id: str, method_type: str = "cash", paid_amount: floa
         kwargs = {}
         if paid_amount is not None:
             kwargs["paid_amount"] = paid_amount
-            
-        receipt, total = system.check_out(play_session_id, method_type=method_type, **kwargs)
+
+        receipt, total = system.check_out(
+            play_session_id, method_type=method_type, **kwargs)
         return f"Check out successful. Total: {total}, Receipt ID: {receipt.payment_id}"
     except Exception as e:
         return f"Error: {e}"
 
+
+# / =====================================================================
+# #00FF00
+# / Method for Config Board Game Cafe
+
+@mcp.tool()
+def add_table_to_branch(auth_id: str, branch_id: str, capacity: int) -> str:
+    """
+    เพิ่มโต๊ะในสาขา (ต้องใช้ Owner ID หรือ Manager ID ในการ Authorize)
+    e.g. add_table_to_branch("OWNER-PESO67", "BRCH-00000", 4)
+    """
+    try:
+        # 1. Authorization Check
+        if not (auth_id.startswith("OWNER") or auth_id.startswith("MANAGER")):
+            return "Authorization Failed: เฉพาะ Owner หรือ Manager เท่านั้นที่สามารถเพิ่มโต๊ะได้"
+        
+        person = system.find_person_by_id(auth_id)
+        if person is None:
+            return f"Authorization Failed: ไม่พบผู้ใช้งาน ID {auth_id} ในระบบ"
+
+        # 2. Execute Action
+        table = system.create_table_to_branch(branch_id, capacity)
+        return f"สร้างโต๊ะสำเร็จ Table ID: {table.table_id} (ความจุ: {capacity} ที่นั่ง) ในสาขา {branch_id}"
+    except Exception as e:
+        return f"Error: {e}"
+    
+@mcp.tool()
+def add_food_to_branch(auth_id: str, branch_id: str, name: str, price: float, description: str = "") -> str:
+    """
+    เพิ่มเมนูอาหาร (ต้องใช้ Owner ID หรือ Manager ID ในการ Authorize)
+    """
+    try:
+        if not (auth_id.startswith("OWNER") or auth_id.startswith("MANAGER")):
+            return "Authorization Failed: เฉพาะ Owner หรือ Manager เท่านั้นที่สามารถเพิ่มเมนูได้"
+        
+        person = system.find_person_by_id(auth_id)
+        if person is None:
+            return "Authorization Failed: ไม่พบผู้ใช้งานในระบบ"
+
+        food = system.create_menu_item_food_to_branch(branch_id, name, price, description)
+        return f"เพิ่มเมนูอาหารสำเร็จ Item ID: {food.item_id} | ชื่อ: {food.name} | ราคา: {price}"
+    except Exception as e:
+        return f"Error: {e}"
+
+@mcp.tool()
+def add_drink_to_branch(auth_id: str, branch_id: str, name: str, price: float, cup_size: str = "S", description: str = "") -> str:
+    """
+    เพิ่มเมนูเครื่องดื่ม (ต้องใช้ Owner ID หรือ Manager ID ในการ Authorize)
+    """
+    try:
+        if not (auth_id.startswith("OWNER") or auth_id.startswith("MANAGER")):
+            return "Authorization Failed: เฉพาะ Owner หรือ Manager เท่านั้นที่สามารถเพิ่มเมนูได้"
+            
+        person = system.find_person_by_id(auth_id)
+        if person is None:
+            return "Authorization Failed: ไม่พบผู้ใช้งานในระบบ"
+
+        drink = system.create_menu_item_drink_to_branch(branch_id, name, price, cup_size, description)
+        return f"เพิ่มเครื่องดื่มสำเร็จ Item ID: {drink.item_id} | ชื่อ: {drink.name} (Size: {cup_size}) | ราคา: {price}"
+    except Exception as e:
+        return f"Error: {e}"
+
+@mcp.tool()
+def add_staff_to_branch(auth_id: str, branch_id: str, staff_name: str) -> str:
+    """
+    สร้างและเพิ่มพนักงานเข้าสาขา (ต้องใช้ Owner ID หรือ Manager ID ในการ Authorize)
+    """
+    try:
+        if not (auth_id.startswith("OWNER") or auth_id.startswith("MANAGER")):
+            return "Authorization Failed: เฉพาะ Owner หรือ Manager เท่านั้นที่สามารถเพิ่มพนักงานได้"
+            
+        person = system.find_person_by_id(auth_id)
+        if person is None:
+            return "Authorization Failed: ไม่พบผู้ใช้งานในระบบ"
+
+        # สร้าง Staff และเพิ่มเข้าสาขา
+        new_staff = system.create_staff(staff_name)
+        system.add_staff_to_branch(branch_id, new_staff.user_id)
+        
+        return f"เพิ่มพนักงานสำเร็จ Staff ID: {new_staff.user_id} | ชื่อ: {new_staff.name} ถูกเพิ่มเข้าสาขา {branch_id}"
+    except Exception as e:
+        return f"Error: {e}"
+    
+@mcp.tool()
+def authorize_add_spent(auth_id: str, customer_id: str, amount: float) -> str:
+    """
+    เพิ่มยอดใช้จ่ายสะสมให้ลูกค้า Member (ต้องใช้ Owner ID หรือ Manager ID ในการ Authorize)
+    """
+    try:
+        if not (auth_id.startswith("OWNER") or auth_id.startswith("MANAGER")):
+            return "Authorization Failed: เฉพาะ Owner หรือ Manager เท่านั้นที่สามารถอนุมัติการเพิ่มยอดใช้จ่ายได้"
+            
+        person = system.find_person_by_id(auth_id)
+        if person is None:
+            return "Authorization Failed: ไม่พบผู้อนุมัติในระบบ"
+
+        customer = system.add_spent(customer_id, amount)
+        return (f"เพิ่มยอดใช้จ่ายสำเร็จ Customer ID: {customer.user_id} | "
+                f"ยอดสะสมปัจจุบัน: {customer.total_spent} | Tier: {customer.get_member_tier().value}")
+    except Exception as e:
+        return f"Error: {e}"
 
 if __name__ == "__main__":
     mcp.run()
