@@ -187,22 +187,20 @@ Check out session PS-00000 using cash. The customer pays 1000 baht.
 ---
 
 ### 3.2 จ่ายด้วย 💳 บัตรเครดิต (Credit Card)
-> (ใช้กับ Session ใหม่ เช่น PS-00001)
-```
-Check out session PS-00001 using credit card.
-Card number: 4111111111111111
-Expiry date: 12/28
-CVV: 123
-```
+
+Check in a walk-in group at branch BRCH-00000, 2 players, auto-assign table.
+Then order FOOD-00000 and DRINK-00000 for that session.
+Mark both orders as served.
+Then check out using credit card: card number 4111111111111111, expiry 12/28, CVV 123.
 
 ---
 
 ### 3.3 จ่ายด้วย 📱 Online Payment (PromptPay / QR)
-> (ใช้กับ Session ใหม่ เช่น PS-00002)
-```
-Check out session PS-00002 using online payment.
-Email: customer@email.com
-```
+
+Check in a walk-in group at branch BRCH-00000, 2 players, auto-assign table.
+Then order FOOD-00001 and DRINK-00001 for that session.
+Mark both orders as served.
+Then check out using online payment with email: customer@email.com
 
 ---
 
