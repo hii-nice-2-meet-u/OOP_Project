@@ -1276,8 +1276,9 @@ class CafeSystem:
         table = cafe_branch.find_table_by_id(play_session.table_id)
         if table is not None:
             table.status = TableStatus.AVAILABLE
-            payment = self.create_payment(total, method_type, **kwargs)
-            play_session.payment = payment
+            
+        payment = self.create_payment(total, method_type, **kwargs)
+        play_session.payment = payment
 
         for cp in play_session.current_players_id:
             customer = self.find_person_by_id(cp)

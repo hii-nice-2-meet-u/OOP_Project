@@ -12,6 +12,7 @@ class Payment:
     def __init__(self, amount, payment_method):
         self.__payment_id = "PAYMENT-" + str(Payment.__counter).zfill(5)
         self.__amount = amount
+        Payment.__counter += 1
         self.__payment_method = payment_method
         self.__payment_time = None
 
