@@ -26,7 +26,7 @@ system.create_cafe_branch(
     "MasoPeeso 67 Cafe", "Soi HornPub, district BIG-BIG 67, Bankok"
 )
 
-system.add_owner_to_branch("BRCH-00000", "OWNER-00000")
+system.add_owner_to_branch("BRCH-00000", "OWNER-PESO67")
 system.add_manager_to_branch("BRCH-00000", "MANAGER-00000")
 system.add_staff_to_branch("BRCH-00000", "STAFF-00000")
 system.add_staff_to_branch("BRCH-00000", "STAFF-00001")
@@ -195,7 +195,7 @@ system.create_cafe_branch(
     "Ladkrabang Branch", "Soi Ladkrabang, district Ladkrabang, Bankok"
 )
 
-system.add_owner_to_branch("BRCH-00001", "OWNER-00000")
+system.add_owner_to_branch("BRCH-00001", "OWNER-PESO67")
 system.add_manager_to_branch("BRCH-00001", "MANAGER-00001")
 system.add_staff_to_branch("BRCH-00001", "STAFF-00003")
 system.add_staff_to_branch("BRCH-00001", "STAFF-00004")

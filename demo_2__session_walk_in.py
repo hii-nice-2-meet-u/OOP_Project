@@ -79,19 +79,20 @@ if __name__ == "__main__":
 
     # / ════════════════════════════════════════════════════════════════
 
-    play_session = sys.check_in("BRCH-00000", 2, start_time=fake_time)
+    play_session = sys.check_in(
+        "BRCH-00000", 2, start_time=fake_time, table_id="TABLE-00002")
 
     # / ════════════════════════════════════════════════════════════════
 
     print(f'\n{" TEST - ADD CUSTOMER TO SESSION ":═^64}\n')
     print(
-        f'{"BEFORE":<10}:\t{ play_session.current_players_id } ',
+        f'{"BEFORE":<10}:\t{play_session.current_players_id} ',
     )
     sys.join_session("PS-00000", "MEMBER-00001")
     sys.join_session("PS-00000")
     sys.join_session("PS-00000")
     print(
-        f'{"AFTER":<10}:\t{ play_session.current_players_id } ',
+        f'{"AFTER":<10}:\t{play_session.current_players_id} ',
     )
     print(f'\n{"":═^64}\n')
 
@@ -99,12 +100,12 @@ if __name__ == "__main__":
 
     print(f'\n{" TEST - BORROW BOARD GAME ":═^64}\n')
     print(
-        f'{"BEFORE":<10}:\t{ play_session.current_board_games_id } ',
+        f'{"BEFORE":<10}:\t{play_session.current_board_games_id} ',
     )
-    sys.borrow_board_game("TABLE-00000", "BG-00000")
-    sys.borrow_board_game("TABLE-00000", "BG-00001")
+    sys.borrow_board_game("TABLE-00002", "BG-00000")
+    sys.borrow_board_game("TABLE-00002", "BG-00001")
     print(
-        f'{"AFTER":<10}:\t{ play_session.current_board_games_id } ',
+        f'{"AFTER":<10}:\t{play_session.current_board_games_id} ',
     )
     print(f'\n{"":═^64}\n')
 
@@ -112,12 +113,12 @@ if __name__ == "__main__":
 
     print(f'\n{" TEST - TAKE ORDER ":═^64}\n')
     print(
-        f'{"BEFORE":<10}:\t{ [a.menu_items.name for a in play_session.current_order] } ',
+        f'{"BEFORE":<10}:\t{[a.menu_items.name for a in play_session.current_order]} ',
     )
-    sys.take_order("TABLE-00000", "FOOD-00000")
-    sys.take_order("TABLE-00000", "DRINK-00000")
+    sys.take_order("TABLE-00002", "FOOD-00000")
+    sys.take_order("TABLE-00002", "DRINK-00000")
     print(
-        f'{"AFTER":<10}:\t{ [a.menu_items.name for a in play_session.current_order] } ',
+        f'{"AFTER":<10}:\t{[a.menu_items.name for a in play_session.current_order]} ',
     )
     print(f'\n{"":═^64}\n')
 
@@ -125,32 +126,33 @@ if __name__ == "__main__":
 
     sys.update_order_preparing("PS-00000", "ORDER-00000")
     sys.update_order_serve("PS-00000", "ORDER-00000")
+    sys.update_order_serve("PS-00000", "ORDER-00001")
 
     # / ════════════════════════════════════════════════════════════════
 
     # FIX: ส่ง end_time เป็น keyword arg, เพิ่ม method_type และ paid_amount
     a = sys.check_out(
-        "TABLE-00000",
+        "TABLE-00002",
         method_type="cash",
         end_time=fake_time + timedelta(hours=2),
         paid_amount=500,
     )
     print(f'\n{" TEST - CHECK OUT ":═^64}\n')
-    print(f'{"PAYMENT":<10}:\t{ a } ')
+    print(f'{"PAYMENT":<10}:\t{a} ')
     print(f'\n{"":═^64}\n')
 
     # / ════════════════════════════════════════════════════════════════
 
     try:
         a = sys.check_out(
-            "TABLE-00000",
+            "TABLE-00002",
             method_type="cash",
             end_time=fake_time + timedelta(hours=2),
             paid_amount=500,
         )
     except ValueError as e:
         print(f'\n{" TEST - CHECK OUT AGAIN ":═^64}\n')
-        print(f'{"ERROR":<10}:\t{ e } ')
+        print(f'{"ERROR":<10}:\t{e} ')
         print(f'\n{"":═^64}\n')
 
 # / ════════════════════════════════════════════════════════════════

@@ -89,7 +89,7 @@ if __name__ == "__main__":
         "2026-03-09",
         "15:00",
         "16:00",
-        "TABLE-00000",
+        "TABLE-00002",
     )
 
     sys.make_reservation(
@@ -130,10 +130,13 @@ if __name__ == "__main__":
         f'{"BEFORE":<10}:\t{ play_session.current_board_games_id } ',
     )
 
-    sys.borrow_board_game("TABLE-00000", "BG-00000")
-    sys.borrow_board_game("TABLE-00000", "BG-00001")
-    sys.borrow_board_game("TABLE-00000", "BG-00002")
-
+    sys.borrow_board_game("TABLE-00002", "BG-00000")
+    sys.borrow_board_game("TABLE-00002", "BG-00001")
+    try:
+        sys.borrow_board_game("TABLE-00002", "BG-00002")
+    except Exception as e:
+        print(f"ERROR: {e}")
+        
     print(
         f'{"AFTER":<10}:\t{ play_session.current_board_games_id } ',
     )
@@ -146,8 +149,8 @@ if __name__ == "__main__":
         f'{"BEFORE":<10}:\t{ [a.menu_items.name for a in play_session.current_order] } ',
     )
 
-    sys.take_order("TABLE-00000", "FOOD-00000")
-    sys.take_order("TABLE-00000", "DRINK-00000")
+    sys.take_order("TABLE-00002", "FOOD-00000")
+    sys.take_order("TABLE-00002", "DRINK-00000")
 
     print(
         f'{"AFTER":<10}:\t{ [a.menu_items.name for a in play_session.current_order] } ',
@@ -158,11 +161,12 @@ if __name__ == "__main__":
 
     sys.update_order_preparing("PS-00000", "ORDER-00000")
     sys.update_order_serve("PS-00000", "ORDER-00000")
+    sys.update_order_serve("PS-00000", "ORDER-00001")
 
     # / ════════════════════════════════════════════════════════════════
 
     a = sys.check_out(
-        "TABLE-00000",
+        "TABLE-00002",
         method_type="cash",
         end_time=fake_time + timedelta(hours=2),
         paid_amount=9999999999,
@@ -177,7 +181,7 @@ if __name__ == "__main__":
 
     try:
         a = sys.check_out(
-            "TABLE-00000",
+            "TABLE-00002",
             method_type="cash",
             end_time=fake_time + timedelta(hours=2),
             paid_amount=500,

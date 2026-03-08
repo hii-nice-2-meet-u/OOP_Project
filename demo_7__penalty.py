@@ -21,6 +21,7 @@ if __name__ == "__main__":
 
     sys.create_table_to_branch("BRCH-00000", 2)
     sys.create_table_to_branch("BRCH-00000", 4)
+    sys.create_table_to_branch("BRCH-00000", 6)
 
     # / ════════════════════════════════════════════════════════════════
 
@@ -59,7 +60,7 @@ if __name__ == "__main__":
 
     # / ════════════════════════════════════════════════════════════════
 
-    play_session = sys.check_in("BRCH-00000", 2, start_time=fake_time)
+    play_session = sys.check_in("BRCH-00000", 2, start_time=fake_time, table_id="TABLE-00002")
 
     # / ════════════════════════════════════════════════════════════════
 
@@ -68,13 +69,13 @@ if __name__ == "__main__":
 
     # / ════════════════════════════════════════════════════════════════
 
-    sys.borrow_board_game("TABLE-00000", "BG-00000")  # Catan
-    sys.borrow_board_game("TABLE-00000", "BG-00001")  # Pandemic
+    sys.borrow_board_game("TABLE-00002", "BG-00000")  # Catan
+    sys.borrow_board_game("TABLE-00002", "BG-00001")  # Pandemic
 
     # / ════════════════════════════════════════════════════════════════
 
-    sys.take_order("TABLE-00000", "FOOD-00000")  # Croissant
-    sys.take_order("TABLE-00000", "DRINK-00000")  # Americano
+    sys.take_order("TABLE-00002", "FOOD-00000")  # Croissant
+    sys.take_order("TABLE-00002", "DRINK-00000")  # Americano
 
     sys.update_order_preparing("PS-00000", "ORDER-00000")
     sys.update_order_serve("PS-00000", "ORDER-00000")
@@ -87,7 +88,7 @@ if __name__ == "__main__":
 
     print(f'\n{" TEST - RETURN BOARD GAME (OK) ":═^64}\n')
     print(f'{"BEFORE":<10}:\tgame_penalty = { play_session.game_penalty }')
-    sys.return_board_game("TABLE-00000", "BG-00000", is_damaged=False)
+    sys.return_board_game("TABLE-00002", "BG-00000", is_damaged=False)
     print(f'{"AFTER":<10}:\tgame_penalty = { play_session.game_penalty }')
     print(f'{"BG-00000":<10}:\t{ sys.find_board_game_by_id("BG-00000") }')
     print(f'\n{"":═^64}\n')
@@ -98,7 +99,7 @@ if __name__ == "__main__":
 
     print(f'\n{" TEST - RETURN BOARD GAME (DAMAGED) ":═^64}\n')
     print(f'{"BEFORE":<10}:\tgame_penalty = { play_session.game_penalty }')
-    sys.return_board_game("TABLE-00000", "BG-00001", is_damaged=True)
+    sys.return_board_game("TABLE-00002", "BG-00001", is_damaged=True)
     print(f'{"AFTER":<10}:\tgame_penalty = { play_session.game_penalty }')
     print(f'{"BG-00001":<10}:\t{ sys.find_board_game_by_id("BG-00001") }')
     print(f'\n{"":═^64}\n')
@@ -108,7 +109,7 @@ if __name__ == "__main__":
     # / ════════════════════════════════════════════════════════════════
 
     payment = sys.check_out(
-        "TABLE-00000",
+        "TABLE-00002",
         method_type="cash",
         end_time=fake_time + timedelta(hours=2),
         paid_amount=2000,
@@ -123,7 +124,7 @@ if __name__ == "__main__":
 
     try:
         sys.check_out(
-            "TABLE-00000",
+            "TABLE-00002",
             method_type="cash",
             end_time=fake_time + timedelta(hours=2),
             paid_amount=2000,
