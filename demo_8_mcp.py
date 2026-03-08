@@ -1,7 +1,7 @@
+from mcp.server.fastmcp import FastMCP
+from datetime import datetime
 import sys
 import os
-from datetime import datetime
-from mcp.server.fastmcp import FastMCP
 
 # --- STEP 1: จัดการ PATH ให้ถูกต้อง ---
 # บังคับให้ Python มองเห็นไฟล์ BGC_... ทุกไฟล์ในโฟลเดอร์ปัจจุบัน
@@ -42,8 +42,7 @@ def make_reservation(
     ตัวอย่างการเรียก: make_reservation("MEMBER_A", "Ladkrabang", 4, "2024-07-01", "18:00", "20:00")
     ใช้ชื่อสาขาในการจองแทน ID เพื่อความสะดวกในการทดสอบ"""
     try:
-        # สมมติว่าสร้าง Member ใหม่เพื่อทดสอบการจอง
-        member = system.create_customer_member(customer_name)
+        member = system.find_person_by_name(customer_name)
         branch = system.find_cafe_branch_by_name(branch_name)
         if not branch:
             return "สาขาไม่พบ"
@@ -61,7 +60,9 @@ def get_all_cafe_branches() -> str:
     branches = system.get_cafe_branches()
     result = []
     for b in branches:
-        result.append(f"สาขา: {b.name} (ID: {b.branch_id}) - โต๊ะ: {b.total_tables}")
+        result.append(
+            f"สาขา : {b.name:<25} ( ID : {b.branch_id} ) - โต๊ะ : {b.total_tables}"
+        )
     return "\n".join(result) if result else "ไม่มีข้อมูลสาขา"
 
 
