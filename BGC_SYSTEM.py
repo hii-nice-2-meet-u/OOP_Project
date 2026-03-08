@@ -193,6 +193,37 @@ class CafeSystem:
         except ValueError as e:
             raise ValueError(f"Cannot update person : {e}")
 
+    def add_spent(self, customer_id, amount, authorizer_id):
+        """
+        Add total spent to a customer's account.
+        Only Owners or Managers can authorize this action.
+        """
+        validate_id(customer_id, ["MEMBER", "WALK"])
+
+        if not isinstance(amount, (int, float)) or amount <= 0:
+            raise ValueError("Amount must be a positive number")
+
+        # Check authorization
+        authorizer = self.find_person_by_id(authorizer_id)
+        if not authorizer:
+            raise ValueError("Authorizer not found")
+            
+        if not (isinstance(authorizer, Owner) or isinstance(authorizer, Manager)):
+            raise ValueError("Unauthorized: Only Owners and Managers can add spent amount directly.")
+
+        customer = self.find_person_by_id(customer_id)
+        if not customer:
+            raise ValueError("Customer not found")
+            
+        if not isinstance(customer, Member):
+            raise ValueError("Only Members can accumulate total spent")
+
+        try:
+            customer.total_spent = amount
+            return customer
+        except Exception as e:
+            raise ValueError(f"Failed to add spent amount: {e}")
+
     # / ════════════════════════════════════════════════════════════════
     # \ CAFE BRANCH
 
@@ -900,6 +931,11 @@ class CafeSystem:
             session = PlaySession(reservation.table_id, now)
             branch.add_play_session(session)
             session.add_players_id(reservation.customer_id)
+            
+            # Fill the remaining player slots with anonymous walk-in IDs
+            for _ in range(reservation.players - 1):
+                session.add_players_id(self.create_customer_walk_in().user_id)
+                
             return session
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to create play session: {e}")
@@ -952,6 +988,10 @@ class CafeSystem:
             if customer_id == "walk_in":
                 customer_id = self.create_customer_walk_in().user_id
             session.add_players_id(customer_id)
+            
+            # Fill the remaining player slots with anonymous walk-in IDs
+            for _ in range(player_amount - 1):
+                session.add_players_id(self.create_customer_walk_in().user_id)
 
             branch.add_play_session(session)
             return session
@@ -978,11 +1018,20 @@ class CafeSystem:
             raise ValueError("Play Session not found")
 
         try:
+            # Check table capacity before joining
+            table = cafe_branch.find_table_by_id(play_session.table_id)
+            if table is None:
+                raise ValueError("Table for this session not found")
+                
+            if play_session.get_total_players() >= table.capacity:
+                raise ValueError(f"Table capacity is full ({table.capacity}/{table.capacity})")
+
             if customer_id == "walk_in":
                 play_session.add_players_id(
                     self.create_customer_walk_in().user_id)
             else:
                 play_session.add_players_id(customer_id)
+            return True
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to join session: {e}")
 
@@ -1077,7 +1126,7 @@ class CafeSystem:
 
         cafe_branch = self.find_cafe_branch_by_id(any_id)
         if cafe_branch is None:
-            raise ValueError("Cafe Branch not found")
+            raise ValueError("Play Session already closed or Cafe Branch not found")
 
         play_session = cafe_branch.find_play_session_by_id(any_id)
         if play_session is None:
@@ -1129,7 +1178,25 @@ class CafeSystem:
         self.update_order(play_session_id, order_id, OrderStatus.SERVED)
 
     def update_order_cancel(self, play_session_id, order_id):
-        self.update_order(play_session_id, order_id, OrderStatus.CANCELLED)
+        validate_id(play_session_id, ["PS"])
+        validate_id(order_id, ["ORDER"])
+
+        cafe_branch = self.find_cafe_branch_by_id(play_session_id)
+        if cafe_branch is None:
+            raise ValueError("Cafe Branch not found")
+
+        play_session = cafe_branch.find_play_session_by_id(play_session_id)
+        if play_session is None:
+            raise ValueError("Play Session not found")
+
+        for order in play_session.current_order:
+            if order.order_id == order_id:
+                if order.status == OrderStatus.SERVED:
+                    raise ValueError("Cannot cancel an order that has already been served")
+                self.update_order(play_session_id, order_id, OrderStatus.CANCELLED)
+                return
+
+        raise ValueError("Order not found")
 
     # / ════════════════════════════════════════════════════════════════
     # \ GAME SESSION - CHECK-OUT
