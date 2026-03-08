@@ -11,39 +11,41 @@ if __name__ == "__main__":
 
     sys = CafeSystem()
 
-    owner   = sys.create_owner("OWNER_A")
+    owner = sys.create_owner("OWNER_A")
     manager = sys.create_manager("MANAGER_A")
-    staff   = sys.create_staff("STAFF_A")
+    staff = sys.create_staff("STAFF_A")
     sys.create_customer_member("MEMBER_A")
 
     branch = sys.create_cafe_branch("Cafe - A", "A 123/456")
-    bid    = branch.branch_id
+    bid = branch.branch_id
 
     # สร้างโต๊ะ 6 โต๊ะ (1 โต๊ะต่อ 1 test)
     t = [sys.create_table_to_branch(bid, 2) for _ in range(6)]
 
-    sys.create_board_game_to_branch(bid, "Uno",      "classic card game",  100.00, 2, 10, "")
-    sys.create_board_game_to_branch(bid, "Monopoly", "classic board game", 200.00, 2,  6, "")
+    sys.create_board_game_to_branch(bid, "Uno", "classic card game", 100.00, 2, 10, "")
+    sys.create_board_game_to_branch(
+        bid, "Monopoly", "classic board game", 200.00, 2, 6, ""
+    )
 
     sys.create_menu_to_branch(bid)
-    food  = sys.create_menu_item_food_to_branch (bid, "ITEM_FOOD_1",  50.00, "Food 1")
+    food = sys.create_menu_item_food_to_branch(bid, "ITEM_FOOD_1", 50.00, "Food 1")
     drink = sys.create_menu_item_drink_to_branch(bid, "ITEM_DRINK_1", 40.00, "Drink 1")
 
-    sys.add_owner_to_branch  (bid, owner.user_id)
+    sys.add_owner_to_branch(bid, owner.user_id)
     sys.add_manager_to_branch(bid, manager.user_id)
-    sys.add_staff_to_branch  (bid, staff.user_id)
+    sys.add_staff_to_branch(bid, staff.user_id)
 
     # / ════════════════════════════════════════════════════════════════
     # HELPER — เริ่ม session และสั่ง food + drink (serve แล้ว)
     # / ════════════════════════════════════════════════════════════════
 
     def start_session(table):
-        ps = sys.check_in_walk_in(bid, 2, table.table_id, start_time=fake_time)
+        ps = sys.check_in(bid, 2, table.table_id, start_time=fake_time)
         sys.take_order(table.table_id, food.item_id)
         sys.take_order(table.table_id, drink.item_id)
         order_id = ps.current_order[0].order_id
         sys.update_order_preparing(ps.session_id, order_id)
-        sys.update_order_serve    (ps.session_id, order_id)
+        sys.update_order_serve(ps.session_id, order_id)
         return ps
 
     # / ════════════════════════════════════════════════════════════════
