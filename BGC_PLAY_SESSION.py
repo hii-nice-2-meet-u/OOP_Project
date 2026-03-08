@@ -252,7 +252,10 @@ class PlaySession:
     def take_order(self, menu_item):
         if not isinstance(menu_item, MenuItem):
             raise ValueError("Type Error : Invalid order")
-        self.__current_order.append(Order(menu_item))
+        new_order = Order(menu_item)
+        self.__current_order.append(new_order)
+        return new_order
+        
 
     def remove_board_games_id(self, board_game_id):
         self.__current_board_games_id.remove(board_game_id)
@@ -261,6 +264,12 @@ class PlaySession:
         self.__current_players_id.remove(player_id)
 
     def duration(self):
+        if (
+            self.__start_time is None
+            or self.__end_time is None
+            or self.__end_time < self.__start_time
+        ):
+            return 0
         return round((self.__end_time - self.__start_time).total_seconds() / 3600.0)
 
     # / ════════════════════════════════════════════════════════════════
