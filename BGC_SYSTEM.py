@@ -1068,7 +1068,7 @@ class CafeSystem:
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to borrow board game: {e}")
 
-    def return_board_game(self, any_id, board_game_id):
+    def return_board_game(self, any_id, board_game_id, is_damaged=None):
         validate_id(any_id, ["TABLE", "PS"])
         validate_id(board_game_id, ["BG"])
 
@@ -1085,7 +1085,8 @@ class CafeSystem:
             raise ValueError("Board Game not found")
 
         try:
-            if self.check_board_game_damage():
+            damage_flag = self.check_board_game_damage() if is_damaged is None else is_damaged
+            if damage_flag:
                 board_game.status = BoardGameStatus.MAINTENANCE
                 play_session.add_game_penalty(board_game_id)
             else:
@@ -1227,30 +1228,23 @@ class CafeSystem:
 
         total = 0
         try:
-            for board_game_id in play_session.current_board_games_id:
-                board_game = cafe_branch.find_board_game_by_id(board_game_id)
-                if board_game:
-                    board_game.status = BoardGameStatus.AVAILABLE
-
+            # 1. Calculate the total bill first without changing state
             for order in play_session.current_order:
+                if order.status in [OrderStatus.PENDING, OrderStatus.PREPARING]:
+                    raise ValueError("Cannot checkout while there are pending or preparing orders. Please serve or cancel them first.")
                 if order.status == OrderStatus.SERVED:
                     total += order.menu_items.price
-
-            self.update_table_status(
-                play_session.table_id, TableStatus.AVAILABLE)
-
-            actual_end_time = end_time if end_time is not None else datetime.now()
-            cafe_branch.end_play_session(
-                play_session.session_id, actual_end_time)
-
+                    
             discount = 0
+            members_in_session = []
             for player_id in play_session.current_players_id:
                 try:
                     player = self.find_person_by_id(player_id)
                     if isinstance(player, Member):
+                        members_in_session.append(player)
                         discount = max(discount, player.get_discount())
                 except ValueError:
-                    continue  # ข้าม player ที่หาไม่เจอ
+                    continue
 
             total += (
                 Table.price_per_hour
@@ -1265,19 +1259,36 @@ class CafeSystem:
                     if _board_game:
                         penalty_fee += _board_game.price
                 except ValueError:
-                    continue  # ข้ามเกมที่หาไม่เจอ
+                    continue
 
             total = (total * (1 - discount)) + penalty_fee
-
         except (TypeError, ValueError) as e:
-            raise ValueError(f"Error calculating checkout total: {e}")
+            raise ValueError(f"Error calculating checkout total: {e}")    
+        try:
+            payment = self.create_payment(total, method_type, **kwargs)
+            
+            for board_game_id in play_session.current_board_games_id:
+                board_game = cafe_branch.find_board_game_by_id(board_game_id)
+                if board_game:
+                    board_game.status = BoardGameStatus.AVAILABLE
+                    
+            self.update_table_status(
+                play_session.table_id, TableStatus.AVAILABLE)
 
-        # !!! เพิ่มเงินไปที่ Member total spend ด้วยนับเเบบชม. x เวลา ( เเบบง่าย ไม่นับส่วนลด )
+            actual_end_time = end_time if end_time is not None else datetime.now()
+            cafe_branch.end_play_session(
+                play_session.session_id, actual_end_time)
+                
+            if members_in_session and total > 0:
+                split_amount = total / len(members_in_session)
+                for member in members_in_session:
+                    member.total_spent = split_amount
+                    
+            play_session.payment = payment
 
-        payment = self.create_payment(total, method_type, **kwargs)
-        play_session.payment = payment
-
-        return payment, total
+            return payment, total
+        except Exception as e:
+            raise ValueError(f"Error finalizing checkout: {e}")
 
     # / ════════════════════════════════════════════════════════════════
     # \ PAYMENT
