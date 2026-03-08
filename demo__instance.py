@@ -16,13 +16,15 @@ system.create_staff("Wave")
 system.create_customer_member("Pao")
 system.create_customer_member("Sua")
 
+# | ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+# | #FFFF67
 
 # / ════════════════════════════════════════════════════════════════
 # / Cafe branch 1
-# #00FF00
 
 system.create_cafe_branch(
-    "MasoPeeso 67 Cafe", "Soi HornPub, district BIG-BIG 67, Bankok")
+    "MasoPeeso 67 Cafe", "Soi HornPub, district BIG-BIG 67, Bankok"
+)
 
 system.add_owner_to_branch("BRCH-00000", "OWNER-00000")
 system.add_manager_to_branch("BRCH-00000", "MANAGER-00000")
@@ -109,41 +111,86 @@ system.create_board_game_to_branch(
 )
 
 # / ════════════════════════════════════════════════════════════════
+
 system.create_menu_to_branch("BRCH-00000")
+
 # เพิ่มเมนูอาหารลงในระบบ
 system.create_menu_item_food_to_branch(
-
-    "BRCH-00000", "Spicy BBQ Wings", 129, "Deep-fried wings with spicy BBQ sauce")
+    "BRCH-00000",
+    "Spicy BBQ Wings",
+    129,
+    "Deep-fried wings with spicy BBQ sauce",
+)
 system.create_menu_item_food_to_branch(
-
-    "BRCH-00000", "Larb French Fries", 89, "French fries with spicy Larb seasoning")
+    "BRCH-00000",
+    "Larb French Fries",
+    89,
+    "French fries with spicy Larb seasoning",
+)
 system.create_menu_item_food_to_branch(
-
-    "BRCH-00000", "Spicy Tuna Sandwich", 79, "Tuna sandwich with a spicy Sriracha kick")
+    "BRCH-00000",
+    "Spicy Tuna Sandwich",
+    79,
+    "Tuna sandwich with a spicy Sriracha kick",
+)
 system.create_menu_item_food_to_branch(
-
-    "BRCH-00000", "Crispy Gyoza Chili Oil", 95, "Fried gyoza served with spicy chili oil")
+    "BRCH-00000",
+    "Crispy Gyoza Chili Oil",
+    95,
+    "Fried gyoza served with spicy chili oil",
+)
 system.create_menu_item_food_to_branch(
-
-    "BRCH-00000", "Cheesy Nachos Jalapeno", 115, "Nachos with cheese and spicy jalapenos")
+    "BRCH-00000",
+    "Cheesy Nachos Jalapeno",
+    115,
+    "Nachos with cheese and spicy jalapenos",
+)
 
 # เพิ่มเมนูเครื่องดื่มลงในระบบ (พารามิเตอร์: branch_id, name, price, cup_size, description)
 system.create_menu_item_drink_to_branch(
-    "BRCH-00000", "Thai Milk Tea", 55, "M", "Signature Thai iced tea")
+    "BRCH-00000",
+    "Thai Milk Tea",
+    55,
+    "M",
+    "Signature Thai iced tea",
+)
 system.create_menu_item_drink_to_branch(
-    "BRCH-00000", "Pink Lemonade Soda", 65, "L", "Sparkling pink lemonade")
+    "BRCH-00000",
+    "Pink Lemonade Soda",
+    65,
+    "L",
+    "Sparkling pink lemonade",
+)
 system.create_menu_item_drink_to_branch(
-    "BRCH-00000", "Iced Matcha Latte", 75, "M", "Premium Japanese matcha with fresh milk")
+    "BRCH-00000",
+    "Iced Matcha Latte",
+    75,
+    "M",
+    "Premium Japanese matcha with fresh milk",
+)
 system.create_menu_item_drink_to_branch(
-    "BRCH-00000", "Lychee Rose Tea", 60, "L", "Refreshing lychee tea with rose aroma")
+    "BRCH-00000",
+    "Lychee Rose Tea",
+    60,
+    "L",
+    "Refreshing lychee tea with rose aroma",
+)
 system.create_menu_item_drink_to_branch(
-    "BRCH-00000", "Dark Chocolate Frappe", 85, "M", "Rich dark chocolate blended drink")
+    "BRCH-00000",
+    "Dark Chocolate Frappe",
+    85,
+    "M",
+    "Rich dark chocolate blended drink",
+)
 
 # / ════════════════════════════════════════════════════════════════
+
+# | ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+# | #FFFF67
 
 # / ════════════════════════════════════════════════════════════════
 # / Cafe Branch 2: Ladkrabang
-# #00FF00
+
 system.create_cafe_branch(
     "Ladkrabang Branch", "Soi Ladkrabang, district Ladkrabang, Bankok"
 )
@@ -322,3 +369,5 @@ system.create_menu_item_drink_to_branch(
     "M",
     "Pure, creamy, and chilled fresh milk.",
 )
+
+# | ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
