@@ -14,6 +14,7 @@ mcp = FastMCP("BoardGameCafe")
 # --- STEP 3: โหลดระบบ (ดัก Error การ Import) ---
 try:
     from BGC_SYSTEM import CafeSystem
+
     system = CafeSystem()
     # สร้างข้อมูลจำลอง (ถ้าต้องการทดสอบ)
     branch = system.create_cafe_branch("BRCH-00000", "Ladkrabang")
@@ -97,11 +98,19 @@ system.add_staff_to_branch("BRCH-00000", "STAFF-00000")
 
 # --- STEP 4: สร้าง Tools ให้ Claude ---
 
+
 @mcp.tool()
-def make_reservation(customer_name: str, branch_name: str, players: int, date_str: str, start_t: str, end_t: str) -> str:
+def make_reservation(
+    customer_name: str,
+    branch_name: str,
+    players: int,
+    date_str: str,
+    start_t: str,
+    end_t: str,
+) -> str:
     """จองโต๊ะ (date_str format: YYYY-MM-DD, time format: HH:MM)
-     ตัวอย่างการเรียก: make_reservation("MEMBER_A", "Ladkrabang", 4, "2024-07-01", "18:00", "20:00")
-     ใช้ชื่อสาขาในการจองแทน ID เพื่อความสะดวกในการทดสอบ"""
+    ตัวอย่างการเรียก: make_reservation("MEMBER_A", "Ladkrabang", 4, "2024-07-01", "18:00", "20:00")
+    ใช้ชื่อสาขาในการจองแทน ID เพื่อความสะดวกในการทดสอบ"""
     try:
         # สมมติว่าสร้าง Member ใหม่เพื่อทดสอบการจอง
         member = system.create_customer_member(customer_name)
@@ -109,7 +118,8 @@ def make_reservation(customer_name: str, branch_name: str, players: int, date_st
         if not branch:
             return "สาขาไม่พบ"
         res = system.make_reservation(
-            member.user_id, branch.branch_id, players, date_str, start_t, end_t)
+            member.user_id, branch.branch_id, players, date_str, start_t, end_t
+        )
         return f"จองสำเร็จ! ID: {res.reservation_id} ที่โต๊ะ {res.table_id}"
     except Exception as e:
         return f"เกิดข้อผิดพลาด: {str(e)}"
@@ -121,8 +131,7 @@ def get_all_cafe_branches() -> str:
     branches = system.get_cafe_branches()
     result = []
     for b in branches:
-        result.append(
-            f"สาขา: {b.name} (ID: {b.branch_id}) - โต๊ะ: {b.total_tables}")
+        result.append(f"สาขา: {b.name} (ID: {b.branch_id}) - โต๊ะ: {b.total_tables}")
     return "\n".join(result) if result else "ไม่มีข้อมูลสาขา"
 
 
