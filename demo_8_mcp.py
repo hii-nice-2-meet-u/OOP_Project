@@ -145,6 +145,19 @@ def search_board_game_by_min_players(branch_id: str, min_players: int) -> str:
     except Exception as e:
         return f"Error: {e}"
 
+@mcp.tool()
+def search_board_game_by_max_players(branch_id: str, max_players: int) -> str:
+    """Search for board games by maximum players required"""
+    try:
+        games = system.search_board_game_by_max_players(branch_id, max_players)
+        return (
+            "\n".join(
+                [f"Game ID: {g.game_id}, Name: {g.name}" for g in games])
+            if games
+            else "ไม่มีเกม"
+        )
+    except Exception as e:
+        return f"Error: {e}"
 
 @mcp.tool()
 def get_branch_menu(branch_id: str) -> str:

@@ -201,7 +201,8 @@ class CafeSystem:
             if not isinstance(cafe_branch_name, str) or not cafe_branch_name.strip():
                 raise ValueError("Branch name must be a non-empty string")
 
-            new_cafe_branch = CafeBranch(cafe_branch_name, cafe_branch_location)
+            new_cafe_branch = CafeBranch(
+                cafe_branch_name, cafe_branch_location)
             self.__cafe_branches.append(new_cafe_branch)
             return new_cafe_branch
 
@@ -332,7 +333,8 @@ class CafeSystem:
             if target_table is None:
                 raise ValueError("The specified table is not found.")
             if target_table.capacity < total_player:
-                raise ValueError("The specified table does not have enough capacity.")
+                raise ValueError(
+                    "The specified table does not have enough capacity.")
             if not self.__is_table_free(
                 target_table.table_id, date, start_time, end_time
             ):
@@ -390,9 +392,11 @@ class CafeSystem:
         if reservation is None:
             raise ValueError("Reservation not found.")
         if reservation.status == ReservationStatus.CANCELLED:
-            raise ValueError("Cannot cancel. Reservation is already cancelled.")
+            raise ValueError(
+                "Cannot cancel. Reservation is already cancelled.")
         if reservation.status != ReservationStatus.PENDING:
-            raise ValueError("Cannot cancel. Reservation is not in PENDING status.")
+            raise ValueError(
+                "Cannot cancel. Reservation is not in PENDING status.")
 
         now = current_time if current_time is not None else datetime.now()
 
@@ -404,7 +408,8 @@ class CafeSystem:
             raise ValueError(f"Invalid reservation date/time format: {e}")
 
         if now > reservation_time:
-            raise ValueError("Cannot cancel. The reservation time has already passed.")
+            raise ValueError(
+                "Cannot cancel. The reservation time has already passed.")
 
         reservation.status = ReservationStatus.CANCELLED
 
@@ -434,7 +439,8 @@ class CafeSystem:
         )
 
     def set_reservation_no_show_by_id(self, reservation_id):
-        self.update_reservation_status_by_id(reservation_id, ReservationStatus.NO_SHOW)
+        self.update_reservation_status_by_id(
+            reservation_id, ReservationStatus.NO_SHOW)
 
     def set_reservation_complete_by_id(self, reservation_id):
         self.update_reservation_status_by_id(
@@ -456,8 +462,10 @@ class CafeSystem:
             if reservation.date == date_str and reservation.table_id == table_id:
                 if reservation.status == ReservationStatus.PENDING:
                     try:
-                        exist_start = datetime.strptime(reservation.start_time, "%H:%M")
-                        exist_end = datetime.strptime(reservation.end_time, "%H:%M")
+                        exist_start = datetime.strptime(
+                            reservation.start_time, "%H:%M")
+                        exist_end = datetime.strptime(
+                            reservation.end_time, "%H:%M")
                     except ValueError:
                         continue  # ข้ามการจองที่มี format ผิด
                     if new_start < exist_end and new_end > exist_start:
@@ -528,7 +536,8 @@ class CafeSystem:
             duration_hrs += 24
 
         if duration_hrs <= 0 or duration_hrs > 24:
-            raise ValueError("End time must be after start time or within 24 hours.")
+            raise ValueError(
+                "End time must be after start time or within 24 hours.")
 
         max_dur_hrs = 2
         if tier == MemberTier.BRONZE:
@@ -554,7 +563,8 @@ class CafeSystem:
                 f"{date_str} {start_time}", "%Y-%m-%d %H:%M"
             )
         except ValueError:
-            ValueError("I nvalid date/time format. Expected YYYY-MM-DD and HH:MM.")
+            ValueError(
+                "I nvalid date/time format. Expected YYYY-MM-DD and HH:MM.")
 
         lead_time = reservation_time - datetime.now()
         one_hour = timedelta(hours=1)
@@ -598,7 +608,8 @@ class CafeSystem:
                 reservation_time = reservation.reservation_time
                 time_diff = reservation_time - now
                 if timedelta(hours=0) <= time_diff <= timedelta(hours=1):
-                    self.update_table_status(reservation.table_id, TableStatus.RESERVED)
+                    self.update_table_status(
+                        reservation.table_id, TableStatus.RESERVED)
                 elif time_diff < timedelta(hours=0):
                     self.update_table_status(
                         reservation.table_id, TableStatus.AVAILABLE
@@ -697,6 +708,15 @@ class CafeSystem:
             raise ValueError("Cafe Branch not found")
 
         return cafe_branch.search_board_game_by_min_players(min_players)
+
+    def search_board_game_by_max_players(self, branch_id, max_players):
+        validate_id(branch_id, ["BRCH"])
+
+        cafe_branch = self.find_cafe_branch_by_id(branch_id)
+        if cafe_branch is None:
+            raise ValueError("Cafe Branch not found")
+
+        return cafe_branch.search_board_game_by_min_players(max_players)
 
     def update_board_game_status(self, board_game_id, status):
         validate_id(board_game_id, ["BG"])
@@ -823,7 +843,8 @@ class CafeSystem:
             raise ValueError("Menu Item not found")
 
         try:
-            cafe_branch.update_menu_item_by_id(menu_item_id, name, price, description)
+            cafe_branch.update_menu_item_by_id(
+                menu_item_id, name, price, description)
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to update menu item: {e}")
 
@@ -859,7 +880,8 @@ class CafeSystem:
             )
 
         if reservation.status != ReservationStatus.PENDING:
-            raise ValueError("Can't check in reservation that already completed")
+            raise ValueError(
+                "Can't check in reservation that already completed")
 
         branch = self.find_cafe_branch_by_id(reservation.branch_id)
         if branch is None:
@@ -957,7 +979,8 @@ class CafeSystem:
 
         try:
             if customer_id == "walk_in":
-                play_session.add_players_id(self.create_customer_walk_in().user_id)
+                play_session.add_players_id(
+                    self.create_customer_walk_in().user_id)
             else:
                 play_session.add_players_id(customer_id)
         except (TypeError, ValueError) as e:
@@ -1146,10 +1169,12 @@ class CafeSystem:
                 if order.status == OrderStatus.SERVED:
                     total += order.menu_items.price
 
-            self.update_table_status(play_session.table_id, TableStatus.AVAILABLE)
+            self.update_table_status(
+                play_session.table_id, TableStatus.AVAILABLE)
 
             actual_end_time = end_time if end_time is not None else datetime.now()
-            cafe_branch.end_play_session(play_session.session_id, actual_end_time)
+            cafe_branch.end_play_session(
+                play_session.session_id, actual_end_time)
 
             discount = 0
             for player_id in play_session.current_players_id:
@@ -1216,7 +1241,8 @@ class CafeSystem:
                     kwargs["card_number"], kwargs["expiry_date"], kwargs["cvv"]
                 )
             except KeyError as e:
-                raise ValueError(f"Missing required field for card payment: {e}")
+                raise ValueError(
+                    f"Missing required field for card payment: {e}")
             except (TypeError, ValueError) as e:
                 raise ValueError(f"Invalid card payment details: {e}")
 
@@ -1224,7 +1250,8 @@ class CafeSystem:
             try:
                 payment_method = OnlinePayment(kwargs["email"])
             except KeyError:
-                raise ValueError("Missing required field for online payment: email")
+                raise ValueError(
+                    "Missing required field for online payment: email")
             except (TypeError, ValueError) as e:
                 raise ValueError(f"Invalid online payment details: {e}")
 
@@ -1355,7 +1382,14 @@ class CafeBranch:
         return [
             board_game
             for board_game in self.__board_games
-            if board_game.min_players <= min_players
+            if board_game.min_players >= min_players
+        ]
+
+    def search_board_game_by_max_players(self, max_players):
+        return [
+            board_game
+            for board_game in self.__board_games
+            if board_game.max_players <= max_players
         ]
 
     def remove_board_game_by_id(self, board_game_id):
@@ -1467,7 +1501,8 @@ class CafeBranch:
                     if play_session.table_id == any_id:
                         return play_session
             else:
-                raise ValueError("Invalid ID : ID must be start with PS or TABLE")
+                raise ValueError(
+                    "Invalid ID : ID must be start with PS or TABLE")
             return None
         except (AttributeError, TypeError):
             raise ValueError("Invalid ID format")
@@ -1483,7 +1518,8 @@ class CafeBranch:
                     if play_session.table_id == any_id:
                         return play_session
                 else:
-                    raise ValueError("Invalid ID : ID must be start with PS or TABLE")
+                    raise ValueError(
+                        "Invalid ID : ID must be start with PS or TABLE")
             return None
         except (AttributeError, TypeError):
             raise ValueError("Invalid ID format")
