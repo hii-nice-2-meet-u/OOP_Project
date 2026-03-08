@@ -1092,9 +1092,9 @@ class CafeSystem:
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to return board game: {e}")
 
-    # 10% chance of damage : simulate chance of damage in real life situation
-    def check_board_game_damage(self):
-        return random.random() < 0.1
+    # # 10% chance of damage : simulate chance of damage in real life situation
+    # def check_board_game_damage(self):
+    #     return random.random() < 0.1
 
     def maintenance_board_game(self, board_game_id):
         validate_id(board_game_id, ["BG"])
@@ -1211,8 +1211,7 @@ class CafeSystem:
                 f"Invalid payment method: '{method_type}'. Allowed: 'cash', 'card', 'online'"
             )
 
-        if end_time is None:
-            end_time = datetime.now()
+        actual_end_time = end_time if end_time is not None else datetime.now()
 
         cafe_branch = self.find_cafe_branch_by_id(any_id)
         if cafe_branch is None:
@@ -1264,18 +1263,8 @@ class CafeSystem:
         except (TypeError, ValueError) as e:
             raise ValueError(f"Error calculating checkout total: {e}")
         
-                
-
-            actual_end_time = end_time if end_time is not None else datetime.now()
-            cafe_branch.end_play_session(
-                play_session.session_id, actual_end_time)
-                
-            if members_in_session and total > 0:
-                split_amount = total / len(members_in_session)
-                for member in members_in_session:
-                    member.total_spent = split_amount
-                    
-            play_session.payment = payment
+        cafe_branch.end_play_session(
+            play_session.session_id, actual_end_time)
 
         payment = self.create_payment(total, method_type, **kwargs)
         play_session.payment = payment
