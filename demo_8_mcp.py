@@ -42,7 +42,7 @@ def make_reservation(
         if not branch:
             return "สาขาไม่พบ"
         res = system.make_reservation(
-            member.user_id, branch.branch_id, players, date_str, start_t, end_t
+            member.user_id, branch.branch_id, players, date_str, start_t, end_t, table_id
         )
         return f"จองสำเร็จ! ID: {res.reservation_id} ที่โต๊ะ {res.table_id}"
     except Exception as e:
@@ -226,7 +226,7 @@ def add_spent(customer_id: str, amount: float, authorizer_id: str) -> str:
 def cancel_reservation(reservation_id: str) -> str:
     """Cancel a reservation by ID"""
     try:
-        res = system.cancel_reservation(reservation_id)
+        res = system.cancel_reservation(reservation_id, current_time)
         return "ยกเลิกสำเร็จ" if res else "ยกเลิกไม่สำเร็จหรือไม่มีข้อมูล"
     except Exception as e:
         return f"Error: {e}"
