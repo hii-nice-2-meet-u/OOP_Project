@@ -193,7 +193,7 @@ class CafeSystem:
         except ValueError as e:
             raise ValueError(f"Cannot update person : {e}")
 
-    def add_spent(self, customer_id, amount, authorizer_id):
+    def add_spent(self, customer_id, amount):
         """
         Add total spent to a customer's account.
         Only Owners or Managers can authorize this action.
@@ -203,23 +203,17 @@ class CafeSystem:
         if not isinstance(amount, (int, float)) or amount <= 0:
             raise ValueError("Amount must be a positive number")
 
-        # Check authorization
-        authorizer = self.find_person_by_id(authorizer_id)
-        if not authorizer:
-            raise ValueError("Authorizer not found")
-            
-        if not (isinstance(authorizer, Owner) or isinstance(authorizer, Manager)):
-            raise ValueError("Unauthorized: Only Owners and Managers can add spent amount directly.")
-
         customer = self.find_person_by_id(customer_id)
         if not customer:
             raise ValueError("Customer not found")
-            
+
         if not isinstance(customer, Member):
             raise ValueError("Only Members can accumulate total spent")
 
         try:
+
             customer.total_spent = amount
+
             return customer
         except Exception as e:
             raise ValueError(f"Failed to add spent amount: {e}")
@@ -455,6 +449,7 @@ class CafeSystem:
         except Exception:
             pass  # ไม่ block การยกเลิกหากหาโต๊ะไม่เจอ
         return True
+
     def update_reservation_status_by_id(self, reservation_id, status):
         validate_id(reservation_id, ["RESV"])
 
@@ -562,7 +557,7 @@ class CafeSystem:
             start_dt = datetime.strptime(start_time, "%H:%M")
             end_dt = datetime.strptime(end_time, "%H:%M")
         except ValueError:
-            ValueError("Invalid time format. Expected HH:MM.")
+            raise ValueError("Invalid time format. Expected HH:MM.")
 
         duration_hrs = (end_dt - start_dt).total_seconds() / 3600
         if duration_hrs <= 0:
@@ -596,8 +591,8 @@ class CafeSystem:
                 f"{date_str} {start_time}", "%Y-%m-%d %H:%M"
             )
         except ValueError:
-            ValueError(
-                "I nvalid date/time format. Expected YYYY-MM-DD and HH:MM.")
+            raise ValueError(
+                "Invalid date/time format. Expected YYYY-MM-DD and HH:MM.")
 
         lead_time = reservation_time - datetime.now()
         one_hour = timedelta(hours=1)
@@ -1016,9 +1011,10 @@ class CafeSystem:
             table = cafe_branch.find_table_by_id(play_session.table_id)
             if table is None:
                 raise ValueError("Table for this session not found")
-                
+
             if play_session.get_total_players() >= table.capacity:
-                raise ValueError(f"Table capacity is full ({table.capacity}/{table.capacity})")
+                raise ValueError(
+                    f"Table capacity is full ({table.capacity}/{table.capacity})")
 
             if customer_id == "walk_in":
                 play_session.add_players_id(
@@ -1062,7 +1058,7 @@ class CafeSystem:
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to borrow board game: {e}")
 
-    def return_board_game(self, any_id, board_game_id):
+    def return_board_game(self, any_id, board_game_id, is_damaged=None):
         validate_id(any_id, ["TABLE", "PS"])
         validate_id(board_game_id, ["BG"])
 
@@ -1079,7 +1075,8 @@ class CafeSystem:
             raise ValueError("Board Game not found")
 
         try:
-            if self.check_board_game_damage():
+            damage_flag = self.check_board_game_damage() if is_damaged is None else is_damaged
+            if damage_flag:
                 board_game.status = BoardGameStatus.MAINTENANCE
                 play_session.add_game_penalty(board_game_id)
             else:
@@ -1089,9 +1086,9 @@ class CafeSystem:
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to return board game: {e}")
 
-    # 10% chance of damage : simulate chance of damage in real life situation
-    def check_board_game_damage(self):
-        return random.random() < 0.1
+    # # 10% chance of damage : simulate chance of damage in real life situation
+    # def check_board_game_damage(self):
+    #     return random.random() < 0.1
 
     def maintenance_board_game(self, board_game_id):
         validate_id(board_game_id, ["BG"])
@@ -1120,7 +1117,8 @@ class CafeSystem:
 
         cafe_branch = self.find_cafe_branch_by_id(any_id)
         if cafe_branch is None:
-            raise ValueError("Play Session already closed or Cafe Branch not found")
+            raise ValueError(
+                "Play Session already closed or Cafe Branch not found")
 
         play_session = cafe_branch.find_play_session_by_id(any_id)
         if play_session is None:
@@ -1186,8 +1184,10 @@ class CafeSystem:
         for order in play_session.current_order:
             if order.order_id == order_id:
                 if order.status == OrderStatus.SERVED:
-                    raise ValueError("Cannot cancel an order that has already been served")
-                self.update_order(play_session_id, order_id, OrderStatus.CANCELLED)
+                    raise ValueError(
+                        "Cannot cancel an order that has already been served")
+                self.update_order(play_session_id, order_id,
+                                  OrderStatus.CANCELLED)
                 return
 
         raise ValueError("Order not found")
@@ -1205,8 +1205,7 @@ class CafeSystem:
                 f"Invalid payment method: '{method_type}'. Allowed: 'cash', 'card', 'online'"
             )
 
-        if end_time is None:
-            end_time = datetime.now()
+        actual_end_time = end_time if end_time is not None else datetime.now()
 
         cafe_branch = self.find_cafe_branch_by_id(any_id)
         if cafe_branch is None:
@@ -1221,30 +1220,23 @@ class CafeSystem:
 
         total = 0
         try:
-            for board_game_id in play_session.current_board_games_id:
-                board_game = cafe_branch.find_board_game_by_id(board_game_id)
-                if board_game:
-                    board_game.status = BoardGameStatus.AVAILABLE
-
+            # 1. Calculate the total bill first without changing state
             for order in play_session.current_order:
+                if order.status in [OrderStatus.PENDING, OrderStatus.PREPARING]:
+                    raise ValueError("Cannot checkout while there are pending or preparing orders. Please serve or cancel them first.")
                 if order.status == OrderStatus.SERVED:
                     total += order.menu_items.price
-
-            self.update_table_status(
-                play_session.table_id, TableStatus.AVAILABLE)
-
-            actual_end_time = end_time if end_time is not None else datetime.now()
-            cafe_branch.end_play_session(
-                play_session.session_id, actual_end_time)
-
+                    
             discount = 0
+            members_in_session = []
             for player_id in play_session.current_players_id:
                 try:
                     player = self.find_person_by_id(player_id)
                     if isinstance(player, Member):
+                        members_in_session.append(player)
                         discount = max(discount, player.get_discount())
                 except ValueError:
-                    continue  # ข้าม player ที่หาไม่เจอ
+                    continue
 
             total += (
                 Table.price_per_hour
@@ -1259,20 +1251,23 @@ class CafeSystem:
                     if _board_game:
                         penalty_fee += _board_game.price
                 except ValueError:
-                    continue  # ข้ามเกมที่หาไม่เจอ
+                    continue
 
             total = (total * (1 - discount)) + penalty_fee
-
         except (TypeError, ValueError) as e:
             raise ValueError(f"Error calculating checkout total: {e}")
-
-        # !!! เพิ่มเงินไปที่ Member total spend ด้วยนับเเบบชม. x เวลา ( เเบบง่าย ไม่นับส่วนลด )
+        
+        cafe_branch.end_play_session(
+            play_session.session_id, actual_end_time)
 
         payment = self.create_payment(total, method_type, **kwargs)
         play_session.payment = payment
 
-        
-        
+        for cp in play_session.current_players_id:
+            customer = self.find_person_by_id(cp)
+            if isinstance(customer, Member):
+                self.add_spent(cp, Table.price_per_hour * play_session.duration())
+                
         return payment, total
 
     # / ════════════════════════════════════════════════════════════════
