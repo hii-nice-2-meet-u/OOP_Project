@@ -1133,13 +1133,13 @@ class CafeSystem:
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to take order: {e}")
 
-    def get_pending_orders(self, branch_id):
+    def get_all_orders(self, branch_id):
         validate_id(branch_id, ["BRCH"])
 
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
-        return cafe_branch.get_pending_orders()
+        return cafe_branch.get_all_orders()
 
     def update_order(self, play_session_id, order_id, session_status):
         validate_id(play_session_id, ["PS"])
@@ -1603,13 +1603,17 @@ class CafeBranch:
     # / ════════════════════════════════════════════════════════════════
     # \ ORDER
 
-    def get_pending_orders(self):
-        pending_orders = []
+    def get_all_orders(self):
+        str_list = []
         for play_session in self.__play_sessions:
             for order in play_session.current_order:
-                if order.status == OrderStatus.PENDING:
-                    pending_orders.append(order)
-        return pending_orders
+                
+                # ( Session: PS-00000 | Name: ITEM_FOOD_1 | Price: 10 | Status: Pending)
+                formatted_str = f"Session: {play_session.session_id} | Name: {order.menu_items.name} | Price: ฿{order.menu_items.price} | Status: {order.status.value }"
+                
+                str_list.append(formatted_str)
+                
+        return str_list
 
     # / ════════════════════════════════════════════════════════════════
     # \ PLAY SESSION

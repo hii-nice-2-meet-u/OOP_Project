@@ -193,21 +193,15 @@ def get_branch_menu(branch_id: str) -> str:
 
 
 @mcp.tool()
-def get_pending_orders(branch_id: str) -> str:
-    """Get pending food/drink orders for a branch"""
+def get_all_orders(branch_id: str) -> str:
+    """Get all food/drink orders for a branch"""
     try:
-        orders = system.get_pending_orders(branch_id)
-        branch = system.find_cafe_branch_by_id(branch_id)
+        orders = system.get_all_orders(branch_id)
 
         return (
-            "\n".join(
-                [
-                    f"Order ID: {o.order_id}, Status: {o.status}"
-                    for o in orders
-                ]
-            )
+            "\n".join(orders)
             if orders
-            else "No pending orders"
+            else "Currently No Orders"
         )
     except Exception as e:
         return f"Error: {e}"
@@ -323,6 +317,8 @@ def update_order_cancel(play_session_id: str, order_id: str) -> str:
         return "Order cancelled"
     except Exception as e:
         return f"Error: {e}"
+
+
 @mcp.tool()
 def bill_history(play_session_id: str) -> str:
     """View past receipt of a checked-out session (Use PS- only)
@@ -364,6 +360,7 @@ def bill_history_by_person(person_id: str) -> str:
     except Exception as e:
         return f"Error: {e}"
 
+
 @mcp.tool()
 def check_out(play_session_id: str, method_type: str = "cash", paid_amount: float = None) -> str:
     """Check out a session and generate receipt
@@ -396,7 +393,7 @@ def add_table_to_branch(auth_id: str, branch_id: str, capacity: int) -> str:
         # 1. Authorization Check
         if not (auth_id.startswith("OWNER") or auth_id.startswith("MANAGER")):
             return "Authorization Failed: Only Owner or Manager can add a table"
-        
+
         person = system.find_person_by_id(auth_id)
         if isinstance(person, Manager):
             if system.find_cafe_branch_by_id(branch_id).manager_id != person.user_id:
@@ -409,7 +406,8 @@ def add_table_to_branch(auth_id: str, branch_id: str, capacity: int) -> str:
         return f"Table created successfully Table ID: {table.table_id} (Capacity: {capacity} seats) in branch {branch_id}"
     except Exception as e:
         return f"Error: {e}"
-    
+
+
 @mcp.tool()
 def add_food_to_branch(auth_id: str, branch_id: str, name: str, price: float, description: str = "") -> str:
     """
@@ -418,7 +416,7 @@ def add_food_to_branch(auth_id: str, branch_id: str, name: str, price: float, de
     try:
         if not (auth_id.startswith("OWNER") or auth_id.startswith("MANAGER")):
             return "Authorization Failed: Only Owner or Manager can add a menu item"
-        
+
         person = system.find_person_by_id(auth_id)
         if isinstance(person, Manager):
             if system.find_cafe_branch_by_id(branch_id).manager_id != person.user_id:
@@ -426,10 +424,12 @@ def add_food_to_branch(auth_id: str, branch_id: str, name: str, price: float, de
         if person is None:
             return "Authorization Failed: User not found in the system"
 
-        food = system.create_menu_item_food_to_branch(branch_id, name, price, description)
+        food = system.create_menu_item_food_to_branch(
+            branch_id, name, price, description)
         return f"Food menu added successfully Item ID: {food.item_id} | Name: {food.name} | Price: {price}"
     except Exception as e:
         return f"Error: {e}"
+
 
 @mcp.tool()
 def add_drink_to_branch(auth_id: str, branch_id: str, name: str, price: float, cup_size: str = "S", description: str = "") -> str:
@@ -439,19 +439,21 @@ def add_drink_to_branch(auth_id: str, branch_id: str, name: str, price: float, c
     try:
         if not (auth_id.startswith("OWNER") or auth_id.startswith("MANAGER")):
             return "Authorization Failed: Only Owner or Manager can add a menu item"
-            
+
         person = system.find_person_by_id(auth_id)
         if person is None:
             return "Authorization Failed: User not found in the system"
-        
+
         if isinstance(person, Manager):
             if system.find_cafe_branch_by_id(branch_id).manager_id != person.user_id:
                 return f"You are not Manager of {system.find_cafe_branch_by_id(branch_id).name}"
 
-        drink = system.create_menu_item_drink_to_branch(branch_id, name, price, cup_size, description)
+        drink = system.create_menu_item_drink_to_branch(
+            branch_id, name, price, cup_size, description)
         return f"Drink added successfully Item ID: {drink.item_id} | Name: {drink.name} (Size: {cup_size}) | Price: {price}"
     except Exception as e:
         return f"Error: {e}"
+
 
 @mcp.tool()
 def add_staff_to_branch(auth_id: str, branch_id: str, staff_name: str) -> str:
@@ -461,7 +463,7 @@ def add_staff_to_branch(auth_id: str, branch_id: str, staff_name: str) -> str:
     try:
         if not (auth_id.startswith("OWNER") or auth_id.startswith("MANAGER")):
             return "Authorization Failed: Only Owner or Manager can add staff"
-            
+
         person = system.find_person_by_id(auth_id)
         if isinstance(person, Manager):
             if system.find_cafe_branch_by_id(branch_id).manager_id != person.user_id:
@@ -472,11 +474,12 @@ def add_staff_to_branch(auth_id: str, branch_id: str, staff_name: str) -> str:
         # Create Staff and add to branch
         new_staff = system.create_staff(staff_name)
         system.add_staff_to_branch(branch_id, new_staff.user_id)
-        
+
         return f"Staff added successfully Staff ID: {new_staff.user_id} | Name: {new_staff.name} added to branch {branch_id}"
     except Exception as e:
         return f"Error: {e}"
-    
+
+
 @mcp.tool()
 def authorize_add_spent(auth_id: str, customer_id: str, amount: float) -> str:
     """
@@ -485,7 +488,7 @@ def authorize_add_spent(auth_id: str, customer_id: str, amount: float) -> str:
     try:
         if not (auth_id.startswith("OWNER") or auth_id.startswith("MANAGER")):
             return "Authorization Failed: Only Owner or Manager can authorize adding spent amount"
-            
+
         person = system.find_person_by_id(auth_id)
         if person is None:
             return "Authorization Failed: Authorizer not found in the system"
@@ -495,6 +498,7 @@ def authorize_add_spent(auth_id: str, customer_id: str, amount: float) -> str:
                 f"Current Total Spent: {customer.total_spent} | Tier: {customer.get_member_tier().value}")
     except Exception as e:
         return f"Error: {e}"
+
 
 if __name__ == "__main__":
     mcp.run()
