@@ -13,12 +13,6 @@ mcp = FastMCP("BoardGameCafe")
 
 # --- STEP 3: โหลดระบบ (ดัก Error การ Import) ---
 try:
-    from BGC_SYSTEM import CafeSystem
-
-    system = CafeSystem()
-    # สร้างข้อมูลจำลอง (ถ้าต้องการทดสอบ)
-    branch = system.create_cafe_branch("BRCH-00000", "Ladkrabang")
-    system.create_table_to_branch(branch.branch_id, 4)
     from demo__instance import system
 except Exception as e:
     # พิมพ์ Error ลง stderr เท่านั้น (ห้าม print ลง stdout)
@@ -68,9 +62,13 @@ def get_all_cafe_branches() -> str:
 
 @mcp.tool()
 def get_person_by_type(person_type: str) -> str:
-    """Get all persons of a specific type ('owner', 'manager', 'staff', 'customer_member', 'customer_walk_in')"""
+    """Get all persons of a specific type ('Owner', 'Manager', 'Staff', 'Customer_member', 'customer_walk_in')
+    pass with CamelCase owner -> Owner (Case Sensitive)
+    ประเภทที่รองรับ: 'Owner', 'Manager', 'Staff', 'Member', 'WalkInCustomer'"""
     try:
-        persons = system.get_person_by_type(person_type)
+        person_module = sys.modules.get('BGC_PERSON')
+        target_class = getattr(person_module, person_type)
+        persons = system.get_person_by_type(target_class)
         return (
             "\n".join([f"ID: {p.user_id}, Name: {p.name}" for p in persons])
             if persons
@@ -105,7 +103,8 @@ def search_available_table(branch_id: str, required_capacity: int = 0) -> str:
     try:
         tables = system.search_available_table(branch_id, required_capacity)
         return (
-            "\n".join([f"Table ID: {t.table_id}, Cap: {t.capacity}" for t in tables])
+            "\n".join(
+                [f"Table ID: {t.table_id}, Cap: {t.capacity}" for t in tables])
             if tables
             else "ไม่มีโต๊ะว่าง"
         )
@@ -121,7 +120,7 @@ def get_branch_board_games(branch_id: str) -> str:
         return (
             "\n".join(
                 [
-                    f"Game ID: {g.board_game_id}, Name: {g.name}, Status: {g.status}"
+                    f"Game ID: {g.game_id}, Name: {g.name}, Status: {g.status}"
                     for g in games
                 ]
             )
@@ -138,7 +137,8 @@ def search_board_game_by_min_players(branch_id: str, min_players: int) -> str:
     try:
         games = system.search_board_game_by_min_players(branch_id, min_players)
         return (
-            "\n".join([f"Game ID: {g.board_game_id}, Name: {g.name}" for g in games])
+            "\n".join(
+                [f"Game ID: {g.game_id}, Name: {g.name}" for g in games])
             if games
             else "ไม่มีเกม"
         )
@@ -154,7 +154,7 @@ def get_branch_menu(branch_id: str) -> str:
         return (
             "\n".join(
                 [
-                    f"Menu ID: {m.menu_item_id}, Name: {m.name}, Price: {m.price}"
+                    f"Menu ID: {m.item_id}, Name: {m.name}, Price: {m.price}"
                     for m in items
                 ]
             )
@@ -170,10 +170,12 @@ def get_pending_orders(branch_id: str) -> str:
     """Get pending food/drink orders for a branch"""
     try:
         orders = system.get_pending_orders(branch_id)
+        branch = system.find_cafe_branch_by_id(branch_id)
+            
         return (
             "\n".join(
                 [
-                    f"Order ID: {o.order_id}, Session: {o.play_session_id}, Status: {o.status}"
+                    f"Order ID: {o.order_id}, Status: {o.status}"
                     for o in orders
                 ]
             )
@@ -213,18 +215,19 @@ def check_in(
 ) -> str:
     """Check in a walk-in or walk-in member"""
     try:
-        session = system.check_in(branch_id, player_amount, customer_id, table_id)
-        return f"Check in successful! Session ID: {session.play_session_id}, Table: {session.table_id}"
+        session = system.check_in(
+            branch_id, player_amount, customer_id, table_id)
+        return f"Check in successful! Session ID: {session.session_id}, Table: {session.table_id}"
     except Exception as e:
         return f"Error: {e}"
 
 
 @mcp.tool()
-def check_in_reserved(reservation_id: str, customer_id: str) -> str:
+def check_in_reserved(reservation_id: str, customer_id: str, current_time: datetime) -> str:
     """Check in a reserved session"""
     try:
-        session = system.check_in_reserved(reservation_id, customer_id)
-        return f"Check in reserved successful! Session ID: {session.play_session_id}"
+        session = system.check_in_reserved(reservation_id, customer_id, current_time)
+        return f"Check in reserved successful! Session ID: {session.session_id}"
     except Exception as e:
         return f"Error: {e}"
 
@@ -262,12 +265,14 @@ def return_board_game(play_session_id: str, board_game_id: str) -> str:
 
 @mcp.tool()
 def take_order(play_session_id: str, menu_item_id: str) -> str:
-    """Take an order for a session"""
+    """Take an order for a session
+    e.g. take_order("PS-00000", "FOOD-00000")
+    """
     try:
         order = system.take_order(play_session_id, menu_item_id)
         return f"สั่งอาหารสำเร็จ Order ID: {order.order_id}" if order else "สั่งอาหารไม่สำเร็จ"
     except Exception as e:
-        return f"Error: {e}"
+        return f"Error: {str(e)}"
 
 
 @mcp.tool()
@@ -294,8 +299,8 @@ def update_order_cancel(play_session_id: str, order_id: str) -> str:
 def check_out(play_session_id: str, method_type: str = "cash") -> str:
     """Check out a session and generate receipt"""
     try:
-        receipt = system.check_out(play_session_id, method_type=method_type)
-        return f"Check out successful. Total: {receipt.total}, Receipt ID: {receipt.payment_id}"
+        receipt, total = system.check_out(play_session_id, method_type=method_type)
+        return f"Check out successful. Total: {total}, Receipt ID: {receipt.payment_id}"
     except Exception as e:
         return f"Error: {e}"
 

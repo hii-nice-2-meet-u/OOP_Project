@@ -201,6 +201,12 @@ system.add_staff_to_branch("BRCH-00001", "STAFF-00003")
 system.add_staff_to_branch("BRCH-00001", "STAFF-00004")
 system.add_staff_to_branch("BRCH-00001", "STAFF-00005")
 
+system.create_table_to_branch("BRCH-00001", 2)
+system.create_table_to_branch("BRCH-00001", 4)
+system.create_table_to_branch("BRCH-00001", 6)
+system.create_table_to_branch("BRCH-00001", 8)
+system.create_table_to_branch("BRCH-00001", 10)
+
 # เพิ่มบอร์ดเกม 7 เกม
 system.create_board_game_to_branch(
     "BRCH-00001",

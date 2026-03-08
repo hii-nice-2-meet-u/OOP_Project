@@ -1065,7 +1065,7 @@ class CafeSystem:
             raise ValueError("Menu Item not found")
 
         try:
-            play_session.take_order(menu_item)
+            return play_session.take_order(menu_item)
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to take order: {e}")
 
@@ -1185,7 +1185,7 @@ class CafeSystem:
         payment = self.create_payment(total, method_type, **kwargs)
         play_session.payment = payment
 
-        return payment
+        return payment, total
 
     # / ════════════════════════════════════════════════════════════════
     # \ PAYMENT

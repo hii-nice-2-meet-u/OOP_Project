@@ -252,7 +252,10 @@ class PlaySession:
     def take_order(self, menu_item):
         if not isinstance(menu_item, MenuItem):
             raise ValueError("Type Error : Invalid order")
-        self.__current_order.append(Order(menu_item))
+        new_order = Order(menu_item)
+        self.__current_order.append(new_order)
+        return new_order
+        
 
     def remove_board_games_id(self, board_game_id):
         self.__current_board_games_id.remove(board_game_id)
