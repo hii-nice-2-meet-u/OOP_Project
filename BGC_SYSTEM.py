@@ -200,7 +200,7 @@ class CafeSystem:
         """
         validate_id(customer_id, ["MEMBER", "WALK"])
 
-        if not isinstance(amount, (int, float)) or amount <= 0:
+        if not isinstance(amount, (int, float)) or amount < 0:
             raise ValueError("Amount must be a positive number")
 
         customer = self.find_person_by_id(customer_id)

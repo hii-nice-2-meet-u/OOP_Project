@@ -321,7 +321,7 @@ def update_order_cancel(play_session_id: str, order_id: str) -> str:
 
 @mcp.tool()
 def bill_history(play_session_id: str) -> str:
-    """View past receipt of a checked-out session (Use PS- only)
+    """ดูใบเสร็จย้อนหลังของ session ที่ checkout แล้ว (ใช้ PS- เท่านั้น)
     e.g. bill_history("PS-00000")
     """
     try:
@@ -338,13 +338,13 @@ def bill_history(play_session_id: str) -> str:
 
 @mcp.tool()
 def bill_history_by_person(person_id: str) -> str:
-    """View all receipt history for a specific person
+    """ดูประวัติใบเสร็จทุก session ของ person คนนึง
     e.g. bill_history_by_person("MEMBER-00000")
     """
     try:
-        all_bills = system.bill_history_by_person(person_id)
-        if not all_bills:
-            return "No service history found"
+        items = system.bill_history_by_person(person_id)
+        if not items:
+            return "ไม่พบประวัติการใช้บริการ"
         lines = []
         for label, price in items:
             if price is None:
