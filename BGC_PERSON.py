@@ -31,10 +31,6 @@ class Person(ABC):
     def name(self, value):
         self.__name = value
 
-    @user_id.setter
-    def user_id(self, value):
-        self.__user_id = value
-
     # / ════════════════════════════════════════════════════════════════
     # - Methods
     # / ════════════════════════════════════════════════════════════════
@@ -49,15 +45,29 @@ class Person(ABC):
 class Customer(Person):
     def __init__(self, name, user_id):
         super().__init__(name, user_id)
-
+        self.__phone_number = ""
+        self.__note = ""
+        self.__email = ""
     # / ════════════════════════════════════════════════════════════════
     # - Getters
     # / ════════════════════════════════════════════════════════════════
+    @property
+    def phone_number(self):
+        return self.__phone_number
 
+    @property
+    def note(self):
+        return self.__note
     # / ════════════════════════════════════════════════════════════════
     # - Setters
     # / ════════════════════════════════════════════════════════════════
+    @phone_number.setter
+    def phone_number(self, value):
+        self.__phone_number = value
 
+    @note.setter
+    def note(self, value):
+        self.__note = value
     # / ════════════════════════════════════════════════════════════════
     # - Methods
     # / ════════════════════════════════════════════════════════════════
@@ -92,7 +102,6 @@ class Member(Customer):
         self.__total_spent = 0
         self.__member_tier = MemberTier.NONE_TIER
         self.__birth_date = ""
-        # self.__is_student = False
 
     # / ════════════════════════════════════════════════════════════════
     # - Getters
@@ -106,10 +115,6 @@ class Member(Customer):
     def birth_date(self):
         return self.__birth_date
 
-    @property
-    def is_student(self):
-        return self.__is_student
-
     # / ════════════════════════════════════════════════════════════════
     # - Setters
     # / ════════════════════════════════════════════════════════════════
@@ -122,10 +127,6 @@ class Member(Customer):
     @birth_date.setter
     def birth_date(self, date):
         self.__birth_date = date
-
-    @is_student.setter
-    def is_student(self, value):
-        self.__is_student = value
 
     # / ════════════════════════════════════════════════════════════════
     # - Methods
@@ -292,13 +293,12 @@ class Owner(NonCustomer):
     # - Setters
     # / ════════════════════════════════════════════════════════════════
 
-    @owned_branches.setter
-    def owned_branches(self, branches):
-        self.__owned_branches = branches
-
     # / ════════════════════════════════════════════════════════════════
     # - Methods
     # / ════════════════════════════════════════════════════════════════
+
+    def add_owned_branch(self, branch_id):
+        self.__owned_branches.append(branch_id)
 
     # / ════════════════════════════════════════════════════════════════
 

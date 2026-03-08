@@ -51,7 +51,7 @@ class MenuItem(ABC):
         self.__price = price
 
     @is_available.setter
-    def availability(self, is_available):
+    def is_available(self, is_available):
         self.__is_available = is_available
 
     @description.setter
@@ -235,7 +235,7 @@ class Order:
         self.__status = status
 
     def set_order_preparing(self):
-        self.__status = OrderStatus.CANCELLED
+        self.__status = OrderStatus.PREPARING
 
     def set_order_serve(self):
         self.__status = OrderStatus.SERVED
