@@ -932,10 +932,6 @@ class CafeSystem:
             branch.add_play_session(session)
             session.add_players_id(reservation.customer_id)
             
-            # Fill the remaining player slots with anonymous walk-in IDs
-            for _ in range(reservation.players - 1):
-                session.add_players_id(self.create_customer_walk_in().user_id)
-                
             return session
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to create play session: {e}")
@@ -988,10 +984,6 @@ class CafeSystem:
             if customer_id == "walk_in":
                 customer_id = self.create_customer_walk_in().user_id
             session.add_players_id(customer_id)
-            
-            # Fill the remaining player slots with anonymous walk-in IDs
-            for _ in range(player_amount - 1):
-                session.add_players_id(self.create_customer_walk_in().user_id)
 
             branch.add_play_session(session)
             return session
@@ -1277,6 +1269,8 @@ class CafeSystem:
         payment = self.create_payment(total, method_type, **kwargs)
         play_session.payment = payment
 
+        
+        
         return payment, total
 
     # / ════════════════════════════════════════════════════════════════
@@ -1335,7 +1329,76 @@ class CafeSystem:
         except Exception as e:
             raise ValueError(f"Payment validation failed: {e}")
 
+    def bill(self, any_id):
+        validate_id(any_id, ["TABLE", "PS"])
 
+        cafe_branch = self.find_cafe_branch_by_id(any_id)
+        if cafe_branch is None:
+            raise ValueError("Cafe Branch not found")
+
+        play_session = cafe_branch.find_play_session_by_id(any_id)
+        if play_session is None:
+            raise ValueError("Play Session not found")
+
+        bill_items = []
+        total = 0
+
+        # ─── ค่าโต๊ะ (ราคาต่อชั่วโมง × ชั่วโมงที่ใช้ × จำนวนผู้เล่น) ───
+        duration = play_session.duration()
+        total_players = play_session.get_total_players()
+        table_cost = Table.price_per_hour * duration * total_players
+        bill_items.append({
+            "item": f"Table fee ({duration} hr x {total_players} players @ ฿{Table.price_per_hour}/hr)",
+            "price": table_cost
+        })
+        total += table_cost
+
+        # ─── ค่าอาหาร/เครื่องดื่ม (เฉพาะที่ SERVED แล้ว) ───
+        for order in play_session.current_order:
+            if order.status == OrderStatus.SERVED:
+                bill_items.append({
+                    "item": f"[Order] {order.menu_items.name}",
+                    "price": order.menu_items.price
+                })
+                total += order.menu_items.price
+
+        # ─── ส่วนลด (ใช้ส่วนลดสูงสุดจาก Member ในกลุ่ม) ───
+        discount = 0
+        for player_id in play_session.current_players_id:
+            try:
+                player = self.find_person_by_id(player_id)
+                if isinstance(player, Member):
+                    discount = max(discount, player.get_discount())
+            except ValueError:
+                continue
+
+        discount_amount = total * discount
+        if discount_amount > 0:
+            bill_items.append({
+                "item": f"Discount ({int(discount * 100)}%)",
+                "price": -discount_amount
+            })
+        total -= discount_amount
+
+        # ─── ค่าปรับบอร์ดเกมเสียหาย ───
+        for game_id in play_session.game_penalty:
+            try:
+                board_game = cafe_branch.find_board_game_by_id(game_id)
+                if board_game:
+                    bill_items.append({
+                        "item": f"[Penalty] Damaged board game: {board_game.name}",
+                        "price": board_game.price
+                    })
+                    total += board_game.price
+            except ValueError:
+                continue
+
+        bill_items.append({
+            "item": "TOTAL",
+            "price": total
+        })
+
+        return bill_items
 # | ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 # | #EFFF11
 

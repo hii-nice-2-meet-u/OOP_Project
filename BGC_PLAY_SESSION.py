@@ -271,7 +271,8 @@ class PlaySession:
         ):
             return 0
         return round((self.__end_time - self.__start_time).total_seconds() / 3600.0)
-
+        
+ 
     # / ════════════════════════════════════════════════════════════════
 
 
