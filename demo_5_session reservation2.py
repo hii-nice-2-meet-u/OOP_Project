@@ -133,7 +133,7 @@ if __name__ == "__main__":
     sys.borrow_board_game("TABLE-00000", "BG-00000")
     sys.borrow_board_game("TABLE-00000", "BG-00001")
     sys.borrow_board_game("TABLE-00000", "BG-00002")
-    
+
     print(
         f'{"AFTER":<10}:\t{ play_session.current_board_games_id } ',
     )
@@ -195,9 +195,9 @@ if __name__ == "__main__":
     print(
         f'{"BEFORE":<10}:\t{ [f"{a.reservation_id} ({a.status.name})" for a in sys.reservations] } ',
     )
-        
+
     sys.cancel_reservation("RESV-00001")
-        
+
     print(
         f'{"AFTER":<10}:\t{ [f"{a.reservation_id} ({a.status.name})" for a in sys.reservations] } ',
     )
