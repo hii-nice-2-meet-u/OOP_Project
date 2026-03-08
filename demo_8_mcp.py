@@ -364,19 +364,31 @@ def bill_history_by_person(person_id: str) -> str:
     except Exception as e:
         return f"Error: {e}"
 @mcp.tool()
-def check_out(play_session_id: str, method_type: str = "cash", paid_amount: float = None) -> str:
-    """Check out a session and generate receipt
-    method_type can be 'cash', 'card', or 'online'.
-    If using cash and paying less/more than total, pass paid_amount.
-    """
+def check_out(
+    play_session_id: str,
+    method_type: str = "cash",
+    paid_amount: float = None,
+    email: str = None,
+    card_number: str = None,
+    expiry_date: str = None,
+    cvv: str = None,
+) -> str:
     try:
         kwargs = {}
         if paid_amount is not None:
             kwargs["paid_amount"] = paid_amount
+        if email is not None:
+            kwargs["email"] = email
+        if card_number is not None:
+            kwargs["card_number"] = card_number
+        if expiry_date is not None:
+            kwargs["expiry_date"] = expiry_date
+        if cvv is not None:
+            kwargs["cvv"] = cvv
 
         receipt, total = system.check_out(
             play_session_id, method_type=method_type, **kwargs)
-        return f"Check out successful. Total: {total}, Receipt ID: {receipt.payment_id}"
+        return f"Check out successful. Total: {total:.2f}, Receipt ID: {receipt.payment_id}"
     except Exception as e:
         return f"Error: {e}"
 
