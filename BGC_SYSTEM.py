@@ -1259,9 +1259,12 @@ class CafeSystem:
         
         cafe_branch.end_play_session(
             play_session.session_id, actual_end_time)
-
-        payment = self.create_payment(total, method_type, **kwargs)
-        play_session.payment = payment
+        
+        table = cafe_branch.find_table_by_id(play_session.table_id)
+        if table is not None:
+            table.status = TableStatus.AVAILABLE
+            payment = self.create_payment(total, method_type, **kwargs)
+            play_session.payment = payment
 
         for cp in play_session.current_players_id:
             customer = self.find_person_by_id(cp)
@@ -1326,63 +1329,49 @@ class CafeSystem:
         except Exception as e:
             raise ValueError(f"Payment validation failed: {e}")
 
-    def find_play_session_history_by_id(self, any_id):
-        """ค้นหา session ที่ checkout แล้วจาก history"""
-        for cafe_branch in self.__cafe_branches:
-            session = cafe_branch.find_play_session_history_by_id(any_id)
-            if session:
-                return session
-        return None
+    def bill_history(self, session_id: str) -> list:
+        validate_id(session_id, ["PS"])
+        for branch in self.__cafe_branches:
+            for session in branch.get_play_sessions_history():
+                if session.session_id == session_id:
+                    return self.__calculate_bill(session)
+        raise ValueError(f"Session {session_id} not found")
 
-    def bill_history(self, play_session_id):
-        validate_id(play_session_id, ["PS"])
-        session = self.find_play_session_history_by_id(play_session_id)
-        if session is None:
-            raise ValueError("Session history not found")
-        return self.__calculate_bill(session)
-    
-    def bill_history_by_person(self, person_id):
+
+    def bill_history_by_person(self, person_id: str) -> list:
         validate_id(person_id, ["MEMBER", "WALK", "OWNER", "MANAGER", "STAFF"])
-        all_bills = []
-        for cafe_branch in self.__cafe_branches:
-            for session in cafe_branch.get_play_sessions_history():
+        items = []
+        for branch in self.__cafe_branches:
+            for session in branch.get_play_sessions_history():
                 if person_id in session.current_players_id:
-                    items = self.__calculate_bill(session)
-                    all_bills.append({
-                        "session_id": session.session_id,
-                        "table_id": session.table_id,
-                        "start_time": str(session.start_time),
-                        "end_time": str(session.end_time),
-                        "bill": items
-                    })
-        return all_bills
-    
-    def __calculate_bill(self, session):
+                    items.append((f"Session {session.session_id}", None))  # header
+                    items += self.__calculate_bill(session)
+        return items
+
+
+    def __calculate_bill(self, session) -> list:
         cafe_branch = self.find_cafe_branch_by_id(session.session_id)
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
-        bill_items = []
-        total = 0
+        items = []
+        total = 0.0
 
-        duration = session.duration()
+        # ── ค่าโต๊ะ ──────────────────────────────
+        duration      = session.duration()
         total_players = session.get_total_players()
-        table_cost = Table.price_per_hour * duration * total_players
-        bill_items.append({
-            "item": f"Table fee ({duration} hr x {total_players} players @ ฿{Table.price_per_hour}/hr)",
-            "price": table_cost
-        })
+        table_cost    = Table.price_per_hour * duration * total_players
+        items.append((f"Table fee ({duration} hr x {total_players} players @ ฿{Table.price_per_hour}/hr)", table_cost))
         total += table_cost
 
+        # ── อาหาร/เครื่องดื่มที่เสิร์ฟแล้ว ──────
         for order in session.current_order:
             if order.status == OrderStatus.SERVED:
-                bill_items.append({
-                    "item": f"[Order] {order.menu_items.name}",
-                    "price": order.menu_items.price
-                })
+                items.append((f"[Order] {order.menu_items.name}", order.menu_items.price))
                 total += order.menu_items.price
 
-        discount = 0
+        # ── ส่วนลด Member ────────────────────────
+        discount = 0.0
         for player_id in session.current_players_id:
             try:
                 player = self.find_person_by_id(player_id)
@@ -1393,26 +1382,21 @@ class CafeSystem:
 
         discount_amount = total * discount
         if discount_amount > 0:
-            bill_items.append({
-                "item": f"Discount ({int(discount * 100)}%)",
-                "price": -discount_amount
-            })
-        total -= discount_amount
+            items.append((f"Discount ({int(discount * 100)}%)", -discount_amount))
+            total -= discount_amount
 
+        # ── ค่าปรับบอร์ดเกม ──────────────────────
         for game_id in session.game_penalty:
             try:
                 board_game = cafe_branch.find_board_game_by_id(game_id)
                 if board_game:
-                    bill_items.append({
-                        "item": f"[Penalty] Damaged: {board_game.name}",
-                        "price": board_game.price
-                    })
+                    items.append((f"[Penalty] Damaged: {board_game.name}", board_game.price))
                     total += board_game.price
             except ValueError:
                 continue
 
-        bill_items.append({"item": "TOTAL", "price": total})
-        return bill_items
+        items.append(("TOTAL", total))
+        return items
 # | ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 # | #EFFF11
 

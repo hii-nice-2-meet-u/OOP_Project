@@ -323,19 +323,15 @@ def update_order_cancel(play_session_id: str, order_id: str) -> str:
         return "ยกเลิกออเดอร์แล้ว"
     except Exception as e:
         return f"Error: {e}"
-
 @mcp.tool()
 def bill_history(play_session_id: str) -> str:
-    """ดูใบเสร็จย้อนหลังของ session ที่ checkout แล้ว (ใช้ PS- เท่านั้น)
-    e.g. bill_history("PS-00000")
-    """
     try:
         items = system.bill_history(play_session_id)
         lines = []
-        for entry in items:
-            prefix = ">>> " if entry["item"] == "TOTAL" else "    "
-            sign = "-" if entry["price"] < 0 else " "
-            lines.append(f"{prefix}{entry['item']:<45} {sign}฿{abs(entry['price']):.2f}")
+        for label, price in items:
+            prefix = ">>> " if label == "TOTAL" else "    "
+            sign = "-" if price < 0 else " "
+            lines.append(f"{prefix}{label:<45} {sign}฿{abs(price):.2f}")
         return "\n".join(lines)
     except Exception as e:
         return f"Error: {e}"
@@ -343,23 +339,20 @@ def bill_history(play_session_id: str) -> str:
 
 @mcp.tool()
 def bill_history_by_person(person_id: str) -> str:
-    """ดูประวัติใบเสร็จทุก session ของ person คนนึง
-    e.g. bill_history_by_person("MEMBER-00000")
-    """
     try:
-        all_bills = system.bill_history_by_person(person_id)
-        if not all_bills:
+        items = system.bill_history_by_person(person_id)
+        if not items:
             return "ไม่พบประวัติการใช้บริการ"
         lines = []
-        for record in all_bills:
-            lines.append(f"{'─'*64}")
-            lines.append(f"  Session : {record['session_id']}  |  Table : {record['table_id']}")
-            lines.append(f"  Time    : {record['start_time']} → {record['end_time']}")
-            lines.append("")
-            for entry in record["bill"]:
-                prefix = "  >>> " if entry["item"] == "TOTAL" else "      "
-                sign = "-" if entry["price"] < 0 else " "
-                lines.append(f"{prefix}{entry['item']:<43} {sign}฿{abs(entry['price']):.2f}")
+        for label, price in items:
+            if price is None:
+                lines.append(f"{'─'*64}")
+                lines.append(f"  {label}")
+            elif label == "TOTAL":
+                lines.append(f"  >>> {label:<43}  ฿{price:.2f}")
+            else:
+                sign = "-" if price < 0 else " "
+                lines.append(f"      {label:<43} {sign}฿{abs(price):.2f}")
         lines.append(f"{'─'*64}")
         return "\n".join(lines)
     except Exception as e:

@@ -8,72 +8,73 @@ if __name__ == "__main__":
 
     # / ════════════════════════════════════════════════════════════════
 
-    sys.create_owner("OWNER_A")
-    sys.create_manager("MANAGER_A")
-    sys.create_staff("STAFF_A")
-    sys.create_customer_member("MEMBER_A")
-    sys.create_customer_member("MEMBER_B")
+    owner    = sys.create_owner("OWNER_A")
+    manager  = sys.create_manager("MANAGER_A")
+    staff    = sys.create_staff("STAFF_A")
+    member_a = sys.create_customer_member("MEMBER_A")
+    member_b = sys.create_customer_member("MEMBER_B")
 
     # / ════════════════════════════════════════════════════════════════
 
-    sys.create_cafe_branch("Cafe - A", "A 123/456")
+    branch = sys.create_cafe_branch("Cafe - A", "A 123/456")
 
     # / ════════════════════════════════════════════════════════════════
 
-    sys.create_table_to_branch("BRCH-00000", 2)
-    sys.create_table_to_branch("BRCH-00000", 4)
+    sys.create_table_to_branch(branch.branch_id, 2)
+    sys.create_table_to_branch(branch.branch_id, 4)
 
     # / ════════════════════════════════════════════════════════════════
 
     sys.create_board_game_to_branch(
-        "BRCH-00000", "Uno", "classic card game", 100.00, 2, 10,
+        branch.branch_id, "Uno", "classic card game", 100.00, 2, 10,
         "A card game where players match cards by color or number.",
     )
     sys.create_board_game_to_branch(
-        "BRCH-00000", "Monopoly", "classic board game", 200.00, 2, 6,
+        branch.branch_id, "Monopoly", "classic board game", 200.00, 2, 6,
         "A board game about buying and selling properties.",
     )
 
     # / ════════════════════════════════════════════════════════════════
 
-    sys.create_menu_to_branch("BRCH-00000")
-    sys.create_menu_item_food_to_branch("BRCH-00000", "ITEM_FOOD_1",  50,  "ข้าวผัด")
-    sys.create_menu_item_food_to_branch("BRCH-00000", "ITEM_FOOD_2", 120,  "สเต็ก")
-    sys.create_menu_item_drink_to_branch("BRCH-00000", "ITEM_DRINK_1", 60, "กาแฟ")
-    sys.create_menu_item_drink_to_branch("BRCH-00000", "ITEM_DRINK_2", 80, "ชานมไข่มุก")
+    sys.create_menu_to_branch(branch.branch_id)
+    sys.create_menu_item_food_to_branch(branch.branch_id, "ITEM_FOOD_1",  50,  "ข้าวผัด")
+    sys.create_menu_item_food_to_branch(branch.branch_id, "ITEM_FOOD_2", 120,  "สเต็ก")
+    sys.create_menu_item_drink_to_branch(branch.branch_id, "ITEM_DRINK_1", 60, "กาแฟ")
+    sys.create_menu_item_drink_to_branch(branch.branch_id, "ITEM_DRINK_2", 80, "ชานมไข่มุก")
 
     # / ════════════════════════════════════════════════════════════════
 
-    sys.add_owner_to_branch("BRCH-00000", "OWNER-00000")
-    sys.add_manager_to_branch("BRCH-00000", "MANAGER-00000")
-    sys.add_staff_to_branch("BRCH-00000", "STAFF-00000")
+    sys.add_owner_to_branch(branch.branch_id, owner.user_id)
+    sys.add_manager_to_branch(branch.branch_id, manager.user_id)
+    sys.add_staff_to_branch(branch.branch_id, staff.user_id)
 
     # / ════════════════════════════════════════════════════════════════
     # SESSION 1 : MEMBER_A + MEMBER_B
 
-    sys.make_reservation(
-        "MEMBER-00000", "BRCH-00000", 2,
+    reservation = sys.make_reservation(
+        member_a.user_id, branch.branch_id, 2,
         "2026-03-09", "15:00", "16:00", "TABLE-00000",
     )
 
     play_session_1 = sys.check_in_reserved(
-        "RESV-00000", "MEMBER-00000", current_time=fake_time
+        reservation.reservation_id, member_a.user_id, current_time=fake_time
     )
 
-    sys.join_session("PS-00000", "MEMBER-00001")
-    sys.borrow_board_game("TABLE-00000", "BG-00000")
-    sys.take_order("TABLE-00000", "FOOD-00000")   # ข้าวผัด  50
-    sys.take_order("TABLE-00000", "FOOD-00001")   # สเต็ก  120
-    sys.take_order("TABLE-00000", "DRINK-00000")  # กาแฟ    60
+    sys.join_session(play_session_1.session_id, member_b.user_id)
+    sys.borrow_board_game(play_session_1.session_id, "BG-00000")
 
-    sys.update_order_preparing("PS-00000", "ORDER-00000")
-    sys.update_order_serve("PS-00000", "ORDER-00000")
-    sys.update_order_preparing("PS-00000", "ORDER-00001")
-    sys.update_order_serve("PS-00000", "ORDER-00001")
-    sys.update_order_cancel("PS-00000", "ORDER-00002")  # กาแฟ ถูกยกเลิก
+    order_0 = sys.take_order(play_session_1.session_id, "FOOD-00000")   # ข้าวผัด  50
+    order_1 = sys.take_order(play_session_1.session_id, "FOOD-00001")   # สเต็ก  120
+    order_2 = sys.take_order(play_session_1.session_id, "DRINK-00000")  # กาแฟ    60
+
+    sys.update_order_preparing(play_session_1.session_id, order_0.order_id)
+    sys.update_order_serve(play_session_1.session_id, order_0.order_id)
+    sys.update_order_preparing(play_session_1.session_id, order_1.order_id)
+    sys.update_order_serve(play_session_1.session_id, order_1.order_id)
+    sys.update_order_cancel(play_session_1.session_id, order_2.order_id)  # กาแฟ ถูกยกเลิก
 
     sys.check_out(
-        "TABLE-00000",
+        play_session_1.session_id,
         method_type="cash",
         end_time=fake_time + timedelta(hours=2),
         paid_amount=9999,
@@ -85,16 +86,16 @@ if __name__ == "__main__":
     fake_time_2 = datetime(2026, 3, 9, 18, 0, 0)
 
     play_session_2 = sys.check_in(
-        "BRCH-00000", 1, "MEMBER-00000", "TABLE-00000",
+        branch.branch_id, 1, member_a.user_id, "TABLE-00000",
         start_time=fake_time_2
     )
 
-    sys.take_order("TABLE-00000", "DRINK-00001")  # ชานมไข่มุก  80
-    sys.update_order_preparing("PS-00001", "ORDER-00003")
-    sys.update_order_serve("PS-00001", "ORDER-00003")
+    order_3 = sys.take_order(play_session_2.session_id, "DRINK-00001")  # ชานมไข่มุก  80
+    sys.update_order_preparing(play_session_2.session_id, order_3.order_id)
+    sys.update_order_serve(play_session_2.session_id, order_3.order_id)
 
     sys.check_out(
-        "TABLE-00000",
+        play_session_2.session_id,
         method_type="cash",
         end_time=fake_time_2 + timedelta(hours=1),
         paid_amount=9999,
@@ -102,60 +103,56 @@ if __name__ == "__main__":
 
     # / ════════════════════════════════════════════════════════════════
 
-    print(f'\n{" TEST - BILL HISTORY (PS-00000) ":═^64}\n')
+    print(f'\n{" TEST - BILL HISTORY (SESSION 1) ":═^64}\n')
 
-    items = sys.bill_history("PS-00000")
-    for entry in items:
-        prefix = ">>> " if entry["item"] == "TOTAL" else "    "
-        sign = "-" if entry["price"] < 0 else " "
-        print(f"{prefix}{entry['item']:<45} {sign}฿{abs(entry['price']):.2f}")
-
-    print(f'\n{"":═^64}\n')
-
-    # / ════════════════════════════════════════════════════════════════
-
-    print(f'\n{" TEST - BILL HISTORY (PS-00001) ":═^64}\n')
-
-    items2 = sys.bill_history("PS-00001")
-    for entry in items2:
-        prefix = ">>> " if entry["item"] == "TOTAL" else "    "
-        sign = "-" if entry["price"] < 0 else " "
-        print(f"{prefix}{entry['item']:<45} {sign}฿{abs(entry['price']):.2f}")
+    for label, price in sys.bill_history(play_session_1.session_id):
+        prefix = ">>> " if label == "TOTAL" else "    "
+        sign = "-" if price < 0 else " "
+        print(f"{prefix}{label:<45} {sign}฿{abs(price):.2f}")
 
     print(f'\n{"":═^64}\n')
 
     # / ════════════════════════════════════════════════════════════════
 
-    print(f'\n{" TEST - BILL HISTORY BY PERSON (MEMBER-00000) ":═^64}\n')
+    print(f'\n{" TEST - BILL HISTORY (SESSION 2) ":═^64}\n')
 
-    all_bills = sys.bill_history_by_person("MEMBER-00000")
-    for record in all_bills:
-        print(f"{'─'*64}")
-        print(f"  Session : {record['session_id']}  |  Table : {record['table_id']}")
-        print(f"  Time    : {record['start_time']} → {record['end_time']}")
-        print()
-        for entry in record["bill"]:
-            prefix = "  >>> " if entry["item"] == "TOTAL" else "      "
-            sign = "-" if entry["price"] < 0 else " "
-            print(f"{prefix}{entry['item']:<43} {sign}฿{abs(entry['price']):.2f}")
+    for label, price in sys.bill_history(play_session_2.session_id):
+        prefix = ">>> " if label == "TOTAL" else "    "
+        sign = "-" if price < 0 else " "
+        print(f"{prefix}{label:<45} {sign}฿{abs(price):.2f}")
+
+    print(f'\n{"":═^64}\n')
+
+    # / ════════════════════════════════════════════════════════════════
+
+    print(f'\n{" TEST - BILL HISTORY BY PERSON (MEMBER_A) ":═^64}\n')
+
+    for label, price in sys.bill_history_by_person(member_a.user_id):
+        if price is None:
+            print(f"{'─'*64}")
+            print(f"  {label}")
+        elif label == "TOTAL":
+            print(f"  >>> {label:<43}  ฿{price:.2f}")
+        else:
+            sign = "-" if price < 0 else " "
+            print(f"      {label:<43} {sign}฿{abs(price):.2f}")
     print(f"{'─'*64}")
 
     print(f'\n{"":═^64}\n')
 
     # / ════════════════════════════════════════════════════════════════
 
-    print(f'\n{" TEST - BILL HISTORY BY PERSON (MEMBER-00001) ":═^64}\n')
+    print(f'\n{" TEST - BILL HISTORY BY PERSON (MEMBER_B) ":═^64}\n')
 
-    all_bills_2 = sys.bill_history_by_person("MEMBER-00001")
-    for record in all_bills_2:
-        print(f"{'─'*64}")
-        print(f"  Session : {record['session_id']}  |  Table : {record['table_id']}")
-        print(f"  Time    : {record['start_time']} → {record['end_time']}")
-        print()
-        for entry in record["bill"]:
-            prefix = "  >>> " if entry["item"] == "TOTAL" else "      "
-            sign = "-" if entry["price"] < 0 else " "
-            print(f"{prefix}{entry['item']:<43} {sign}฿{abs(entry['price']):.2f}")
+    for label, price in sys.bill_history_by_person(member_b.user_id):
+        if price is None:
+            print(f"{'─'*64}")
+            print(f"  {label}")
+        elif label == "TOTAL":
+            print(f"  >>> {label:<43}  ฿{price:.2f}")
+        else:
+            sign = "-" if price < 0 else " "
+            print(f"      {label:<43} {sign}฿{abs(price):.2f}")
     print(f"{'─'*64}")
 
     print(f'\n{"":═^64}\n')
@@ -175,7 +172,7 @@ if __name__ == "__main__":
 
     print(f'\n{" TEST - BILL HISTORY BY PERSON NO HISTORY ":═^64}\n')
 
-    empty = sys.bill_history_by_person("STAFF-00000")
+    empty = sys.bill_history_by_person(staff.user_id)
     print(f'{"RESULT":<10}:\t{"ไม่พบประวัติการใช้บริการ" if not empty else empty}')
 
     print(f'\n{"":═^64}\n')
