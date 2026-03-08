@@ -421,7 +421,7 @@ class CafeSystem:
                     table.status = TableStatus.AVAILABLE
         except Exception:
             pass  # ไม่ block การยกเลิกหากหาโต๊ะไม่เจอ
-
+        return True
     def update_reservation_status_by_id(self, reservation_id, status):
         validate_id(reservation_id, ["RESV"])
 

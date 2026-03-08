@@ -31,6 +31,7 @@ def make_reservation(
     date_str: str,
     start_t: str,
     end_t: str,
+    table_id : str
 ) -> str:
     """จองโต๊ะ (date_str format: YYYY-MM-DD, time format: HH:MM)
     ตัวอย่างการเรียก: make_reservation("MEMBER_A", "Ladkrabang", 4, "2024-07-01", "18:00", "20:00")
@@ -41,7 +42,7 @@ def make_reservation(
         if not branch:
             return "สาขาไม่พบ"
         res = system.make_reservation(
-            member.user_id, branch.branch_id, players, date_str, start_t, end_t
+            member.user_id, branch.branch_id, players, date_str, start_t, end_t, table_id
         )
         return f"จองสำเร็จ! ID: {res.reservation_id} ที่โต๊ะ {res.table_id}"
     except Exception as e:
@@ -210,10 +211,10 @@ def create_customer_member(name: str) -> str:
 
 
 @mcp.tool()
-def cancel_reservation(reservation_id: str) -> str:
+def cancel_reservation(reservation_id: str, current_time: datetime) -> str:
     """Cancel a reservation by ID"""
     try:
-        res = system.cancel_reservation(reservation_id)
+        res = system.cancel_reservation(reservation_id, current_time)
         return "ยกเลิกสำเร็จ" if res else "ยกเลิกไม่สำเร็จหรือไม่มีข้อมูล"
     except Exception as e:
         return f"Error: {e}"
