@@ -38,6 +38,8 @@ def make_reservation(
     ใช้ชื่อสาขาในการจองแทน ID เพื่อความสะดวกในการทดสอบ"""
     try:
         member = system.find_person_by_name(customer_name)
+        if not member:
+            return "ไม่พบชื่อลูกค้านี้ในระบบ"
         branch = system.find_cafe_branch_by_name(branch_name)
         if not branch:
             return "สาขาไม่พบ"
@@ -70,8 +72,14 @@ def get_person_by_type(person_type: str) -> str:
         person_module = sys.modules.get('BGC_PERSON')
         target_class = getattr(person_module, person_type)
         persons = system.get_person_by_type(target_class)
+        def format_person(p):
+            if person_type == 'Member':
+                tier_name = p.get_member_tier().value if hasattr(p, 'get_member_tier') else 'None'
+                return f"ID: {p.user_id}, Name: {p.name}, Tier: {tier_name}, Total Spent: {p.get_total_spent() if hasattr(p, 'get_total_spent') else 0}"
+            return f"ID: {p.user_id}, Name: {p.name}"
+
         return (
-            "\n".join([f"ID: {p.user_id}, Name: {p.name}" for p in persons])
+            "\n".join([format_person(p) for p in persons])
             if persons
             else "ไม่พบข้อมูล"
         )
@@ -267,11 +275,13 @@ def borrow_board_game(play_session_id: str, board_game_id: str) -> str:
 
 
 @mcp.tool()
-def return_board_game(play_session_id: str, board_game_id: str) -> str:
-    """Return a board game from a session"""
+def return_board_game(play_session_id: str, board_game_id: str, is_damaged: bool = False) -> str:
+    """Return a board game from a session
+    Set is_damaged to true to flag the board game as broken (MAINTENANCE)
+    """
     try:
-        res = system.return_board_game(play_session_id, board_game_id)
-        return "คืนสำเร็จ" if res else "คืนไม่สำเร็จ"
+        system.return_board_game(play_session_id, board_game_id, is_damaged=is_damaged)
+        return "คืนสำเร็จ"
     except Exception as e:
         return f"Error: {e}"
 
@@ -309,10 +319,17 @@ def update_order_cancel(play_session_id: str, order_id: str) -> str:
 
 
 @mcp.tool()
-def check_out(play_session_id: str, method_type: str = "cash") -> str:
-    """Check out a session and generate receipt"""
+def check_out(play_session_id: str, method_type: str = "cash", paid_amount: float = None) -> str:
+    """Check out a session and generate receipt
+    method_type can be 'cash', 'card', or 'online'.
+    If using cash and paying less/more than total, pass paid_amount.
+    """
     try:
-        receipt, total = system.check_out(play_session_id, method_type=method_type)
+        kwargs = {}
+        if paid_amount is not None:
+            kwargs["paid_amount"] = paid_amount
+            
+        receipt, total = system.check_out(play_session_id, method_type=method_type, **kwargs)
         return f"Check out successful. Total: {total}, Receipt ID: {receipt.payment_id}"
     except Exception as e:
         return f"Error: {e}"

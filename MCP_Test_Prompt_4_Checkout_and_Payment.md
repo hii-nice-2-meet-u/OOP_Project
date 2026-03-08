@@ -1,6 +1,6 @@
 # MCP Test Prompt 4: Checkout & Payment
 
-ก็อปปี้ Prompt ด้านล่างนี้ไปวางใน Claude Desktop ที่เชื่อมต่อกับ MCP Server `BoardGameCafe` แล้ว เพื่อให้ Claude ทำการทดสอบระบบชำระเงิน (Check-out)
+ก็อปปี้ Prompt ดานล่างนี้ไปวางใน Claude Desktop ที่เชื่อมต่อกับ MCP Server `BoardGameCafe` แล้ว เพื่อให้ Claude ทำการทดสอบระบบชำระเงิน (Check-out)
 
 ---
 
