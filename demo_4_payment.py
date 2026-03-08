@@ -40,7 +40,7 @@ if __name__ == "__main__":
     # / ════════════════════════════════════════════════════════════════
 
     def start_session(table):
-        ps = sys.check_in(bid, 2, table.table_id, start_time=fake_time)
+        ps = sys.check_in(bid, 2, table_id=table.table_id, start_time=fake_time)
         sys.take_order(table.table_id, food.item_id)
         sys.take_order(table.table_id, drink.item_id)
         order_id = ps.current_order[0].order_id

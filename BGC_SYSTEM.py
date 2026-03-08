@@ -1469,6 +1469,10 @@ class CafeBranch:
     @property
     def total_board_games(self):
         return len(self.__board_games)
+    
+    @property
+    def manager_id(self):
+        return self.__manager_id
 
     # / ════════════════════════════════════════════════════════════════
     # - Setters

@@ -53,7 +53,7 @@ if __name__ == "__main__":
 
     # / ════════════════════════════════════════════════════════════════
 
-    sys.add_owner_to_branch("BRCH-00000", "OWNER-00000")
+    sys.add_owner_to_branch("BRCH-00000", "OWNER-PESO67")
     sys.add_manager_to_branch("BRCH-00000", "MANAGER-00000")
     sys.add_staff_to_branch("BRCH-00000", "STAFF-00000")
 
