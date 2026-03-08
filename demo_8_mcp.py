@@ -218,15 +218,22 @@ def create_customer_member(name: str) -> str:
 
 
 @mcp.tool()
-def cancel_reservation(reservation_id: str, current_time) -> str:
-    """Cancel a reservation by ID, current time = time of reservation """
+def cancel_reservation(reservation_id: str, current_time: str = None) -> str:
     try:
-        res = system.cancel_reservation(reservation_id, current_time)
+        parsed_time = None
+        if current_time is not None:
+            for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+                try:
+                    parsed_time = datetime.strptime(current_time, fmt)
+                    break
+                except ValueError:
+                    continue
+            if parsed_time is None:
+                return "Error: current_time format invalid. Use 'YYYY-MM-DD HH:MM'"
+        res = system.cancel_reservation(reservation_id, parsed_time)
         return "Cancellation successful" if res else "Cancellation failed or no data found"
     except Exception as e:
         return f"Error: {e}"
-
-
 @mcp.tool()
 def check_in(
     branch_id: str,

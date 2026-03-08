@@ -419,13 +419,27 @@ class CafeSystem:
         if reservation is None:
             raise ValueError("Reservation not found.")
         if reservation.status == ReservationStatus.CANCELLED:
-            raise ValueError(
-                "Cannot cancel. Reservation is already cancelled.")
+            raise ValueError("Cannot cancel. Reservation is already cancelled.")
         if reservation.status != ReservationStatus.PENDING:
-            raise ValueError(
-                "Cannot cancel. Reservation is not in PENDING status.")
+            raise ValueError("Cannot cancel. Reservation is not in PENDING status.")
 
-        now = current_time if current_time is not None else datetime.now()
+        if current_time is None:
+            now = datetime.now()
+        elif isinstance(current_time, datetime):
+            now = current_time
+        elif isinstance(current_time, str):
+            parsed = None
+            for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+                try:
+                    parsed = datetime.strptime(current_time, fmt)
+                    break
+                except ValueError:
+                    continue
+            if parsed is None:
+                raise ValueError("Invalid current_time format. Expected 'YYYY-MM-DD HH:MM' or ISO format.")
+            now = parsed
+        else:
+            raise TypeError("current_time must be a datetime object or a string.")
 
         try:
             reservation_time = datetime.strptime(
@@ -435,8 +449,7 @@ class CafeSystem:
             raise ValueError(f"Invalid reservation date/time format: {e}")
 
         if now > reservation_time:
-            raise ValueError(
-                "Cannot cancel. The reservation time has already passed.")
+            raise ValueError("Cannot cancel. The reservation time has already passed.")
 
         reservation.status = ReservationStatus.CANCELLED
 
@@ -447,7 +460,7 @@ class CafeSystem:
                 if table is not None and table.status == TableStatus.RESERVED:
                     table.status = TableStatus.AVAILABLE
         except Exception:
-            pass  # ไม่ block การยกเลิกหากหาโต๊ะไม่เจอ
+            pass
         return True
 
     def update_reservation_status_by_id(self, reservation_id, status):
