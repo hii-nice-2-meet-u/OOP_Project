@@ -31,7 +31,7 @@ def make_reservation(
     date_str: str,
     start_t: str,
     end_t: str,
-    table_id : str
+    table_id: str,
 ) -> str:
     """จองโต๊ะ (date_str format: YYYY-MM-DD, time format: HH:MM)
     ตัวอย่างการเรียก: make_reservation("MEMBER_A", "Ladkrabang", 4, "2024-07-01", "18:00", "20:00")
@@ -211,7 +211,19 @@ def create_customer_member(name: str) -> str:
 
 
 @mcp.tool()
-def cancel_reservation(reservation_id: str, current_time: datetime) -> str:
+def add_spent(customer_id: str, amount: float, authorizer_id: str) -> str:
+    """Add total spent to a customer's account to increase their tier.
+    Only an Owner or Manager can authorize this action.
+    """
+    try:
+        customer = system.add_spent(customer_id, amount, authorizer_id)
+        return f"Added {amount} spent to {customer.name}. New total: {customer.total_spent}. New tier: {customer.get_member_tier().name}"
+    except Exception as e:
+        return f"Error: {e}"
+
+
+@mcp.tool()
+def cancel_reservation(reservation_id: str) -> str:
     """Cancel a reservation by ID"""
     try:
         res = system.cancel_reservation(reservation_id, current_time)
@@ -250,9 +262,8 @@ def check_in_reserved(reservation_id: str, customer_id: str, current_time: datet
 def join_session(play_session_id: str, customer_id: str = "walk_in") -> str:
     """Join an existing play session"""
     try:
-        if system.join_session(play_session_id, customer_id):
-            return "เข้าร่วมสำเร็จ"
-        return "เข้าร่วมไม่สำเร็จ"
+        system.join_session(play_session_id, customer_id)
+        return "เข้าร่วมสำเร็จ"
     except Exception as e:
         return f"Error: {e}"
 
@@ -293,8 +304,8 @@ def take_order(play_session_id: str, menu_item_id: str) -> str:
 def update_order_serve(play_session_id: str, order_id: str) -> str:
     """Update order status to served"""
     try:
-        res = system.update_order_serve(play_session_id, order_id)
-        return "อัปเดตสถานะเป็นเสิร์ฟแล้ว" if res else "ไม่สำเร็จ"
+        system.update_order_serve(play_session_id, order_id)
+        return "อัปเดตสถานะเป็นเสิร์ฟแล้ว"
     except Exception as e:
         return f"Error: {e}"
 
@@ -303,8 +314,8 @@ def update_order_serve(play_session_id: str, order_id: str) -> str:
 def update_order_cancel(play_session_id: str, order_id: str) -> str:
     """Cancel an order"""
     try:
-        res = system.update_order_cancel(play_session_id, order_id)
-        return "ยกเลิกออเดอร์แล้ว" if res else "ไม่สำเร็จ"
+        system.update_order_cancel(play_session_id, order_id)
+        return "ยกเลิกออเดอร์แล้ว"
     except Exception as e:
         return f"Error: {e}"
 
