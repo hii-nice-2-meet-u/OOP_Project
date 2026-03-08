@@ -49,9 +49,7 @@ if __name__ == "__main__":
     sys.create_menu_item_food_to_branch(
         "BRCH-00000", "Croissant", 85, "Butter croissant"
     )
-    sys.create_menu_item_drink_to_branch(
-        "BRCH-00000", "Americano", 65, "Hot americano"
-    )
+    sys.create_menu_item_drink_to_branch("BRCH-00000", "Americano", 65, "Hot americano")
 
     # / ════════════════════════════════════════════════════════════════
 
@@ -61,7 +59,7 @@ if __name__ == "__main__":
 
     # / ════════════════════════════════════════════════════════════════
 
-    play_session = sys.check_in_walk_in("BRCH-00000", 2, start_time=fake_time)
+    play_session = sys.check_in("BRCH-00000", 2, start_time=fake_time)
 
     # / ════════════════════════════════════════════════════════════════
 
@@ -70,12 +68,12 @@ if __name__ == "__main__":
 
     # / ════════════════════════════════════════════════════════════════
 
-    sys.borrow_board_game("TABLE-00000", "BG-00000")   # Catan
-    sys.borrow_board_game("TABLE-00000", "BG-00001")   # Pandemic
+    sys.borrow_board_game("TABLE-00000", "BG-00000")  # Catan
+    sys.borrow_board_game("TABLE-00000", "BG-00001")  # Pandemic
 
     # / ════════════════════════════════════════════════════════════════
 
-    sys.take_order("TABLE-00000", "FOOD-00000")   # Croissant
+    sys.take_order("TABLE-00000", "FOOD-00000")  # Croissant
     sys.take_order("TABLE-00000", "DRINK-00000")  # Americano
 
     sys.update_order_preparing("PS-00000", "ORDER-00000")
