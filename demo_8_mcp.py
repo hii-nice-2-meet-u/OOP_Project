@@ -42,7 +42,7 @@ def make_reservation(
         if not branch:
             return "สาขาไม่พบ"
         res = system.make_reservation(
-            member.user_id, branch.branch_id, players, date_str, start_t, end_t
+            member.user_id, branch.branch_id, players, date_str, start_t, end_t, table_id
         )
         return f"จองสำเร็จ! ID: {res.reservation_id} ที่โต๊ะ {res.table_id}"
     except Exception as e:
@@ -217,22 +217,10 @@ def create_customer_member(name: str) -> str:
 
 
 @mcp.tool()
-def add_spent(customer_id: str, amount: float, authorizer_id: str) -> str:
-    """Add total spent to a customer's account to increase their tier.
-    Only an Owner or Manager can authorize this action.
-    """
+def cancel_reservation(reservation_id: str, current_time) -> str:
+    """Cancel a reservation by ID, current time = time of reservation """
     try:
-        customer = system.add_spent(customer_id, amount, authorizer_id)
-        return f"Added {amount} spent to {customer.name}. New total: {customer.total_spent}. New tier: {customer.get_member_tier().name}"
-    except Exception as e:
-        return f"Error: {e}"
-
-
-@mcp.tool()
-def cancel_reservation(reservation_id: str) -> str:
-    """Cancel a reservation by ID"""
-    try:
-        res = system.cancel_reservation(reservation_id)
+        res = system.cancel_reservation(reservation_id, current_time)
         return "ยกเลิกสำเร็จ" if res else "ยกเลิกไม่สำเร็จหรือไม่มีข้อมูล"
     except Exception as e:
         return f"Error: {e}"
