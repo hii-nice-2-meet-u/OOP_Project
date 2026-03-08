@@ -555,7 +555,7 @@ class CafeSystem:
             start_dt = datetime.strptime(start_time, "%H:%M")
             end_dt = datetime.strptime(end_time, "%H:%M")
         except ValueError:
-            ValueError("Invalid time format. Expected HH:MM.")
+            raise ValueError("Invalid time format. Expected HH:MM.")
 
         duration_hrs = (end_dt - start_dt).total_seconds() / 3600
         if duration_hrs <= 0:
@@ -589,8 +589,8 @@ class CafeSystem:
                 f"{date_str} {start_time}", "%Y-%m-%d %H:%M"
             )
         except ValueError:
-            ValueError(
-                "I nvalid date/time format. Expected YYYY-MM-DD and HH:MM.")
+            raise ValueError(
+                "Invalid date/time format. Expected YYYY-MM-DD and HH:MM.")
 
         lead_time = reservation_time - datetime.now()
         one_hour = timedelta(hours=1)

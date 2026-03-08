@@ -38,6 +38,8 @@ def make_reservation(
     ใช้ชื่อสาขาในการจองแทน ID เพื่อความสะดวกในการทดสอบ"""
     try:
         member = system.find_person_by_name(customer_name)
+        if not member:
+            return "ไม่พบชื่อลูกค้านี้ในระบบ"
         branch = system.find_cafe_branch_by_name(branch_name)
         if not branch:
             return "สาขาไม่พบ"
