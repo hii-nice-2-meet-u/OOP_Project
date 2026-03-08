@@ -372,6 +372,7 @@ def bill_history_by_person(person_id: str) -> str:
 def check_out(
     play_session_id: str,
     method_type: str = "cash",
+    end_time : datetime = None,
     paid_amount: float = None,
     email: str = None,
     card_number: str = None,
@@ -392,7 +393,7 @@ def check_out(
             kwargs["cvv"] = cvv
 
         receipt, total = system.check_out(
-            play_session_id, method_type=method_type, **kwargs)
+            play_session_id,end_time=end_time, method_type=method_type, **kwargs)
         return f"Check out successful. Total: {total:.2f}, Receipt ID: {receipt.payment_id}"
     except Exception as e:
         return f"Error: {e}"

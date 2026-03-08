@@ -135,16 +135,22 @@ A new walk-in customer wants to join session PS-00000.
 ### 2.6 สั่งอาหาร
 ```
 Order "Spicy BBQ Wings" (FOOD-00000) for session PS-00000.
+Order "Spicy BBQ Wings" (FOOD-00000) for session PS-00001.
+Order "Spicy BBQ Wings" (FOOD-00000) for session PS-00002.
 ```
 
 ### 2.7 สั่งเครื่องดื่ม
 ```
 Order "Thai Milk Tea" (DRINK-00000) for session PS-00000.
+Order "Thai Milk Tea" (DRINK-00000) for session PS-00001.
+Order "Thai Milk Tea" (DRINK-00000) for session PS-00002.
 ```
 
 ### 2.8 สั่งอาหารเพิ่มอีก
 ```
-Order "Larb French Fries" (FOOD-00001) for session PS-00000.
+Order (FOOD-00002) for session PS-00000.
+Order (FOOD-00001) for session PS-00001.
+Order (FOOD-00002) for session PS-00001.
 ```
 
 ### 2.9 ดู Order ที่รอดำเนินการ
@@ -167,6 +173,11 @@ Cancel order ORDER-00001 in session PS-00000.
 ## ═══════════════════════════════════════════════
 ## 💳 PHASE 3 — Check-out & Payment
 ## ═══════════════════════════════════════════════
+
+โดยทุก checkout ใช้เวลา โต๊ะต่างกัน 
+PS-0000 1 ชั่วโมง
+PS-0001 1.5 ชั่วโมง
+PS-0002 2 ชั่วโมง
 
 ### 3.1 จ่ายด้วย 💵 เงินสด (Cash)
 ```
