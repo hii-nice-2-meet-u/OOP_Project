@@ -30,6 +30,7 @@ def validate_id(_id, list_type_id):
 # | ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 # | #EFFF11
 
+
 class CafeSystem:
     def __init__(self):
         self.__person = []
@@ -161,6 +162,13 @@ class CafeSystem:
     def find_person_by_id(self, user_id):
         for person in self.__person:
             if person.user_id == user_id:
+                return person
+        return None
+
+    def find_person_by_name(self, name):
+        name = name.lower()
+        for person in self.__person:
+            if person.name.lower() == name:
                 return person
         return None
 
