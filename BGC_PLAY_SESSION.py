@@ -261,12 +261,6 @@ class PlaySession:
         self.__current_players_id.remove(player_id)
 
     def duration(self):
-        if (
-            self.__start_time is None
-            or self.__end_time is None
-            or self.__end_time < self.__start_time
-        ):
-            return 0
         return round((self.__end_time - self.__start_time).total_seconds() / 3600.0)
 
     # / ════════════════════════════════════════════════════════════════

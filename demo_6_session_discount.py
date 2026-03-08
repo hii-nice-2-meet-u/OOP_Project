@@ -41,15 +41,23 @@ if __name__ == "__main__":
 
     sys.create_menu_to_branch("BRCH-00000")
 
-    sys.create_menu_item_food_to_branch("BRCH-00000", "Pizza", 200, "Pizza test")
+    sys.create_menu_item_food_to_branch(
+        "BRCH-00000", "Pizza", 200, "Pizza test"
+    )
 
-    sys.create_menu_item_drink_to_branch("BRCH-00000", "Cola", 50, "Drink test")
+    sys.create_menu_item_drink_to_branch(
+        "BRCH-00000", "Cola", 50, "Drink test"
+    )
 
     # ═══════════════════════════════════════════════
     # WALK IN
     # ═══════════════════════════════════════════════
 
-    play_session = sys.check_in("BRCH-00000", 2, start_time=fake_time)
+    play_session = sys.check_in_walk_in(
+        "BRCH-00000",
+        2,
+        start_time=fake_time
+    )
 
     sys.join_session(play_session.session_id, m1.user_id)
     sys.join_session(play_session.session_id, m2.user_id)
@@ -75,7 +83,7 @@ if __name__ == "__main__":
         "TABLE-00000",
         method_type="cash",
         end_time=fake_time + timedelta(hours=2),
-        paid_amount=1000,
+        paid_amount=1000
     )
 
     # ═══════════════════════════════════════════════

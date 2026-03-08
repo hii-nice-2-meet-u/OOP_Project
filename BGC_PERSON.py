@@ -62,18 +62,6 @@ class Customer(Person):
     # - Methods
     # / ════════════════════════════════════════════════════════════════
 
-    @abstractmethod
-    def get_total_spent(self):
-        pass
-
-    @abstractmethod
-    def get_discount(self):
-        pass
-
-    @abstractmethod
-    def get_member_tier(self):
-        pass
-
     # / ════════════════════════════════════════════════════════════════
 
 
@@ -103,6 +91,10 @@ class Member(Customer):
         return self.__total_spent
 
     @property
+    def member_tier(self):
+        return self.__member_tier
+
+    @property
     def birth_date(self):
         return self.__birth_date
 
@@ -117,7 +109,11 @@ class Member(Customer):
     @total_spent.setter
     def total_spent(self, amount):
         self.__total_spent += amount
-        self.update_member_tier()
+        self.__update_member_tier()
+
+    @member_tier.setter
+    def member_tier(self, tier):
+        self.__member_tier = tier
 
     @birth_date.setter
     def birth_date(self, date):
@@ -131,13 +127,7 @@ class Member(Customer):
     # - Methods
     # / ════════════════════════════════════════════════════════════════
 
-    def get_total_spent(self):
-        return self.__total_spent
-
-    def get_member_tier(self):
-        return self.__member_tier
-
-    def update_member_tier(self):
+    def __update_member_tier(self):
         if self.__total_spent >= 2000:
             self.__member_tier = MemberTier.PLATINUM
         elif self.__total_spent >= 1000:
@@ -186,15 +176,6 @@ class WalkInCustomer(Customer):
     # / ════════════════════════════════════════════════════════════════
     # - Methods
     # / ════════════════════════════════════════════════════════════════
-
-    def get_total_spent(self):
-        return 0
-
-    def get_member_tier(self):
-        return MemberTier.NONE_TIER
-
-    def get_discount(self):
-        return 0
 
     # / ════════════════════════════════════════════════════════════════
 

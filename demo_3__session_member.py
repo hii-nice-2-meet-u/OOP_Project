@@ -79,7 +79,7 @@ if __name__ == "__main__":
 
     # / ════════════════════════════════════════════════════════════════
 
-    play_session = sys.check_in("BRCH-00000", 2, "MEMBER-00000", start_time=fake_time)
+    play_session = sys.check_in_member("BRCH-00000", 2, "MEMBER-00000", start_time=fake_time)
 
     # / ════════════════════════════════════════════════════════════════
 
@@ -102,6 +102,7 @@ if __name__ == "__main__":
     )
     sys.borrow_board_game("TABLE-00000", "BG-00000")
     sys.borrow_board_game("TABLE-00000", "BG-00001")
+    sys.borrow_board_game("TABLE-00000", "BG-00002")
     print(
         f'{"AFTER":<10}:\t{ play_session.current_board_games_id } ',
     )
@@ -126,6 +127,7 @@ if __name__ == "__main__":
     sys.update_order_serve("PS-00000", "ORDER-00000")
 
     # / ════════════════════════════════════════════════════════════════
+
 
     a = sys.check_out(
         "TABLE-00000",

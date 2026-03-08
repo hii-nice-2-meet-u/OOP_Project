@@ -1,6 +1,5 @@
-from datetime import datetime
-
 from ENUM_STATUS import ReservationStatus
+from datetime import datetime
 
 # | ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 # | #EFFF11
@@ -57,17 +56,17 @@ class Reservation:
     def table_id(self):
         return self.__table_id
 
-    # @property
-    # def reservation_date(self):
-    #     return self.__reservation_date
+    @property
+    def reservation_date(self):
+        return self.__reservation_date
 
     @property
     def reservation_time(self):
         return self.__reservation_time
 
-    # @property
-    # def duration(self):
-    #     return self.__duration
+    @property
+    def duration(self):
+        return self.__duration
 
     @property
     def status(self):
@@ -105,17 +104,17 @@ class Reservation:
     def table_id(self, value):
         self.__table_id = value
 
-    # @reservation_date.setter
-    # def reservation_date(self, value):
-    #     self.__reservation_date = value
+    @reservation_date.setter
+    def reservation_date(self, value):
+        self.__reservation_date = value
 
     @reservation_time.setter
     def reservation_time(self, value):
         self.__reservation_time = value
 
-    # @duration.setter
-    # def duration(self, value):
-    #     self.__duration = value
+    @duration.setter
+    def duration(self, value):
+        self.__duration = value
 
     @status.setter
     def status(self, value):

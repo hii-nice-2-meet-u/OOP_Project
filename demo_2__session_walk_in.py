@@ -79,7 +79,7 @@ if __name__ == "__main__":
 
     # / ════════════════════════════════════════════════════════════════
 
-    play_session = sys.check_in("BRCH-00000", 2, start_time=fake_time)
+    play_session = sys.check_in_walk_in("BRCH-00000", 2, start_time=fake_time)
 
     # / ════════════════════════════════════════════════════════════════
 
@@ -103,6 +103,7 @@ if __name__ == "__main__":
     )
     sys.borrow_board_game("TABLE-00000", "BG-00000")
     sys.borrow_board_game("TABLE-00000", "BG-00001")
+    sys.borrow_board_game("TABLE-00000", "BG-00002")
     print(
         f'{"AFTER":<10}:\t{ play_session.current_board_games_id } ',
     )
