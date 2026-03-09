@@ -14,7 +14,7 @@ mcp = FastMCP("BoardGameCafe")
 
 # --- STEP 3: Load system (Catch Import Error) ---
 try:
-    from demo__instance import system
+    from _Project_instance import system
     print("Downloading Demo_instance....", file=sys.stderr)
 
 except Exception as e:
@@ -193,13 +193,18 @@ def get_branch_menu(branch_id: str) -> str:
 
 
 @mcp.tool()
-def get_all_orders(branch_id: str) -> str:
-    """Get all food/drink orders for a branch"""
+def get_play_session_orders(any_id: str) -> str:
+    """Get  food/drink orders for play session im a branch
+    accept only PS- and TABLE-
+    e.g. get_play_session_order(TABLE-00000)
+    e.g. get_play_session_order(PS-00000)
+    """
     try:
-        orders = system.get_all_orders(branch_id)
+        orders = system.get_play_session_orders(any_id)
 
         return (
-            "\n".join(orders)
+            "\n".join(
+                [f"Order: {o.menu_items.name} status: {o.status.value}" for o in orders])
             if orders
             else "Currently No Orders"
         )
@@ -234,6 +239,8 @@ def cancel_reservation(reservation_id: str, current_time: str = None) -> str:
         return "Cancellation successful" if res else "Cancellation failed or no data found"
     except Exception as e:
         return f"Error: {e}"
+
+
 @mcp.tool()
 def check_in(
     branch_id: str,
@@ -372,7 +379,7 @@ def bill_history_by_person(person_id: str) -> str:
 def check_out(
     play_session_id: str,
     method_type: str = "cash",
-    end_time : datetime = None,
+    end_time: datetime = None,
     paid_amount: float = None,
     email: str = None,
     card_number: str = None,
@@ -393,7 +400,7 @@ def check_out(
             kwargs["cvv"] = cvv
 
         receipt, total = system.check_out(
-            play_session_id,end_time=end_time, method_type=method_type, **kwargs)
+            play_session_id, end_time=end_time, method_type=method_type, **kwargs)
         return f"Check out successful. Total: {total:.2f}, Receipt ID: {receipt.payment_id}"
     except Exception as e:
         return f"Error: {e}"

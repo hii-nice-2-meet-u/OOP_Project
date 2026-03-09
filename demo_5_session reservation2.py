@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 # สมมติว่าคุณจองไว้ตอน 15:00 ของวันที่ 9 มีนาคม 2026
 # เราสร้างเวลาปลอมเป็น 15:05 (ไม่เร็วไป และไม่สายเกิน 15 นาที)
-fake_time = datetime(2026, 3, 9, 15, 5, 0)
+fake_time = datetime(2026, 3, 10, 15, 5, 0)
 
 if __name__ == "__main__":
     sys = CafeSystem()
@@ -86,7 +86,7 @@ if __name__ == "__main__":
         "MEMBER-00000",
         "BRCH-00000",
         2,
-        "2026-03-09",
+        "2026-03-10",
         "15:00",
         "16:00",
         "TABLE-00002",
@@ -112,14 +112,14 @@ if __name__ == "__main__":
 
     print(f'\n{" TEST - ADD CUSTOMER TO SESSION ":═^64}\n')
     print(
-        f'{"BEFORE":<10}:\t{ play_session.current_players_id } ',
+        f'{"BEFORE":<10}:\t{play_session.current_players_id} ',
     )
 
     sys.join_session("PS-00000", "MEMBER-00001")
     sys.join_session("PS-00000")
 
     print(
-        f'{"AFTER":<10}:\t{ play_session.current_players_id } ',
+        f'{"AFTER":<10}:\t{play_session.current_players_id} ',
     )
     print(f'\n{"":═^64}\n')
 
@@ -127,7 +127,7 @@ if __name__ == "__main__":
 
     print(f'\n{" TEST - BORROW BOARD GAME ":═^64}\n')
     print(
-        f'{"BEFORE":<10}:\t{ play_session.current_board_games_id } ',
+        f'{"BEFORE":<10}:\t{play_session.current_board_games_id} ',
     )
 
     sys.borrow_board_game("TABLE-00002", "BG-00000")
@@ -136,9 +136,9 @@ if __name__ == "__main__":
         sys.borrow_board_game("TABLE-00002", "BG-00002")
     except Exception as e:
         print(f"ERROR: {e}")
-        
+
     print(
-        f'{"AFTER":<10}:\t{ play_session.current_board_games_id } ',
+        f'{"AFTER":<10}:\t{play_session.current_board_games_id} ',
     )
     print(f'\n{"":═^64}\n')
 
@@ -146,14 +146,14 @@ if __name__ == "__main__":
 
     print(f'\n{" TEST - TAKE ORDER ":═^64}\n')
     print(
-        f'{"BEFORE":<10}:\t{ [a.menu_items.name for a in play_session.current_order] } ',
+        f'{"BEFORE":<10}:\t{[a.menu_items.name for a in play_session.current_order]} ',
     )
 
     sys.take_order("TABLE-00002", "FOOD-00000")
     sys.take_order("TABLE-00002", "DRINK-00000")
 
     print(
-        f'{"AFTER":<10}:\t{ [a.menu_items.name for a in play_session.current_order] } ',
+        f'{"AFTER":<10}:\t{[a.menu_items.name for a in play_session.current_order]} ',
     )
     print(f'\n{"":═^64}\n')
 
@@ -189,7 +189,7 @@ if __name__ == "__main__":
 
     except ValueError as e:
         print(f'\n{" TEST - CHECK OUT AGAIN ":═^64}\n')
-        print(f'{"ERROR":<10}:\t{ e } ')
+        print(f'{"ERROR":<10}:\t{e} ')
         print(f'\n{"":═^64}\n')
 
     # / ════════════════════════════════════════════════════════════════
@@ -197,13 +197,13 @@ if __name__ == "__main__":
     print(f'\n{" TEST - CANCEL RESERVATION ":═^64}\n')
 
     print(
-        f'{"BEFORE":<10}:\t{ [f"{a.reservation_id} ({a.status.name})" for a in sys.reservations] } ',
+        f'{"BEFORE":<10}:\t{[f"{a.reservation_id} ({a.status.name})" for a in sys.reservations]} ',
     )
 
     sys.cancel_reservation("RESV-00001")
 
     print(
-        f'{"AFTER":<10}:\t{ [f"{a.reservation_id} ({a.status.name})" for a in sys.reservations] } ',
+        f'{"AFTER":<10}:\t{[f"{a.reservation_id} ({a.status.name})" for a in sys.reservations]} ',
     )
     print(f'\n{"":═^64}\n')
 

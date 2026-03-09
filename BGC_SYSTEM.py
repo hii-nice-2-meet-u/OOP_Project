@@ -419,9 +419,11 @@ class CafeSystem:
         if reservation is None:
             raise ValueError("Reservation not found.")
         if reservation.status == ReservationStatus.CANCELLED:
-            raise ValueError("Cannot cancel. Reservation is already cancelled.")
+            raise ValueError(
+                "Cannot cancel. Reservation is already cancelled.")
         if reservation.status != ReservationStatus.PENDING:
-            raise ValueError("Cannot cancel. Reservation is not in PENDING status.")
+            raise ValueError(
+                "Cannot cancel. Reservation is not in PENDING status.")
 
         if current_time is None:
             now = datetime.now()
@@ -436,10 +438,12 @@ class CafeSystem:
                 except ValueError:
                     continue
             if parsed is None:
-                raise ValueError("Invalid current_time format. Expected 'YYYY-MM-DD HH:MM' or ISO format.")
+                raise ValueError(
+                    "Invalid current_time format. Expected 'YYYY-MM-DD HH:MM' or ISO format.")
             now = parsed
         else:
-            raise TypeError("current_time must be a datetime object or a string.")
+            raise TypeError(
+                "current_time must be a datetime object or a string.")
 
         try:
             reservation_time = datetime.strptime(
@@ -449,7 +453,8 @@ class CafeSystem:
             raise ValueError(f"Invalid reservation date/time format: {e}")
 
         if now > reservation_time:
-            raise ValueError("Cannot cancel. The reservation time has already passed.")
+            raise ValueError(
+                "Cannot cancel. The reservation time has already passed.")
 
         reservation.status = ReservationStatus.CANCELLED
 
@@ -941,7 +946,7 @@ class CafeSystem:
             session = PlaySession(reservation.table_id, now)
             branch.add_play_session(session)
             session.add_players_id(reservation.customer_id)
-            
+
             return session
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to create play session: {e}")
@@ -1146,13 +1151,14 @@ class CafeSystem:
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to take order: {e}")
 
-    def get_all_orders(self, branch_id):
-        validate_id(branch_id, ["BRCH"])
+    def get_play_session_orders(self, any_id: str):
 
-        cafe_branch = self.find_cafe_branch_by_id(branch_id)
+        validate_id(any_id, ["PS", "TABLE"])
+
+        cafe_branch = self.find_cafe_branch_by_id(any_id)
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
-        return cafe_branch.get_all_orders()
+        return cafe_branch.get_play_session_orders(any_id)
 
     def update_order(self, play_session_id, order_id, session_status):
         validate_id(play_session_id, ["PS"])
@@ -1236,10 +1242,11 @@ class CafeSystem:
             # 1. Calculate the total bill first without changing state
             for order in play_session.current_order:
                 if order.status in [OrderStatus.PENDING, OrderStatus.PREPARING]:
-                    raise ValueError("Cannot checkout while there are pending or preparing orders. Please serve or cancel them first.")
+                    raise ValueError(
+                        "Cannot checkout while there are pending or preparing orders. Please serve or cancel them first.")
                 if order.status == OrderStatus.SERVED:
                     total += order.menu_items.price
-                    
+
             discount = 0
             members_in_session = []
             for player_id in play_session.current_players_id:
@@ -1269,22 +1276,23 @@ class CafeSystem:
             total = (total * (1 - discount)) + penalty_fee
         except (TypeError, ValueError) as e:
             raise ValueError(f"Error calculating checkout total: {e}")
-        
+
         cafe_branch.end_play_session(
             play_session.session_id, actual_end_time)
-        
+
         table = cafe_branch.find_table_by_id(play_session.table_id)
         if table is not None:
             table.status = TableStatus.AVAILABLE
-            
+
         payment = self.create_payment(total, method_type, **kwargs)
         play_session.payment = payment
 
         for cp in play_session.current_players_id:
             customer = self.find_person_by_id(cp)
             if isinstance(customer, Member):
-                self.add_spent(cp, Table.price_per_hour * play_session.duration())
-                
+                self.add_spent(cp, Table.price_per_hour *
+                               play_session.duration())
+
         return payment, total
 
     # / ════════════════════════════════════════════════════════════════
@@ -1351,17 +1359,16 @@ class CafeSystem:
                     return self.__calculate_bill(session)
         raise ValueError(f"Session {session_id} not found")
 
-
     def bill_history_by_person(self, person_id: str) -> list:
         validate_id(person_id, ["MEMBER", "WALK", "OWNER", "MANAGER", "STAFF"])
         items = []
         for branch in self.__cafe_branches:
             for session in branch.get_play_sessions_history():
                 if person_id in session.current_players_id:
-                    items.append((f"Session {session.session_id}", None))  # header
+                    items.append(
+                        (f"Session {session.session_id}", None))  # header
                     items += self.__calculate_bill(session)
         return items
-
 
     def __calculate_bill(self, session) -> list:
         cafe_branch = self.find_cafe_branch_by_id(session.session_id)
@@ -1372,16 +1379,18 @@ class CafeSystem:
         total = 0.0
 
         # ── ค่าโต๊ะ ──────────────────────────────
-        duration      = session.duration()
+        duration = session.duration()
         total_players = session.get_total_players()
-        table_cost    = Table.price_per_hour * duration * total_players
-        items.append((f"Table fee ({duration} hr x {total_players} players @ ฿{Table.price_per_hour}/hr)", table_cost))
+        table_cost = Table.price_per_hour * duration * total_players
+        items.append(
+            (f"Table fee ({duration} hr x {total_players} players @ ฿{Table.price_per_hour}/hr)", table_cost))
         total += table_cost
 
         # ── อาหาร/เครื่องดื่มที่เสิร์ฟแล้ว ──────
         for order in session.current_order:
             if order.status == OrderStatus.SERVED:
-                items.append((f"[Order] {order.menu_items.name}", order.menu_items.price))
+                items.append(
+                    (f"[Order] {order.menu_items.name}", order.menu_items.price))
                 total += order.menu_items.price
 
         # ── ส่วนลด Member ────────────────────────
@@ -1396,7 +1405,8 @@ class CafeSystem:
 
         discount_amount = total * discount
         if discount_amount > 0:
-            items.append((f"Discount ({int(discount * 100)}%)", -discount_amount))
+            items.append(
+                (f"Discount ({int(discount * 100)}%)", -discount_amount))
             total -= discount_amount
 
         # ── ค่าปรับบอร์ดเกม ──────────────────────
@@ -1404,7 +1414,8 @@ class CafeSystem:
             try:
                 board_game = cafe_branch.find_board_game_by_id(game_id)
                 if board_game:
-                    items.append((f"[Penalty] Damaged: {board_game.name}", board_game.price))
+                    items.append(
+                        (f"[Penalty] Damaged: {board_game.name}", board_game.price))
                     total += board_game.price
             except ValueError:
                 continue
@@ -1467,7 +1478,7 @@ class CafeBranch:
     @property
     def total_board_games(self):
         return len(self.__board_games)
-    
+
     @property
     def manager_id(self):
         return self.__manager_id
@@ -1617,22 +1628,18 @@ class CafeBranch:
     # / ════════════════════════════════════════════════════════════════
     # \ ORDER
 
-    def get_all_orders(self):
-        str_list = []
-        for play_session in self.__play_sessions:
-            for order in play_session.current_order:
-                
-                # ( Session: PS-00000 | Name: ITEM_FOOD_1 | Price: 10 | Status: Pending)
-                formatted_str = f"Session: {play_session.session_id} | Name: {order.menu_items.name} | Price: ฿{order.menu_items.price} | Status: {order.status.value }"
-                
-                str_list.append(formatted_str)
-                
-        return str_list
+    def get_play_session_orders(self, any_id: str):
+
+        play_session = self.find_play_session_by_id(any_id)
+        if play_session is None:
+            raise ValueError("Play Session not found")
+        return play_session.current_order
 
     # / ════════════════════════════════════════════════════════════════
     # \ PLAY SESSION
     def get_play_sessions_history(self):
         return self.__play_sessions_history.copy()
+
     def add_play_session(self, play_session):
         if not isinstance(play_session, PlaySession):
             raise TypeError("Type Error : must be an instance of PlaySession")

@@ -1,7 +1,7 @@
 from BGC import *
 from datetime import datetime, timedelta
 
-fake_time = datetime(2026, 3, 9, 15, 5, 0)
+fake_time = datetime(2026, 3, 10, 15, 5, 0)
 
 if __name__ == "__main__":
     sys = CafeSystem()
@@ -53,7 +53,7 @@ if __name__ == "__main__":
 
     reservation = sys.make_reservation(
         member_a.user_id, branch.branch_id, 2,
-        "2026-03-09", "15:00", "16:00", "TABLE-00000",
+        "2026-03-10", "15:00", "16:00", "TABLE-00000",
     )
 
     play_session_1 = sys.check_in_reserved(
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     # / ════════════════════════════════════════════════════════════════
     # SESSION 2 : MEMBER_A อีกครั้ง (โต๊ะเดิม)
 
-    fake_time_2 = datetime(2026, 3, 9, 18, 0, 0)
+    fake_time_2 = datetime(2026, 3, 10, 18, 0, 0)
 
     play_session_2 = sys.check_in(
         branch.branch_id, 1, member_a.user_id, "TABLE-00000",
