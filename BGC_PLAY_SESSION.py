@@ -265,13 +265,18 @@ class PlaySession:
         self.__current_players_id.remove(player_id)
 
     def duration(self):
-        if (
-            self.__start_time is None
-            or self.__end_time is None
-            or self.__end_time < self.__start_time
-        ):
+        start = self.__start_time
+        end = self.__end_time if self.__end_time is not None else datetime.datetime.now()
+
+        if start is None:
             return 0
-        return math.ceil((self.__end_time - self.__start_time).total_seconds() / 3600.0)
+        
+        # Ensure minimum 1 hour if the session has started
+        diff_seconds = (end - start).total_seconds()
+        if diff_seconds < 0:
+            return 0
+            
+        return max(1, math.ceil(diff_seconds / 3600.0))
         
  
     # / ════════════════════════════════════════════════════════════════

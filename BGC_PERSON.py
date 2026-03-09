@@ -277,7 +277,7 @@ class Owner(NonCustomer):
 
     def __init__(self, name):
         temp_id = "OWNER-PESO67"
-            Owner.__counter += 1
+        Owner.__counter += 1
         super().__init__(name, temp_id)
         self.__owned_branches = []
 

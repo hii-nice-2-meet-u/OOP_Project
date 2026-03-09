@@ -599,12 +599,10 @@ class CafeSystem:
             raise ValueError("Invalid time format. Expected HH:MM.")
 
         duration_hrs = (end_dt - start_dt).total_seconds() / 3600
-        if duration_hrs <= 0:
-            duration_hrs += 24
 
-        if duration_hrs <= 0 or duration_hrs > 24:
+        if duration_hrs <= 0:
             raise ValueError(
-                "End time must be after start time or within 24 hours.")
+                "End time must be after start time.")
 
         max_dur_hrs = 2
         if tier == MemberTier.BRONZE:
@@ -1351,7 +1349,7 @@ class CafeSystem:
         # Compute duration locally WITHOUT setting play_session.end_time early
         # This prevents a corrupted end_time if payment later fails
         raw_seconds = (actual_end_time - play_session.start_time).total_seconds()
-        actual_duration = math.ceil(raw_seconds / 3600.0) if raw_seconds > 0 else 0
+        actual_duration = max(1, math.ceil(raw_seconds / 3600.0)) if raw_seconds >= 0 else 0
 
         total = 0
         try:
@@ -1569,7 +1567,7 @@ class CafeBranch:
         self.__location = location
         self.__tables = []
         self.__board_games = []
-        self.__menu_list = None
+        self.__menu_list = MenuList()
         self.__staff_id = []
         self.__manager_id = None
         self.__owner_id = None
