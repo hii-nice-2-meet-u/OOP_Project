@@ -234,6 +234,16 @@ class PlaySession:
         if self.__reserved_end_time is None:
             return False
         now = current_time if current_time is not None else datetime.datetime.now()
+        if isinstance(now, str):
+            parsed = None
+            for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M",
+                        "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+                try:
+                    parsed = datetime.datetime.strptime(now, fmt)
+                    break
+                except ValueError:
+                    continue
+            now = parsed if parsed else datetime.datetime.now()
         return now >= self.__reserved_end_time
 
     @property
@@ -268,8 +278,8 @@ class PlaySession:
     def add_board_games_id(self, board_game_id):
         self.__current_board_games_id.append(board_game_id)
 
-    def add_game_penalty(self, game_id):
-        self.__game_penalty.append(game_id)
+    def add_game_penalty(self, game_id, price=0.0):
+        self.__game_penalty.append({"game_id": game_id, "price": price})
 
     def get_total_players(self):
         return len(self.__current_players_id)
@@ -292,6 +302,18 @@ class PlaySession:
         start = self.__start_time
         # Use provided current_time, or stored end_time
         end = self.__end_time if self.__end_time is not None else current_time
+        if end is None:
+            end = datetime.datetime.now()
+        elif isinstance(end, str):
+            parsed = None
+            for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M",
+                        "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+                try:
+                    parsed = datetime.datetime.strptime(end, fmt)
+                    break
+                except ValueError:
+                    continue
+            end = parsed if parsed else datetime.datetime.now()
 
         if start is None:
             return 0
