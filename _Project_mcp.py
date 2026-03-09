@@ -401,10 +401,23 @@ def join_session(play_session_id: str, customer_id: str = "walk_in") -> str:
 
 
 @mcp.tool()
-def borrow_board_game(play_session_id: str, board_game_id: str) -> str:
-    """Borrow a board game for a session"""
+def borrow_board_game(play_session_id: str, board_game_id: str, current_time: str = None) -> str:
+    """Borrow a board game for a session.
+    current_time format: 'YYYY-MM-DD HH:MM' or ISO. Leave blank to use current time.
+    """
     try:
-        res = system.borrow_board_game(play_session_id, board_game_id)
+        parsed_time = None
+        if current_time is not None:
+            for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+                try:
+                    parsed_time = datetime.strptime(current_time, fmt)
+                    break
+                except ValueError:
+                    continue
+            if parsed_time is None:
+                return "Error: current_time format invalid. Use 'YYYY-MM-DD HH:MM'"
+
+        res = system.borrow_board_game(play_session_id, board_game_id, current_time=parsed_time)
         return "Successfully borrowed" if res else "Failed to borrow"
     except Exception as e:
         return f"Error: {e}"
@@ -424,12 +437,24 @@ def return_board_game(play_session_id: str, board_game_id: str, is_damaged: bool
 
 
 @mcp.tool()
-def take_order(play_session_id: str, menu_item_id: str) -> str:
+def take_order(play_session_id: str, menu_item_id: str, current_time: str = None) -> str:
     """Take an order for a session
     e.g. take_order("PS-00000", "FOOD-00000")
+    current_time format: 'YYYY-MM-DD HH:MM' or ISO. Leave blank to use current time.
     """
     try:
-        order = system.take_order(play_session_id, menu_item_id)
+        parsed_time = None
+        if current_time is not None:
+            for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+                try:
+                    parsed_time = datetime.strptime(current_time, fmt)
+                    break
+                except ValueError:
+                    continue
+            if parsed_time is None:
+                return "Error: current_time format invalid. Use 'YYYY-MM-DD HH:MM'"
+
+        order = system.take_order(play_session_id, menu_item_id, current_time=parsed_time)
         return f"Order successful Order ID: {order.order_id}" if order else "Order failed"
     except Exception as e:
         return f"Error: {str(e)}"
@@ -829,12 +854,24 @@ def get_reservations(branch_id: str = None) -> str:
 
 
 @mcp.tool()
-def get_active_bill(play_session_id: str) -> str:
+def get_active_bill(play_session_id: str, current_time: str = None) -> str:
     """Preview the current bill for an ACTIVE (not yet checked out) session.
     Uses current time to estimate duration.
     e.g. get_active_bill("PS-00000")  or  get_active_bill("TABLE-00000")
+    current_time format: 'YYYY-MM-DD HH:MM' or ISO. Leave blank to use current time.
     """
     try:
+        parsed_time = None
+        if current_time is not None:
+            for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+                try:
+                    parsed_time = datetime.strptime(current_time, fmt)
+                    break
+                except ValueError:
+                    continue
+            if parsed_time is None:
+                return "Error: current_time format invalid. Use 'YYYY-MM-DD HH:MM'"
+
         cafe_branch = system.find_cafe_branch_by_id(play_session_id)
         if cafe_branch is None:
             return "Error: Session not found"
@@ -844,7 +881,7 @@ def get_active_bill(play_session_id: str) -> str:
         if session.payment is not None:
             return "This session is already checked out. Use bill_history() instead."
 
-        now = datetime.now()
+        now = parsed_time if parsed_time else datetime.now()
         # Use the new duration logic from PlaySession which handles reserved_duration correctly
         duration = session.duration(now)
 
@@ -852,7 +889,7 @@ def get_active_bill(play_session_id: str) -> str:
         lines = [f"=== Active Bill Preview for {session.session_id} ==="]
         time_limit_str = f" | Reserved until: {session.reserved_end_time.strftime('%H:%M')}" if session.reserved_end_time else ""
         lines.append(f"  Start: {session.start_time.strftime('%Y-%m-%d %H:%M')} | Now: {now.strftime('%H:%M')}{time_limit_str} | Duration: {duration} hr")
-        if session.is_time_up:
+        if session.check_time_up(now):
             lines.append("  ⚠️ ALERT: TIME IS UP!")
         lines.append("")
 

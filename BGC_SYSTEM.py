@@ -981,6 +981,11 @@ class CafeSystem:
             raise ValueError("Table not found")
         
         if table.status == TableStatus.OCCUPIED:
+            active_session = branch.find_play_session_by_id(table.table_id)
+            if active_session and active_session.check_time_up():
+                raise ValueError(
+                    f"FORCE CHECKOUT REQUIRED: Table {table.table_id} is occupied by expired session {active_session.session_id}. Please perform payment and check_out for them before proceeding."
+                )
             raise ValueError("Check-in failed: The table is still occupied by another session.")
 
         try:
@@ -1050,8 +1055,16 @@ class CafeSystem:
             table = branch.find_table_by_id(table_id)
             if table is None:
                 raise ValueError("Table not found")
+            if table.status == TableStatus.OCCUPIED:
+                active_session = branch.find_play_session_by_id(table.table_id)
+                if active_session and active_session.check_time_up():
+                    raise ValueError(
+                        f"FORCE CHECKOUT REQUIRED: Table {table.table_id} is occupied by expired session {active_session.session_id}. Please perform payment and check_out for them before proceeding."
+                    )
+                raise ValueError("Check-in failed: The table is still occupied by another session.")
+            
             if table.status != TableStatus.AVAILABLE:
-                raise ValueError("Table is not available")
+                raise ValueError(f"Table is not available (Status: {table.status})")
             if table.capacity < player_amount:
                 raise ValueError("Table capacity not enough")
 
@@ -1165,7 +1178,7 @@ class CafeSystem:
     # / ════════════════════════════════════════════════════════════════
     # \ GAME SESSION - BORROW BOARD GAME
 
-    def borrow_board_game(self, any_id, board_game_id):
+    def borrow_board_game(self, any_id, board_game_id, current_time=None):
         validate_id(any_id, ["TABLE", "PS"])
         validate_id(board_game_id, ["BG"])
 
@@ -1177,7 +1190,7 @@ class CafeSystem:
         if play_session is None:
             raise ValueError("Play Session not found")
         
-        self.__validate_session_time(play_session)
+        self.__validate_session_time(play_session, current_time)
 
         if len(play_session.current_board_games_id) + 1 > 2:
             raise ValueError("Maximum 2 board games per session")
@@ -1250,7 +1263,7 @@ class CafeSystem:
     # / ════════════════════════════════════════════════════════════════
     # \ GAME SESSION - ORDER
 
-    def take_order(self, any_id, menu_item_id):
+    def take_order(self, any_id, menu_item_id, current_time=None):
         validate_id(any_id, ["TABLE", "PS"])
         validate_id(menu_item_id, ["FOOD", "DRINK"])
 
@@ -1263,7 +1276,7 @@ class CafeSystem:
         if play_session is None:
             raise ValueError("Play Session not found")
         
-        self.__validate_session_time(play_session)
+        self.__validate_session_time(play_session, current_time)
 
 
         menu_item = cafe_branch.find_menu_item_by_id(menu_item_id)
@@ -1535,9 +1548,9 @@ class CafeSystem:
                     return True
         return False
 
-    def __validate_session_time(self, play_session):
-        if play_session.is_time_up:
-            if self.__check_future_reservations(play_session.table_id):
+    def __validate_session_time(self, play_session, current_time=None):
+        if play_session.check_time_up(current_time):
+            if self.__check_future_reservations(play_session.table_id, current_time):
                 raise ValueError("Time up! This table is reserved for the next guest. Please proceed to Checkout.")
             else:
                 # We raise a specific message that UI/User can interpret as "Ask for extension"
