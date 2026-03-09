@@ -1337,6 +1337,10 @@ class CafeSystem:
 
         play_session = cafe_branch.find_play_session_by_id(any_id)
         if play_session is None:
+            # Check history to provide a better error message if it was already checked out
+            history_session = self.find_play_session_history_by_id(any_id)
+            if history_session is not None:
+                raise ValueError("This session already checked out")
             raise ValueError("Play Session not found")
 
         if play_session.payment is not None:
