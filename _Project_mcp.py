@@ -539,6 +539,7 @@ def check_out(
       check_out("PS-00000", method_type="online", email="user@example.com")
 
     end_time: optional, format 'YYYY-MM-DD HH:MM'. Leave blank to use current time.
+    """
     try:
         parsed_end = None
         if end_time is not None:
@@ -727,7 +728,8 @@ def create_cafe_branch(auth_id: str, branch_name: str, location: str = "") -> st
 
 @mcp.tool()
 def create_manager(auth_id: str, manager_name: str, branch_id: str) -> str:
-    """Create a new Manager and assign them to a branch. OWNER only.
+    """
+    Create a new Manager and assign them to a branch. OWNER only.
     e.g. create_manager("OWNER-00000", "Alice", "BRCH-00000")
     """
     try:
@@ -755,7 +757,8 @@ def add_board_game_to_branch(
     max_players: int,
     description: str = "",
 ) -> str:
-    """Add a board game to a branch (Requires Owner or Manager to authorize).
+    """
+    Add a board game to a branch (Requires Owner or Manager to authorize).
     e.g. add_board_game_to_branch("OWNER-00000", "BRCH-00000", "Catan", "Strategy", 500, 3, 6)
     """
     try:
@@ -783,7 +786,8 @@ def add_board_game_to_branch(
 
 @mcp.tool()
 def get_active_sessions(branch_id: str) -> str:
-    """List all active (not yet checked out) play sessions in a branch.
+    """
+    List all active (not yet checked out) play sessions in a branch.
     e.g. get_active_sessions("BRCH-00000")
     """
     try:
@@ -813,7 +817,8 @@ def get_active_sessions(branch_id: str) -> str:
 
 @mcp.tool()
 def get_reservations(branch_id: str = None) -> str:
-    """List all reservations. Optionally filter by branch_id.
+    """
+    List all reservations. Optionally filter by branch_id.
     e.g. get_reservations()  or  get_reservations("BRCH-00000")
     """
     try:
@@ -836,7 +841,8 @@ def get_reservations(branch_id: str = None) -> str:
 
 @mcp.tool()
 def get_active_bill(play_session_id: str) -> str:
-    """Preview the current bill for an ACTIVE (not yet checked out) session.
+    """
+    Preview the current bill for an ACTIVE (not yet checked out) session.
     Uses current time to estimate duration.
     e.g. get_active_bill("PS-00000")  or  get_active_bill("TABLE-00000")
     """
