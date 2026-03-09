@@ -49,6 +49,10 @@ class Payment:
         if v:
             self.__payment_time = datetime.datetime.now()
 
+    @payment_time.setter
+    def payment_time(self, t):
+        self.__payment_time = t
+
     def __str__(self):
         method_name = self.__payment_method.__class__.__name__
         # แสดง change ถ้าจ่ายด้วยเงินสด

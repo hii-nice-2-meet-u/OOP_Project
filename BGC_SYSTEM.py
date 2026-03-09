@@ -439,6 +439,8 @@ class CafeSystem:
                 date,
                 start_time,
                 end_time,
+                total_player=total_player,
+                current_time=self.get_time()
             )
             new_reservation.status = ReservationStatus.PENDING
             self.add_reservation(new_reservation)
@@ -484,7 +486,7 @@ class CafeSystem:
                 "Cannot cancel. Reservation is not in PENDING status.")
 
         if current_time is None:
-            now = datetime.now()
+            now = self.get_time()
         elif isinstance(current_time, datetime):
             now = current_time
         elif isinstance(current_time, str):
@@ -605,7 +607,7 @@ class CafeSystem:
         except ValueError as e:
             raise ValueError("Invalid date format. Expected YYYY-MM-DD.")
 
-        today = datetime.now().date()
+        today = self.get_time().date()
         days_advance = (reservation_date - today).days
 
         if days_advance < 0:
@@ -668,7 +670,7 @@ class CafeSystem:
             raise ValueError(
                 "Invalid date/time format. Expected YYYY-MM-DD and HH:MM.")
 
-        lead_time = reservation_time - datetime.now()
+        lead_time = reservation_time - self.get_time()
         one_hour = timedelta(hours=1)
 
         if lead_time < one_hour:
@@ -704,7 +706,7 @@ class CafeSystem:
         return cafe_branch.tables
 
     def update_reserved_tables(self):
-        now = datetime.now()
+        now = self.get_time()
         for reservation in self.__reservations:
             if reservation.status != ReservationStatus.PENDING:
                 continue
@@ -996,9 +998,9 @@ class CafeSystem:
         if reservation.status == ReservationStatus.COMPLETED:
             raise ValueError("Cannot check-in: This reservation is already completed.")
 
-        # BUG FIX: Default to datetime.now() INSIDE the function body, not in
+        # BUG FIX: Default to self.get_time() INSIDE the function body, not in
         # the signature, to avoid the classic 'frozen clock' mutable default bug.
-        now = current_time if current_time is not None else datetime.now()
+        now = current_time if current_time is not None else self.get_time()
         if now < reservation.reservation_time:
             raise ValueError("Too early to check-in")
 
@@ -1051,6 +1053,8 @@ class CafeSystem:
                 reserved_end_time=actual_res_end
             )
             session.add_players_id(reservation.customer_id)
+            for _ in range(reservation.total_player - 1):
+                session.add_players_id(self.create_customer_walk_in().user_id)
             session.reservation_id = reservation.reservation_id
 
             # BUG FIX: Only mutate state AFTER the session is confirmed created.
@@ -1072,6 +1076,25 @@ class CafeSystem:
         table_id="auto",
         start_time=None,
     ):
+        # BUG FIX 2: parse start_time string เป็น datetime object เสมอ
+        if start_time is None:
+            actual_start = self.get_time()
+        elif isinstance(start_time, datetime):
+            actual_start = start_time
+        else:
+            parsed = None
+            for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M",
+                        "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+                try:
+                    parsed = datetime.strptime(start_time, fmt)
+                    break
+                except ValueError:
+                    continue
+            if parsed is None:
+                raise ValueError(
+                    "start_time format invalid. Use 'YYYY-MM-DD HH:MM' or ISO format")
+            actual_start = parsed
+
         validate_id(branch_id, ["BRCH"])
 
         if not isinstance(customer_id, str):
@@ -1119,25 +1142,6 @@ class CafeSystem:
                 raise ValueError("Table capacity not enough")
 
         try:
-            # BUG FIX 2: parse start_time string เป็น datetime object เสมอ
-            # เพื่อป้องกัน (datetime - str) TypeError ใน PlaySession.duration()
-            if start_time is None:
-                actual_start = self.get_time()
-            elif isinstance(start_time, datetime):
-                actual_start = start_time
-            else:
-                parsed = None
-                for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M",
-                            "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
-                    try:
-                        parsed = datetime.strptime(start_time, fmt)
-                        break
-                    except ValueError:
-                        continue
-                if parsed is None:
-                    raise ValueError(
-                        "start_time format invalid. Use 'YYYY-MM-DD HH:MM' or ISO format")
-                actual_start = parsed
             session = PlaySession(table.table_id, actual_start)
 
             if customer_id == "walk_in":
@@ -1284,7 +1288,7 @@ class CafeSystem:
             damage_flag = is_damaged
             if damage_flag:
                 board_game.status = BoardGameStatus.MAINTENANCE
-                play_session.add_game_penalty(board_game_id)
+                play_session.add_game_penalty(board_game_id, board_game.price)
             else:
                 board_game.status = BoardGameStatus.AVAILABLE
             play_session.remove_board_games_id(board_game_id)
@@ -1445,7 +1449,7 @@ class CafeSystem:
                     raise ValueError(
                         "Cannot checkout while there are pending or preparing orders. Please serve or cancel them first.")
                 if order.status == OrderStatus.SERVED:
-                    total += order.menu_items.price
+                    total += order.snapshot_price
 
             discount = 0
             members_in_session = []
@@ -1465,13 +1469,8 @@ class CafeSystem:
             )
 
             penalty_fee = 0
-            for game_id in play_session.game_penalty:
-                try:
-                    _board_game = cafe_branch.find_board_game_by_id(game_id)
-                    if _board_game:
-                        penalty_fee += _board_game.price
-                except ValueError:
-                    continue
+            for penalty in play_session.game_penalty:
+                penalty_fee += penalty.get("price", 0.0)
 
             total = (total * (1 - discount)) + penalty_fee
         except (TypeError, ValueError) as e:
@@ -1483,16 +1482,18 @@ class CafeSystem:
         
         # Only mutate session state AFTER payment has been confirmed successful
         play_session.end_time = actual_end_time
+        payment.payment_time = actual_end_time
         play_session.payment = payment
-
-        # Only release the table AFTER payment has been confirmed successful
-        if table is not None:
-            table.status = TableStatus.AVAILABLE
 
         for cp in play_session.current_players_id:
             customer = self.find_person_by_id(cp)
             if isinstance(customer, Member):
                 self.add_spent(cp, Table.price_per_hour * actual_duration)
+            elif isinstance(customer, WalkInCustomer):
+                try:
+                    self.remove_person_by_id(cp)
+                except ValueError:
+                    pass
         cafe_branch.end_play_session(
             play_session.session_id, actual_end_time)
 
@@ -1620,6 +1621,8 @@ class CafeSystem:
         return False
 
     def __validate_session_time(self, play_session, current_time=None):
+        if current_time is None:
+            current_time = self.get_time()
         if play_session.check_time_up(current_time):
             if self.__check_future_reservations(play_session.table_id, current_time):
                 raise ValueError("Time up! This table is reserved for the next guest. Please proceed to Checkout.")
@@ -1658,8 +1661,8 @@ class CafeSystem:
         for order in session.current_order:
             if order.status == OrderStatus.SERVED:
                 items.append(
-                    (f"[Order] {order.menu_items.name}", order.menu_items.price))
-                total += order.menu_items.price
+                    (f"[Order] {order.snapshot_name}", order.snapshot_price))
+                total += order.snapshot_price
 
         # ── ส่วนลด Member ────────────────────────
         discount = 0.0
@@ -1679,15 +1682,17 @@ class CafeSystem:
 
         # ── ค่าปรับบอร์ดเกม ──────────────────────  ← ย้ายมาอยู่หลัง discount
         penalty_fee = 0.0
-        for game_id in session.game_penalty:
+        for penalty in session.game_penalty:
+            game_id = penalty.get("game_id")
+            price_val = penalty.get("price", 0.0)
             try:
                 board_game = cafe_branch.find_board_game_by_id(game_id)
-                if board_game:
-                    items.append(
-                        (f"[Penalty] Damaged: {board_game.name}", board_game.price))
-                    penalty_fee += board_game.price
+                name_str = board_game.name if board_game else game_id
+                items.append((f"[Penalty] Damaged: {name_str}", price_val))
+                penalty_fee += price_val
             except ValueError:
-                continue
+                items.append((f"[Penalty] Damaged: {game_id}", price_val))
+                penalty_fee += price_val
 
         total += penalty_fee  # ← penalty ไม่ถูก discount (สอดคล้องกับ check_out)
 

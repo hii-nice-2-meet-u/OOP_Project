@@ -198,6 +198,8 @@ class Order:
         Order.__counter += 1
         self.__menu_items = menu_items
         self.__status = OrderStatus.PENDING
+        self.__snapshot_price = menu_items.price if menu_items else 0.0
+        self.__snapshot_name = menu_items.name if menu_items else "Unknown"
 
     # / ════════════════════════════════════════════════════════════════
     # - Getters
@@ -217,7 +219,15 @@ class Order:
 
     @property
     def get_price(self):
-        return self.__menu_items.price
+        return self.__snapshot_price
+
+    @property
+    def snapshot_price(self):
+        return self.__snapshot_price
+
+    @property
+    def snapshot_name(self):
+        return self.__snapshot_name
 
     # / ════════════════════════════════════════════════════════════════
     # - Setters
