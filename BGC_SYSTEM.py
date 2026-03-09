@@ -116,6 +116,7 @@ class CafeSystem:
 
         try:
             cafe_branch.add_owner(owner)
+            owner.add_owned_branch(branch_id)
         except TypeError as e:
             raise ValueError(f"Cannot add owner: {e}")
 
@@ -133,6 +134,7 @@ class CafeSystem:
 
         try:
             cafe_branch.add_manager(manager)
+            manager.managed_branches = branch_id
         except TypeError as e:
             raise ValueError(f"Cannot add manager: {e}")
 
@@ -150,6 +152,7 @@ class CafeSystem:
 
         try:
             cafe_branch.add_staff(staff)
+            staff.assigned_branch = branch_id
         except TypeError as e:
             raise ValueError(f"Cannot add staff: {e}")
 
@@ -779,7 +782,7 @@ class CafeSystem:
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
-        return cafe_branch.search_board_game_by_min_players(max_players)
+        return cafe_branch.search_board_game_by_max_players(max_players)
 
     def update_board_game_status(self, board_game_id, status):
         validate_id(board_game_id, ["BG"])
@@ -1727,9 +1730,9 @@ class CafeBranch:
                 for play_session in self.__play_sessions_history:
                     if play_session.table_id == any_id:
                         return play_session
-                else:
-                    raise ValueError(
-                        "Invalid ID : ID must be start with PS or TABLE")
+            else:
+                raise ValueError(
+                    "Invalid ID : ID must be start with PS or TABLE")
             return None
         except (AttributeError, TypeError):
             raise ValueError("Invalid ID format")
