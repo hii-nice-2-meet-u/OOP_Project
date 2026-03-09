@@ -56,15 +56,11 @@ class CafeSystem:
         return self.__reservations.copy()
 
     def get_time(self):
-        """Returns either the simulated time or the actual current time."""
         if self.__simulated_time is not None:
             return self.__simulated_time
         return datetime.now()
 
     def set_simulated_time(self, time_str):
-        """Sets the system time to a specific value for testing/simulation.
-        time_str format: 'YYYY-MM-DD HH:MM' or ISO. Pass None to reset to real time.
-        """
         if time_str is None:
             self.__simulated_time = None
             return "System time reset to real-time."
@@ -227,10 +223,6 @@ class CafeSystem:
             raise ValueError(f"Cannot update person : {e}")
 
     def add_spent(self, customer_id, amount):
-        """
-        Add total spent to a customer's account.
-        Only Owners or Managers can authorize this action.
-        """
         validate_id(customer_id, ["MEMBER", "WALK"])
 
         if not isinstance(amount, (int, float)) or amount < 0:
@@ -357,8 +349,6 @@ class CafeSystem:
         end_time,
         table_id="auto",
     ):
-        # 🟢 ด่านที่ 0: ตรวจ format ของ date/time ก่อนทุกอย่าง
-        # ให้ error ชัดเจนก่อนที่จะไปตรวจ customer หรือ business rules
         import re
         if not re.match(r'^\d{4}-\d{2}-\d{2}$', str(date)):
             raise ValueError(
@@ -1041,15 +1031,11 @@ class CafeSystem:
             raise ValueError("Check-in failed: The table is still occupied by another session.")
 
         try:
-            # Calculate reserved duration in hours
             res_start = datetime.strptime(reservation.start_time, "%H:%M")
             res_end = datetime.strptime(reservation.end_time, "%H:%M")
             res_duration = (res_end - res_start).total_seconds() / 3600.0
             if res_duration < 0: res_duration += 24 # Overflow cross midnight
             
-            # Create full datetime for reserved_end_time
-            # Note: reservation.reservation_time is the start datetime
-            # We add the duration to it
             actual_res_end = reservation.reservation_time + timedelta(hours=res_duration)
 
             session = PlaySession(
@@ -1061,9 +1047,6 @@ class CafeSystem:
             session.add_players_id(reservation.customer_id)
             session.reservation_id = reservation.reservation_id
 
-            # BUG FIX: Only mutate state AFTER the session is confirmed created.
-            # Setting reservation.status=COMPLETED and table.status=OCCUPIED
-            # before add_play_session means a failure corrupts state irreversibly.
             branch.add_play_session(session)
             reservation.status = ReservationStatus.COMPLETED
             table.status = TableStatus.OCCUPIED
@@ -1080,7 +1063,6 @@ class CafeSystem:
         table_id="auto",
         start_time=None,
     ):
-        # BUG FIX 2: parse start_time string เป็น datetime object เสมอ
         if start_time is None:
             actual_start = self.get_time()
         elif isinstance(start_time, datetime):
@@ -1152,9 +1134,6 @@ class CafeSystem:
                 for _ in range(player_amount):
                     session.add_players_id(self.create_customer_walk_in().user_id)
             elif "," in customer_id:
-                # BUG FIX 4: รองรับ check_in หลาย Member พร้อมกัน
-                # ส่ง comma-separated IDs เช่น "MEMBER-00001,MEMBER-00002"
-                # เพื่อให้ทุกคนถูก track ใน session ตั้งแต่ต้น
                 ids = [mid.strip() for mid in customer_id.split(",") if mid.strip()]
                 seen_ids = set()
                 for mid in ids:
@@ -1176,9 +1155,6 @@ class CafeSystem:
                     raise ValueError(f"Player {customer_id} is already in this session")
                 session.add_players_id(customer_id)
 
-            # BUG FIX: Only mark table OCCUPIED AFTER all player validation passes.
-            # If we set this at the top of the try block and validation fails,
-            # the table is stuck OCCUPIED permanently with no session linked to it.
             table.status = TableStatus.OCCUPIED
             branch.add_play_session(session)
             return session
@@ -1208,14 +1184,10 @@ class CafeSystem:
             raise ValueError(f"Player {customer_id} is already in an active session")
 
         try:
-            # Check table capacity before joining
             table = cafe_branch.find_table_by_id(play_session.table_id)
             if table is None:
                 raise ValueError("Table for this session not found")
 
-            # BUG FIX: capacity check — named Members can always join even if
-            # anonymous walk_in slots filled the table. Only block new walk_in
-            # entries when truly at capacity. Named member spending must be tracked.
             if play_session.get_total_players() >= table.capacity and customer_id == "walk_in":
                 raise ValueError(
                     f"Table capacity is full ({table.capacity}/{table.capacity})")
@@ -1284,7 +1256,6 @@ class CafeSystem:
         if board_game is None:
             raise ValueError("Board Game not found")
 
-        # BUG FIX: Ensure the session actually possesses the game before modifying system state
         if board_game_id not in play_session.current_board_games_id:
             raise ValueError("This session did not borrow this board game")
 
@@ -1440,9 +1411,6 @@ class CafeSystem:
         if play_session.current_board_games_id:
             raise ValueError("Cannot checkout while there are unreturned board games. Please return them first.")
 
-        # Compute duration locally WITHOUT setting play_session.end_time early
-        # This prevents a corrupted end_time if payment later fails
-        # Use session.duration() logic which now considers reserved_duration
         actual_duration = play_session.duration(actual_end_time)
 
         total = 0
@@ -1484,7 +1452,6 @@ class CafeSystem:
 
         payment = self.create_payment(total, method_type, **kwargs)
         
-        # Only mutate session state AFTER payment has been confirmed successful
         play_session.end_time = actual_end_time
         payment.payment_time = actual_end_time
         play_session.payment = payment
@@ -1559,12 +1526,10 @@ class CafeSystem:
             raise ValueError(f"Payment validation failed: {e}")
 
     def get_active_bill(self, session_id, current_time=None):
-        """Returns a dict with bill details for an active session."""
         play_session = self.find_play_session_by_id(session_id)
         if play_session is None:
             raise ValueError("Play Session not found")
         
-        # Temporarily mock end_time if session is active
         original_end = play_session.end_time
         if current_time is None:
             current_time = self.get_time()
@@ -1600,9 +1565,8 @@ class CafeSystem:
         return items
 
     def __is_person_in_active_session(self, person_id: str) -> bool:
-        """Helper to check if a person is already in any active session across all branches."""
         if person_id.startswith("WALK-"):
-            return False # Walk-ins are anonymous, allow duplicate IDs for walk-ins if they somehow clash
+            return False
         
         for branch in self.__cafe_branches:
             for session in branch.get_play_sessions():
@@ -1614,11 +1578,9 @@ class CafeSystem:
         if current_time is None:
             current_time = self.get_time()
         
-        # Check if there is any PENDING reservation for this table starting within the next 30 mins
-        # or already started but not yet checked in.
+
         for res in self.__reservations:
             if res.table_id == table_id and res.status == ReservationStatus.PENDING:
-                # If reservation starts within 30 mins from now or has already started
                 time_diff = (res.reservation_time - current_time).total_seconds() / 60.0
                 if -15 <= time_diff <= 30: # From 15 mins late to 30 mins in future
                     return True
@@ -1631,18 +1593,14 @@ class CafeSystem:
             if self.__check_future_reservations(play_session.table_id, current_time):
                 raise ValueError("Time up! This table is reserved for the next guest. Please proceed to Checkout.")
             else:
-                # We raise a specific message that UI/User can interpret as "Ask for extension"
-                # but for now it's still a blocking error for new activities
                 raise ValueError("Time up! Your reserved time has ended. Would you like to extend your session? (Please contact staff)")
 
     def __calculate_bill(self, session) -> list:
         cafe_branch = None
         for branch in self.__cafe_branches:
-            # Check active sessions (get_play_sessions returns a list)
             if any(s.session_id == session.session_id for s in branch.get_play_sessions()):
                 cafe_branch = branch
                 break
-            # Check history
             if any(s.session_id == session.session_id for s in branch.get_play_sessions_history()):
                 cafe_branch = branch
                 break
@@ -1698,7 +1656,7 @@ class CafeSystem:
                 items.append((f"[Penalty] Damaged: {game_id}", price_val))
                 penalty_fee += price_val
 
-        total += penalty_fee  # ← penalty ไม่ถูก discount (สอดคล้องกับ check_out)
+        total += penalty_fee
 
         items.append(("TOTAL", total))
         return items
