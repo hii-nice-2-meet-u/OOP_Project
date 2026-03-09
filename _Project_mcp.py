@@ -526,13 +526,19 @@ def check_out(
     expiry_date: str = None,
     cvv: str = None,
 ) -> str:
-    """Check out a play session.
-    method_type: 'cash', 'card', or 'online'
-    end_time format: 'YYYY-MM-DD HH:MM' or ISO. Leave blank to use current time.
-    For cash: provide paid_amount.
-    For card: provide card_number, expiry_date, cvv.
-    For online: provide email.
-    """
+    """Check out a play session and process payment.
+
+    method_type (REQUIRED, choose one):
+      - "cash"   → also provide paid_amount (float)
+      - "card"   → also provide card_number, expiry_date, cvv
+      - "online" → also provide email
+
+    Examples:
+      check_out("PS-00000", method_type="cash",   paid_amount=500)
+      check_out("PS-00000", method_type="card",   card_number="1234-5678-9012-3456", expiry_date="12/28", cvv="123")
+      check_out("PS-00000", method_type="online", email="user@example.com")
+
+    end_time: optional, format 'YYYY-MM-DD HH:MM'. Leave blank to use current time.
     try:
         parsed_end = None
         if end_time is not None:
