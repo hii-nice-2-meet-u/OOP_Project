@@ -1,6 +1,7 @@
 from datetime import *
 import time
 import random
+import math
 
 from BGC_MENU import *
 from BGC_PAYMENT import *
@@ -1079,11 +1080,15 @@ class CafeSystem:
                         raise ValueError(f"Member ID {mid} not found")
                     if mid in seen_ids:
                         raise ValueError(f"Duplicate player ID in list: {mid}")
+                    if self.__is_person_in_active_session(mid):
+                        raise ValueError(f"Player {mid} is already in another active session")
                     seen_ids.add(mid)
                     session.add_players_id(mid)
             else:
                 if self.find_person_by_id(customer_id) is None:
                     raise ValueError(f"Member ID {customer_id} not found")
+                if self.__is_person_in_active_session(customer_id):
+                    raise ValueError(f"Player {customer_id} is already in another active session")
                 if customer_id in session.current_players_id:
                     raise ValueError(f"Player {customer_id} is already in this session")
                 session.add_players_id(customer_id)
@@ -1115,6 +1120,9 @@ class CafeSystem:
         play_session = cafe_branch.find_play_session_by_id(any_id)
         if play_session is None:
             raise ValueError("Play Session not found")
+
+        if customer_id != "walk_in" and self.__is_person_in_active_session(customer_id):
+            raise ValueError(f"Player {customer_id} is already in an active session")
 
         try:
             # Check table capacity before joining
@@ -1342,7 +1350,6 @@ class CafeSystem:
 
         # Compute duration locally WITHOUT setting play_session.end_time early
         # This prevents a corrupted end_time if payment later fails
-        import math
         raw_seconds = (actual_end_time - play_session.start_time).total_seconds()
         actual_duration = math.ceil(raw_seconds / 3600.0) if raw_seconds > 0 else 0
 
@@ -1481,6 +1488,17 @@ class CafeSystem:
                         (f"Session {session.session_id}", None))  # header
                     items += self.__calculate_bill(session)
         return items
+
+    def __is_person_in_active_session(self, person_id: str) -> bool:
+        """Helper to check if a person is already in any active session across all branches."""
+        if person_id.startswith("WALK-"):
+            return False # Walk-ins are anonymous, allow duplicate IDs for walk-ins if they somehow clash
+        
+        for branch in self.__cafe_branches:
+            for session in branch.get_play_sessions():
+                if person_id in session.current_players_id:
+                    return True
+        return False
 
     def __calculate_bill(self, session) -> list:
         cafe_branch = self.find_cafe_branch_by_id(session.session_id)
