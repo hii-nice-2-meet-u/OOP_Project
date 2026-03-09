@@ -1,4 +1,5 @@
 import datetime
+import math
 
 from BGC_MENU import *
 from BGC_PAYMENT import *
@@ -270,8 +271,6 @@ class PlaySession:
             or self.__end_time < self.__start_time
         ):
             return 0
-        # BUG FIX: use ceil so any partial hour is charged (round gives 0 for <30min sessions)
-        import math
         return math.ceil((self.__end_time - self.__start_time).total_seconds() / 3600.0)
         
  

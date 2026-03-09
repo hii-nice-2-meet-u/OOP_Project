@@ -1,8 +1,12 @@
 from mcp.server.fastmcp import FastMCP
 from datetime import datetime
 from BGC_PERSON import *
+from BGC_PLAY_SESSION import Table
+from ENUM_STATUS import BoardGameStatus
 import sys
 import os
+import re
+import math
 
 # --- STEP 1: Manage PATH correctly ---
 # Force Python to see all BGC_... files in the current folder
@@ -33,12 +37,11 @@ def make_reservation(
     date_str: str,
     start_t: str,
     end_t: str,
-    table_id: str,
+    table_id: str = "auto",
 ) -> str:
     """Book a table (date_str format: YYYY-MM-DD, time format: HH:MM)
-    Example call: make_reservation("MEMBER_A", "Ladkrabang", 4, "2024-07-01", "18:00", "20:00")
+    table_id: specific TABLE-XXXXX to book, or 'auto' to let system pick the best fit.
     Use branch name for booking instead of ID for testing convenience"""
-    import re
 
     # ✅ ด่านที่ 0: validate format ก่อน DB lookup ทุกอย่าง
     if not re.match(r'^\d{4}-\d{2}-\d{2}$', str(date_str)):
@@ -66,13 +69,15 @@ def make_reservation(
 @mcp.tool()
 def get_all_cafe_branches() -> str:
     """View all cafe branches with their table counts"""
-    branches = system.get_cafe_branches()
-    result = []
-    for b in branches:
-        result.append(
+    try:
+        branches = system.get_cafe_branches()
+        result = [
             f"Branch : {b.name:<25} ( ID : {b.branch_id} ) - Tables : {b.total_tables}"
-        )
-    return "\n".join(result) if result else "No branch data available"
+            for b in branches
+        ]
+        return "\n".join(result) if result else "No branch data available"
+    except Exception as e:
+        return f"Error: {e}"
 
 
 # Alias map: รองรับทั้ง class name จริง และ alias ที่ Claude มักส่งมา
@@ -235,17 +240,20 @@ def get_branch_menu(branch_id: str) -> str:
 
 @mcp.tool()
 def get_play_session_orders(any_id: str) -> str:
-    """Get  food/drink orders for play session im a branch
-    accept only PS- and TABLE-
-    e.g. get_play_session_order(TABLE-00000)
-    e.g. get_play_session_order(PS-00000)
+    """Get food/drink orders for a play session.
+    Accepts PS- (session ID) or TABLE- (table ID).
+    e.g. get_play_session_orders("TABLE-00000")
+    e.g. get_play_session_orders("PS-00000")
     """
     try:
-        orders = system.get_play_session_orders(any_id)
-
+        cafe_branch = system.find_cafe_branch_by_id(any_id)
+        if cafe_branch is None:
+            return "Error: Session not found"
+        orders = cafe_branch.get_play_session_orders(any_id)
         return (
             "\n".join(
-                [f"Order: {o.menu_items.name} status: {o.status.value}" for o in orders])
+                [f"Order ID: {o.order_id} | {o.menu_items.name} | Status: {o.status.value}"
+                 for o in orders])
             if orders
             else "Currently No Orders"
         )
@@ -315,12 +323,24 @@ def check_in(
 
 
 @mcp.tool()
-def check_in_reserved(reservation_id: str, customer_id: str, current_time: datetime) -> str:
-    """Check in a reserved session"""
+def check_in_reserved(reservation_id: str, customer_id: str, current_time: str = None) -> str:
+    """Check in using a reservation.
+    current_time format: 'YYYY-MM-DD HH:MM' or ISO. Leave blank to use current time.
+    """
     try:
-        session = system.check_in_reserved(
-            reservation_id, customer_id, current_time)
-        return f"Check in reserved successful! Session ID: {session.session_id}"
+        parsed_time = None
+        if current_time is not None:
+            for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+                try:
+                    parsed_time = datetime.strptime(current_time, fmt)
+                    break
+                except ValueError:
+                    continue
+            if parsed_time is None:
+                return "Error: current_time format invalid. Use 'YYYY-MM-DD HH:MM'"
+
+        session = system.check_in_reserved(reservation_id, customer_id, parsed_time)
+        return f"Check in reserved successful! Session ID: {session.session_id}, Table: {session.table_id}"
     except Exception as e:
         return f"Error: {e}"
 
@@ -499,14 +519,32 @@ def bill_history_by_person(person_id: str) -> str:
 def check_out(
     play_session_id: str,
     method_type: str = "cash",
-    end_time: datetime = None,
+    end_time: str = None,
     paid_amount: float = None,
     email: str = None,
     card_number: str = None,
     expiry_date: str = None,
     cvv: str = None,
 ) -> str:
+    """Check out a play session.
+    method_type: 'cash', 'card', or 'online'
+    end_time format: 'YYYY-MM-DD HH:MM' or ISO. Leave blank to use current time.
+    For cash: provide paid_amount.
+    For card: provide card_number, expiry_date, cvv.
+    For online: provide email.
+    """
     try:
+        parsed_end = None
+        if end_time is not None:
+            for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+                try:
+                    parsed_end = datetime.strptime(end_time, fmt)
+                    break
+                except ValueError:
+                    continue
+            if parsed_end is None:
+                return "Error: end_time format invalid. Use 'YYYY-MM-DD HH:MM'"
+
         kwargs = {}
         if paid_amount is not None:
             kwargs["paid_amount"] = paid_amount
@@ -520,8 +558,8 @@ def check_out(
             kwargs["cvv"] = cvv
 
         receipt, total = system.check_out(
-            play_session_id, end_time=end_time, method_type=method_type, **kwargs)
-        return f"Check out successful. Total: {total:.2f}, Receipt ID: {receipt.payment_id}"
+            play_session_id, end_time=parsed_end, method_type=method_type, **kwargs)
+        return f"Check out successful. Total: ฿{total:.2f}, Receipt ID: {receipt.payment_id}"
     except Exception as e:
         return f"Error: {e}"
 
@@ -537,18 +575,17 @@ def add_table_to_branch(auth_id: str, branch_id: str, capacity: int) -> str:
     e.g. add_table_to_branch("OWNER-PESO67", "BRCH-00000", 4)
     """
     try:
-        # 1. Authorization Check
         if not (auth_id.startswith("OWNER") or auth_id.startswith("MANAGER")):
             return "Authorization Failed: Only Owner or Manager can add a table"
 
         person = system.find_person_by_id(auth_id)
-        if isinstance(person, Manager):
-            if system.find_cafe_branch_by_id(branch_id).manager_id != person.user_id:
-                return f"You are not Manager of {system.find_cafe_branch_by_id(branch_id).name}"
         if person is None:
             return f"Authorization Failed: User ID {auth_id} not found in the system"
+        if isinstance(person, Manager):
+            branch = system.find_cafe_branch_by_id(branch_id)
+            if branch and branch.manager_id != person.user_id:
+                return f"You are not Manager of {branch.name}"
 
-        # 2. Execute Action
         table = system.create_table_to_branch(branch_id, capacity)
         return f"Table created successfully Table ID: {table.table_id} (Capacity: {capacity} seats) in branch {branch_id}"
     except Exception as e:
@@ -565,14 +602,14 @@ def add_food_to_branch(auth_id: str, branch_id: str, name: str, price: float, de
             return "Authorization Failed: Only Owner or Manager can add a menu item"
 
         person = system.find_person_by_id(auth_id)
-        if isinstance(person, Manager):
-            if system.find_cafe_branch_by_id(branch_id).manager_id != person.user_id:
-                return f"You are not Manager of {system.find_cafe_branch_by_id(branch_id).name}"
         if person is None:
             return "Authorization Failed: User not found in the system"
+        if isinstance(person, Manager):
+            branch = system.find_cafe_branch_by_id(branch_id)
+            if branch and branch.manager_id != person.user_id:
+                return f"You are not Manager of {branch.name}"
 
-        food = system.create_menu_item_food_to_branch(
-            branch_id, name, price, description)
+        food = system.create_menu_item_food_to_branch(branch_id, name, price, description)
         return f"Food menu added successfully Item ID: {food.item_id} | Name: {food.name} | Price: {price}"
     except Exception as e:
         return f"Error: {e}"
@@ -590,10 +627,10 @@ def add_drink_to_branch(auth_id: str, branch_id: str, name: str, price: float, c
         person = system.find_person_by_id(auth_id)
         if person is None:
             return "Authorization Failed: User not found in the system"
-
         if isinstance(person, Manager):
-            if system.find_cafe_branch_by_id(branch_id).manager_id != person.user_id:
-                return f"You are not Manager of {system.find_cafe_branch_by_id(branch_id).name}"
+            branch = system.find_cafe_branch_by_id(branch_id)
+            if branch and branch.manager_id != person.user_id:
+                return f"You are not Manager of {branch.name}"
 
         drink = system.create_menu_item_drink_to_branch(
             branch_id, name, price, cup_size, description)
@@ -612,11 +649,12 @@ def add_staff_to_branch(auth_id: str, branch_id: str, staff_name: str) -> str:
             return "Authorization Failed: Only Owner or Manager can add staff"
 
         person = system.find_person_by_id(auth_id)
-        if isinstance(person, Manager):
-            if system.find_cafe_branch_by_id(branch_id).manager_id != person.user_id:
-                return f"You are not Manager of {system.find_cafe_branch_by_id(branch_id).name}"
         if person is None:
             return "Authorization Failed: User not found in the system"
+        if isinstance(person, Manager):
+            branch = system.find_cafe_branch_by_id(branch_id)
+            if branch and branch.manager_id != person.user_id:
+                return f"You are not Manager of {branch.name}"
 
         # Create Staff and add to branch
         new_staff = system.create_staff(staff_name)
@@ -637,16 +675,11 @@ def authorize_add_spent(
     """Add total spent amount for a Member. Requires Owner or Manager to authorize.
 
     Parameters (both names accepted for the authorizer):
-    - auth_id / authorizer_id : OWNER-PESO67 or MANAGER-XXXXX
+    - auth_id / authorizer_id : OWNER-XXXXX or MANAGER-XXXXX
     - customer_id             : MEMBER-XXXXX
     - amount                  : float, amount to add to total_spent
-
-    Example:
-        authorize_add_spent(auth_id="OWNER-PESO67", customer_id="MEMBER-00003", amount=500)
-        authorize_add_spent(authorizer_id="OWNER-PESO67", customer_id="MEMBER-00003", amount=500)
     """
     try:
-        # รองรับทั้ง auth_id และ authorizer_id
         effective_auth = auth_id if auth_id else authorizer_id
         if not effective_auth:
             return "Authorization Failed: Must provide auth_id or authorizer_id"
@@ -663,6 +696,192 @@ def authorize_add_spent(
                 f"Customer ID: {customer.user_id} | "
                 f"Current Total Spent: {customer.total_spent:.2f} | "
                 f"Tier: {customer.get_member_tier().value}")
+    except Exception as e:
+        return f"Error: {e}"
+
+
+@mcp.tool()
+def create_cafe_branch(auth_id: str, branch_name: str, location: str = "") -> str:
+    """Create a new cafe branch. OWNER only.
+    e.g. create_cafe_branch("OWNER-00000", "สาขาสยาม", "สยามสแควร์")
+    """
+    try:
+        if not auth_id.startswith("OWNER"):
+            return "Authorization Failed: Only Owner can create a new branch"
+        person = system.find_person_by_id(auth_id)
+        if person is None:
+            return f"Authorization Failed: Owner ID {auth_id} not found in the system"
+
+        branch = system.create_cafe_branch(branch_name, location)
+        system.add_owner_to_branch(branch.branch_id, auth_id)
+        return f"Branch created! ID: {branch.branch_id} | Name: {branch.name} | Location: {branch.location}"
+    except Exception as e:
+        return f"Error: {e}"
+
+
+@mcp.tool()
+def create_manager(auth_id: str, manager_name: str, branch_id: str) -> str:
+    """Create a new Manager and assign them to a branch. OWNER only.
+    e.g. create_manager("OWNER-00000", "Alice", "BRCH-00000")
+    """
+    try:
+        if not auth_id.startswith("OWNER"):
+            return "Authorization Failed: Only Owner can create a Manager"
+        person = system.find_person_by_id(auth_id)
+        if person is None:
+            return f"Authorization Failed: Owner ID {auth_id} not found in the system"
+
+        manager = system.create_manager(manager_name)
+        system.add_manager_to_branch(branch_id, manager.user_id)
+        return f"Manager created! ID: {manager.user_id} | Name: {manager.name} | Assigned to: {branch_id}"
+    except Exception as e:
+        return f"Error: {e}"
+
+
+@mcp.tool()
+def add_board_game_to_branch(
+    auth_id: str,
+    branch_id: str,
+    name: str,
+    genre: str,
+    price: float,
+    min_players: int,
+    max_players: int,
+    description: str = "",
+) -> str:
+    """Add a board game to a branch (Requires Owner or Manager to authorize).
+    e.g. add_board_game_to_branch("OWNER-00000", "BRCH-00000", "Catan", "Strategy", 500, 3, 6)
+    """
+    try:
+        if not (auth_id.startswith("OWNER") or auth_id.startswith("MANAGER")):
+            return "Authorization Failed: Only Owner or Manager can add a board game"
+
+        person = system.find_person_by_id(auth_id)
+        if person is None:
+            return f"Authorization Failed: User ID {auth_id} not found in the system"
+        if isinstance(person, Manager):
+            branch = system.find_cafe_branch_by_id(branch_id)
+            if branch and branch.manager_id != person.user_id:
+                return f"You are not Manager of {branch.name}"
+
+        bg = system.create_board_game_to_branch(
+            branch_id, name, genre, price, min_players, max_players, description)
+        return (
+            f"Board game added! ID: {bg.game_id} | Name: {bg.name} | "
+            f"Genre: {bg.genre} | Price: ฿{bg.price:.2f} | "
+            f"Players: {bg.min_players}-{bg.max_players}"
+        )
+    except Exception as e:
+        return f"Error: {e}"
+
+
+@mcp.tool()
+def get_active_sessions(branch_id: str) -> str:
+    """List all active (not yet checked out) play sessions in a branch.
+    e.g. get_active_sessions("BRCH-00000")
+    """
+    try:
+        branch = system.find_cafe_branch_by_id(branch_id)
+        if branch is None:
+            return "Error: Branch not found"
+        sessions = branch.get_play_sessions()
+        if not sessions:
+            return "No active sessions"
+        lines = []
+        for s in sessions:
+            players = ", ".join(s.current_players_id) or "(none)"
+            lines.append(
+                f"Session: {s.session_id} | Table: {s.table_id} | "
+                f"Players: {s.get_total_players()} ({players})"
+            )
+        return "\n".join(lines)
+    except Exception as e:
+        return f"Error: {e}"
+
+
+@mcp.tool()
+def get_reservations(branch_id: str = None) -> str:
+    """List all reservations. Optionally filter by branch_id.
+    e.g. get_reservations()  or  get_reservations("BRCH-00000")
+    """
+    try:
+        all_reservations = system.reservations
+        if branch_id:
+            all_reservations = [r for r in all_reservations if r.branch_id == branch_id]
+        if not all_reservations:
+            return "No reservations found"
+        lines = []
+        for r in all_reservations:
+            lines.append(
+                f"ID: {r.reservation_id} | Status: {r.status.value} | "
+                f"Customer: {r.customer_id} | Table: {r.table_id} | "
+                f"Date: {r.date} {r.start_time}-{r.end_time}"
+            )
+        return "\n".join(lines)
+    except Exception as e:
+        return f"Error: {e}"
+
+
+@mcp.tool()
+def get_active_bill(play_session_id: str) -> str:
+    """Preview the current bill for an ACTIVE (not yet checked out) session.
+    Uses current time to estimate duration.
+    e.g. get_active_bill("PS-00000")  or  get_active_bill("TABLE-00000")
+    """
+    try:
+        cafe_branch = system.find_cafe_branch_by_id(play_session_id)
+        if cafe_branch is None:
+            return "Error: Session not found"
+        session = cafe_branch.find_play_session_by_id(play_session_id)
+        if session is None:
+            return "Error: Active play session not found"
+        if session.payment is not None:
+            return "This session is already checked out. Use bill_history() instead."
+
+        now = datetime.now()
+        raw_seconds = (now - session.start_time).total_seconds()
+        duration = math.ceil(raw_seconds / 3600.0) if raw_seconds > 0 else 0
+
+        total = 0.0
+        lines = [f"=== Active Bill Preview for {session.session_id} ==="]
+        lines.append(f"  Start: {session.start_time.strftime('%Y-%m-%d %H:%M')} | Now: {now.strftime('%H:%M')} | Duration: {duration} hr")
+        lines.append("")
+
+        table_cost = Table.price_per_hour * duration * session.get_total_players()
+        lines.append(f"  Table fee ({duration}hr x {session.get_total_players()} players @ ฿{Table.price_per_hour}/hr): ฿{table_cost:.2f}")
+        total += table_cost
+
+        for order in session.current_order:
+            if order.status.value == "Served":
+                lines.append(f"  [Order] {order.menu_items.name}: ฿{order.menu_items.price:.2f}")
+                total += order.menu_items.price
+
+        lines.append(f"")
+        lines.append(f"  Estimated TOTAL: ฿{total:.2f} (before discount/penalty)")
+        unreturned = session.current_board_games_id
+        if unreturned:
+            lines.append(f"  ⚠️  Unreturned board games: {', '.join(unreturned)}")
+        return "\n".join(lines)
+    except Exception as e:
+        return f"Error: {e}"
+
+
+@mcp.tool()
+def repair_board_game(auth_id: str, board_game_id: str) -> str:
+    """Mark a board game in MAINTENANCE as AVAILABLE again (repaired).
+    Requires Owner or Manager.
+    e.g. repair_board_game("OWNER-00000", "BG-00000")
+    """
+    try:
+        if not (auth_id.startswith("OWNER") or auth_id.startswith("MANAGER")):
+            return "Authorization Failed: Only Owner or Manager can repair board games"
+
+        person = system.find_person_by_id(auth_id)
+        if person is None:
+            return f"Authorization Failed: User ID {auth_id} not found"
+
+        system.update_board_game_status(board_game_id, BoardGameStatus.AVAILABLE)
+        return f"Board game {board_game_id} has been repaired and is now AVAILABLE"
     except Exception as e:
         return f"Error: {e}"
 
