@@ -1069,15 +1069,19 @@ class CafeSystem:
                 # ส่ง comma-separated IDs เช่น "MEMBER-00001,MEMBER-00002"
                 # เพื่อให้ทุกคนถูก track ใน session ตั้งแต่ต้น
                 ids = [mid.strip() for mid in customer_id.split(",") if mid.strip()]
+                seen_ids = set()
                 for mid in ids:
                     validate_id(mid, ["MEMBER", "WALK"])
                     if self.find_person_by_id(mid) is None:
                         raise ValueError(f"Member ID {mid} not found")
+                    if mid in seen_ids:
+                        raise ValueError(f"Duplicate player ID in list: {mid}")
+                    seen_ids.add(mid)
                     session.add_players_id(mid)
             else:
                 if self.find_person_by_id(customer_id) is None:
                     raise ValueError(f"Member ID {customer_id} not found")
-                if customer_id in play_session.current_players_id:
+                if customer_id in session.current_players_id:
                     raise ValueError(f"Player {customer_id} is already in this session")
                 session.add_players_id(customer_id)
 
