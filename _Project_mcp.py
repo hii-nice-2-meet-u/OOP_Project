@@ -551,12 +551,19 @@ def check_out(
     expiry_date: str = None,
     cvv: str = None,
 ) -> str:
-    """Check out a play session.
-    method_type: 'cash', 'card', or 'online'
-    end_time format: 'YYYY-MM-DD HH:MM' or ISO. Leave blank to use current time.
-    For cash: provide paid_amount.
-    For card: provide card_number, expiry_date, cvv.
-    For online: provide email.
+    """Check out a play session and process payment.
+
+    method_type (REQUIRED, choose one):
+      - "cash"   → also provide paid_amount (float)
+      - "card"   → also provide card_number, expiry_date, cvv
+      - "online" → also provide email
+
+    Examples:
+      check_out("PS-00000", method_type="cash",   paid_amount=500)
+      check_out("PS-00000", method_type="card",   card_number="1234-5678-9012-3456", expiry_date="12/28", cvv="123")
+      check_out("PS-00000", method_type="online", email="user@example.com")
+
+    end_time: optional, format 'YYYY-MM-DD HH:MM'. Leave blank to use current time.
     """
     try:
         parsed_end = None
@@ -746,7 +753,8 @@ def create_cafe_branch(auth_id: str, branch_name: str, location: str = "") -> st
 
 @mcp.tool()
 def create_manager(auth_id: str, manager_name: str, branch_id: str) -> str:
-    """Create a new Manager and assign them to a branch. OWNER only.
+    """
+    Create a new Manager and assign them to a branch. OWNER only.
     e.g. create_manager("OWNER-00000", "Alice", "BRCH-00000")
     """
     try:
@@ -774,7 +782,8 @@ def add_board_game_to_branch(
     max_players: int,
     description: str = "",
 ) -> str:
-    """Add a board game to a branch (Requires Owner or Manager to authorize).
+    """
+    Add a board game to a branch (Requires Owner or Manager to authorize).
     e.g. add_board_game_to_branch("OWNER-00000", "BRCH-00000", "Catan", "Strategy", 500, 3, 6)
     """
     try:
@@ -802,7 +811,8 @@ def add_board_game_to_branch(
 
 @mcp.tool()
 def get_active_sessions(branch_id: str) -> str:
-    """List all active (not yet checked out) play sessions in a branch.
+    """
+    List all active (not yet checked out) play sessions in a branch.
     e.g. get_active_sessions("BRCH-00000")
     """
     try:
@@ -832,7 +842,8 @@ def get_active_sessions(branch_id: str) -> str:
 
 @mcp.tool()
 def get_reservations(branch_id: str = None) -> str:
-    """List all reservations. Optionally filter by branch_id.
+    """
+    List all reservations. Optionally filter by branch_id.
     e.g. get_reservations()  or  get_reservations("BRCH-00000")
     """
     try:
