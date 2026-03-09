@@ -17,7 +17,7 @@
 - ตรวจสอบสาขาที่มีอยู่ในระบบ (get_all_cafe_branches) เลือกมา 1 สาขา (เช่น "Ladkrabang" หรือชื่อสาขาที่ได้จากระบบ)
 - ตรวจสอบรายชื่อพนักงานที่มีสิทธิ์เป็น Owner หรือ Manager (`get_person_by_type("Owner")` หรือ `get_person_by_type("Manager")`) เพื่อนำ ID มาใช้เป็น Authorizer
 - สร้างสมาชิกลูกค้าใหม่ 4 คน ชื่อ "Test Bronze", "Test Silver", "Test Gold", "Test Platinum" โดยตอนสร้างใหม่ทั้งหมดจะเป็นระดับ Bronze
-- อัปเกรดระดับสมาชิกของแต่ละคนโดยใช้ `add_spent` (ให้ Authorizer ID ที่ได้มาก่อนหน้าเป็นผู้อนุมัติ):
+- อัปเกรดระดับสมาชิกของแต่ละคนโดยใช้ `add_spent` (ให้ Authorizer ID: OWNER-PESO67):
   - "Test Silver" เพิ่มยอดใช้จ่าย 500
   - "Test Gold" เพิ่มยอดใช้จ่าย 1000
   - "Test Platinum" เพิ่มยอดใช้จ่าย 2000

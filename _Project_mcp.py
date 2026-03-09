@@ -247,11 +247,14 @@ def check_in(
     player_amount: int,
     customer_id: str = "walk_in",
     table_id: str = "auto",
+    start_time:str =None
 ) -> str:
-    """Check in a walk-in or walk-in member"""
+    """Check in a walk-in or walk-in member if start_time = None means date time now
+    if not use input
+    """
     try:
         session = system.check_in(
-            branch_id, player_amount, customer_id, table_id)
+            branch_id, player_amount, customer_id, table_id, start_time=start_time)
         return f"Check in successful! Session ID: {session.session_id}, Table: {session.table_id}"
     except Exception as e:
         return f"Error: {e}"

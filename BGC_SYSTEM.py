@@ -945,7 +945,7 @@ class CafeSystem:
             table.status = TableStatus.OCCUPIED
             session = PlaySession(reservation.table_id, now)
             branch.add_play_session(session)
-            session.add_players_id(reservation.customer_id)
+            session.add_players_id(reservation.customer_id) 
 
             return session
         except (TypeError, ValueError) as e:
@@ -997,8 +997,10 @@ class CafeSystem:
             session = PlaySession(table.table_id, actual_start)
 
             if customer_id == "walk_in":
-                customer_id = self.create_customer_walk_in().user_id
-            session.add_players_id(customer_id)
+                for _ in range(player_amount):
+                    session.add_players_id(self.create_customer_walk_in().user_id)
+            else:
+                session.add_players_id(customer_id)
 
             branch.add_play_session(session)
             return session
@@ -1276,10 +1278,7 @@ class CafeSystem:
             total = (total * (1 - discount)) + penalty_fee
         except (TypeError, ValueError) as e:
             raise ValueError(f"Error calculating checkout total: {e}")
-
-        cafe_branch.end_play_session(
-            play_session.session_id, actual_end_time)
-
+        
         table = cafe_branch.find_table_by_id(play_session.table_id)
         if table is not None:
             table.status = TableStatus.AVAILABLE
@@ -1292,6 +1291,10 @@ class CafeSystem:
             if isinstance(customer, Member):
                 self.add_spent(cp, Table.price_per_hour *
                                play_session.duration())
+        cafe_branch.end_play_session(
+            play_session.session_id, actual_end_time)
+
+
 
         return payment, total
 
