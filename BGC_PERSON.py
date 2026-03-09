@@ -145,7 +145,7 @@ class Member(Customer):
             self.__member_tier = MemberTier.GOLD
         elif self.__total_spent >= 500:
             self.__member_tier = MemberTier.SILVER
-        elif self.__total_spent > 250:
+        elif self.__total_spent >= 250:
             self.__member_tier = MemberTier.BRONZE
         else:
             self.__member_tier = MemberTier.NONE_TIER
