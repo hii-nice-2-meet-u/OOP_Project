@@ -952,7 +952,7 @@ class CafeSystem:
             raise ValueError("Customer not found")
 
         # BUG FIX: Check status FIRST before any time-based logic
-        # so cancelled/no-show reservations get a clear, relevant error message.
+        # so cancelled/no-show reservations get a clear, relevant error message
         if reservation.status == ReservationStatus.CANCELLED:
             raise ValueError("Cannot check-in: This reservation has been cancelled.")
         if reservation.status == ReservationStatus.NO_SHOW:
