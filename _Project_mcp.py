@@ -841,6 +841,33 @@ def get_active_sessions(branch_id: str) -> str:
 
 
 @mcp.tool()
+def get_overstayed_sessions(branch_id: str) -> str:
+    """List all sessions that have exceeded their reserved time and need checkout.
+    Useful for staff to identify tables that need to be freed for next guests.
+    """
+    try:
+        branch = system.find_cafe_branch_by_id(branch_id)
+        if branch is None:
+            return "Error: Branch not found"
+        sessions = branch.get_play_sessions()
+        overstayed = [s for s in sessions if s.is_time_up]
+        if not overstayed:
+            return "No overstayed sessions. All tables are within their time limits."
+        
+        lines = [f"⚠️ Found {len(overstayed)} sessions that need FORCE CHECKOUT:"]
+        for s in overstayed:
+            players = ", ".join(s.current_players_id) or "(none)"
+            lines.append(
+                f"- Session: {s.session_id} | Table: {s.table_id} | "
+                f"Reserved End: {s.reserved_end_time.strftime('%H:%M')} | "
+                f"Players: {s.get_total_players()} ({players})"
+            )
+        return "\n".join(lines)
+    except Exception as e:
+        return f"Error: {e}"
+
+
+@mcp.tool()
 def get_reservations(branch_id: str = None) -> str:
     """
     List all reservations. Optionally filter by branch_id.

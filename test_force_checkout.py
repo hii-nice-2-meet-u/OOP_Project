@@ -34,11 +34,11 @@ def test_force_checkout_flow():
         system.check_in_reserved(res2.reservation_id, member2.user_id, current_time=late_time)
         print("FAILED: Bob checked in while Alice was still there!")
     except ValueError as e:
-        print(f"SUCCESS (Expected Error): {e}")
-        if "FORCE CHECKOUT REQUIRED" in str(e):
-            print("Verified: System correctly identified that Alice must be force-checked out.")
+        print(f"RECEIVED ERROR: {e}")
+        if "FORCE CHECKOUT REQUIRED" in str(e) and "Estimated Total: ฿30.00" in str(e):
+            print("Verified: System correctly identified that Alice must be force-checked out AND provided the bill info.")
         else:
-            print(f"FAILED: Wrong error message: {e}")
+            print(f"FAILED: Wrong error message or missing bill info: {e}")
 
     # 5. Staff performs Force Checkout for Alice
     print(f"\nStaff performing checkout for Alice (Session: {session1.session_id})...")

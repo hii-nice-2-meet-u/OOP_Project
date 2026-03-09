@@ -269,6 +269,14 @@ class CafeSystem:
                     return cafe_branch
         return None
 
+    def find_play_session_by_id(self, any_id):
+        """Finds an active play session by ID or Table ID across all branches."""
+        for branch in self.__cafe_branches:
+            session = branch.find_play_session_by_id(any_id)
+            if session:
+                return session
+        return None
+
     def find_cafe_branch_by_name(self, name):
         if not isinstance(name, str):
             return None
@@ -982,9 +990,16 @@ class CafeSystem:
         
         if table.status == TableStatus.OCCUPIED:
             active_session = branch.find_play_session_by_id(table.table_id)
-            if active_session and active_session.check_time_up():
+            if active_session and active_session.check_time_up(now):
+                # Get bill preview for staff
+                try:
+                    total_amount = self.get_active_bill(active_session.session_id, current_time=now)["total_amount"]
+                except Exception as e:
+                    total_amount = 0.0
                 raise ValueError(
-                    f"FORCE CHECKOUT REQUIRED: Table {table.table_id} is occupied by expired session {active_session.session_id}. Please perform payment and check_out for them before proceeding."
+                    f"FORCE CHECKOUT REQUIRED: Table {table.table_id} is occupied by expired session {active_session.session_id}. "
+                    f"Estimated Total: ฿{total_amount:.2f}. "
+                    f"Please perform payment and check_out for them before proceeding."
                 )
             raise ValueError("Check-in failed: The table is still occupied by another session.")
 
@@ -1057,9 +1072,15 @@ class CafeSystem:
                 raise ValueError("Table not found")
             if table.status == TableStatus.OCCUPIED:
                 active_session = branch.find_play_session_by_id(table.table_id)
-                if active_session and active_session.check_time_up():
+                if active_session and active_session.check_time_up(actual_start):
+                    try:
+                        total_amount = self.get_active_bill(active_session.session_id, current_time=actual_start)["total_amount"]
+                    except:
+                        total_amount = 0.0
                     raise ValueError(
-                        f"FORCE CHECKOUT REQUIRED: Table {table.table_id} is occupied by expired session {active_session.session_id}. Please perform payment and check_out for them before proceeding."
+                        f"FORCE CHECKOUT REQUIRED: Table {table.table_id} is occupied by expired session {active_session.session_id}. "
+                        f"Estimated Total: ฿{total_amount:.2f}. "
+                        f"Please perform payment and check_out for them before proceeding."
                     )
                 raise ValueError("Check-in failed: The table is still occupied by another session.")
             
@@ -1499,10 +1520,31 @@ class CafeSystem:
         try:
             if payment_method.validate_method():
                 new_payment = Payment(total, payment_method)
-                new_payment.process_payment = True
                 return new_payment
         except Exception as e:
             raise ValueError(f"Payment validation failed: {e}")
+
+    def get_active_bill(self, session_id, current_time=None):
+        """Returns a dict with bill details for an active session."""
+        play_session = self.find_play_session_by_id(session_id)
+        if play_session is None:
+            raise ValueError("Play Session not found")
+        
+        # Temporarily mock end_time if session is active
+        original_end = play_session.end_time
+        if current_time is None:
+            current_time = datetime.now()
+            
+        play_session.end_time = current_time
+        try:
+            items = self.__calculate_bill(play_session)
+            total = 0.0
+            for label, amount in items:
+                if label == "TOTAL":
+                    total = amount
+            return {"items": items, "total_amount": total}
+        finally:
+            play_session.end_time = original_end
 
     def bill_history(self, session_id: str) -> list:
         validate_id(session_id, ["PS"])
@@ -1558,9 +1600,19 @@ class CafeSystem:
                 raise ValueError("Time up! Your reserved time has ended. Would you like to extend your session? (Please contact staff)")
 
     def __calculate_bill(self, session) -> list:
-        cafe_branch = self.find_cafe_branch_by_id(session.session_id)
+        cafe_branch = None
+        for branch in self.__cafe_branches:
+            # Check active sessions (get_play_sessions returns a list)
+            if any(s.session_id == session.session_id for s in branch.get_play_sessions()):
+                cafe_branch = branch
+                break
+            # Check history
+            if any(s.session_id == session.session_id for s in branch.get_play_sessions_history()):
+                cafe_branch = branch
+                break
+                
         if cafe_branch is None:
-            raise ValueError("Cafe Branch not found")
+            raise ValueError(f"Cafe Branch not found for session {session.session_id}")
 
         items = []
         total = 0.0
