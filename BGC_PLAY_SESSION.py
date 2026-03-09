@@ -230,11 +230,15 @@ class PlaySession:
     def reserved_end_time(self):
         return self.__reserved_end_time
 
-    @property
-    def is_time_up(self):
+    def check_time_up(self, current_time=None):
         if self.__reserved_end_time is None:
             return False
-        return datetime.datetime.now() >= self.__reserved_end_time
+        now = current_time if current_time is not None else datetime.datetime.now()
+        return now >= self.__reserved_end_time
+
+    @property
+    def is_time_up(self):
+        return self.check_time_up()
 
     # / ════════════════════════════════════════════════════════════════
     # - Setters
