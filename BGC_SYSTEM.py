@@ -1039,7 +1039,6 @@ class CafeSystem:
                 raise ValueError("Table capacity not enough")
 
         try:
-            table.status = TableStatus.OCCUPIED
             # BUG FIX 2: parse start_time string เป็น datetime object เสมอ
             # เพื่อป้องกัน (datetime - str) TypeError ใน PlaySession.duration()
             if start_time is None:
@@ -1085,6 +1084,10 @@ class CafeSystem:
                     raise ValueError(f"Player {customer_id} is already in this session")
                 session.add_players_id(customer_id)
 
+            # BUG FIX: Only mark table OCCUPIED AFTER all player validation passes.
+            # If we set this at the top of the try block and validation fails,
+            # the table is stuck OCCUPIED permanently with no session linked to it.
+            table.status = TableStatus.OCCUPIED
             branch.add_play_session(session)
             return session
         except (TypeError, ValueError) as e:
