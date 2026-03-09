@@ -65,29 +65,60 @@ def get_all_cafe_branches() -> str:
     return "\n".join(result) if result else "No branch data available"
 
 
+# Alias map: รองรับทั้ง class name จริง และ alias ที่ Claude มักส่งมา
+_PERSON_TYPE_ALIASES = {
+    "Owner":           "Owner",
+    "Manager":         "Manager",
+    "Staff":           "Staff",
+    "Member":          "Member",
+    "WalkInCustomer":  "WalkInCustomer",
+    "Customer_member": "Member",
+    "customer_member": "Member",
+    "customer_walk_in":"WalkInCustomer",
+    "WalkIn":          "WalkInCustomer",
+    "walk_in":         "WalkInCustomer",
+    "customer":        "Member",
+    "Customer":        "Member",
+}
+
 @mcp.tool()
 def get_person_by_type(person_type: str) -> str:
-    """Get all persons of a specific type ('Owner', 'Manager', 'Staff', 'Customer_member', 'customer_walk_in')
-    pass with CamelCase owner -> Owner (Case Sensitive)
-    Supported types: 'Owner', 'Manager', 'Staff', 'Member', 'WalkInCustomer'"""
+    """Get all persons of a specific type.
+
+    Accepted values (aliases supported):
+    - "Owner"
+    - "Manager"
+    - "Staff"
+    - "Member"         (aliases: "Customer_member", "customer_member", "customer")
+    - "WalkInCustomer" (aliases: "customer_walk_in", "WalkIn", "walk_in")
+    """
     try:
+        resolved = _PERSON_TYPE_ALIASES.get(person_type)
+        if resolved is None:
+            valid = ", ".join(sorted(set(_PERSON_TYPE_ALIASES.values())))
+            return f"Error: Unknown person_type '{person_type}'. Valid: {valid}"
+
         person_module = sys.modules.get('BGC_PERSON')
-        target_class = getattr(person_module, person_type)
+        target_class = getattr(person_module, resolved)
         persons = system.get_person_by_type(target_class)
 
         def format_person(p):
-            if person_type == 'Member':
+            if resolved == 'Member':
                 tier_name = p.get_member_tier().value if hasattr(p, 'get_member_tier') else 'None'
-                return f"ID: {p.user_id}, Name: {p.name}, Tier: {tier_name}, Total Spent: {p.get_total_spent() if hasattr(p, 'get_total_spent') else 0}"
+                spent = p.get_total_spent() if hasattr(p, 'get_total_spent') else 0
+                return f"ID: {p.user_id}, Name: {p.name}, Tier: {tier_name}, Total Spent: {spent}"
             return f"ID: {p.user_id}, Name: {p.name}"
 
         return (
             "\n".join([format_person(p) for p in persons])
             if persons
-            else "No data found"
+            else f"No {resolved} found"
         )
+    except AttributeError:
+        return f"Error: Class '{person_type}' not found in BGC_PERSON"
     except Exception as e:
         return f"Error: {e}"
+
 
 
 @mcp.tool()
@@ -247,10 +278,23 @@ def check_in(
     player_amount: int,
     customer_id: str = "walk_in",
     table_id: str = "auto",
-    start_time:str =None
+    start_time: str = None
 ) -> str:
-    """Check in a walk-in or walk-in member if start_time = None means date time now
-    if not use input
+    """Check in and start a new play session at a branch.
+
+    CRITICAL - customer_id behaviour:
+    - "walk_in" (default): creates player_amount anonymous WALK- customers.
+      Walk-in IDs are NOT Members — their spending is NEVER tracked for tier upgrades.
+    - "MEMBER-XXXXX": registers that member as the first player (1 person only).
+      player_amount is still used to find a table with enough capacity.
+      Use join_session() afterward to add more named members so their
+      total_spent is also tracked correctly.
+
+    RULE: If any customer is a registered Member, always pass their MEMBER-ID
+    here (or via join_session). Never use walk_in for registered members,
+    or their spending will be lost.
+
+    start_time format: 'YYYY-MM-DD HH:MM' or ISO datetime. None = use now.
     """
     try:
         session = system.check_in(
@@ -272,8 +316,53 @@ def check_in_reserved(reservation_id: str, customer_id: str, current_time: datet
 
 
 @mcp.tool()
+def check_in_members(
+    branch_id: str,
+    member_ids: str,
+    table_id: str = "auto",
+    start_time: str = None
+) -> str:
+    """Check in a group of registered Members together into one session.
+
+    Use this instead of check_in() when ALL players are registered Members
+    and you want EVERY player's total_spent tracked for tier upgrades.
+
+    member_ids: comma-separated MEMBER-IDs, e.g. "MEMBER-00001,MEMBER-00002"
+    The number of IDs determines player_amount automatically.
+
+    start_time format: 'YYYY-MM-DD HH:MM' or ISO datetime. None = use now.
+    """
+    try:
+        ids = [mid.strip() for mid in member_ids.split(",") if mid.strip()]
+        if not ids:
+            return "Error: No member IDs provided"
+
+        # Check-in the first member to create the session
+        session = system.check_in(
+            branch_id, len(ids), ids[0], table_id, start_time=start_time
+        )
+
+        # Join all remaining members into the same session
+        for mid in ids[1:]:
+            system.join_session(session.session_id, mid)
+
+        player_list = ", ".join(ids)
+        return (
+            f"Check in successful! Session ID: {session.session_id}, "
+            f"Table: {session.table_id}, Members: {player_list}"
+        )
+    except Exception as e:
+        return f"Error: {e}"
+
+
+@mcp.tool()
 def join_session(play_session_id: str, customer_id: str = "walk_in") -> str:
-    """Join an existing play session"""
+    """Join an existing play session.
+
+    customer_id: MEMBER-ID of the member joining, or "walk_in" for anonymous.
+    Use a real MEMBER-ID (not walk_in) to ensure this player's spending is
+    tracked toward their tier at checkout.
+    """
     try:
         system.join_session(play_session_id, customer_id)
         return "Successfully joined"
@@ -337,7 +426,23 @@ def update_order_cancel(play_session_id: str, order_id: str) -> str:
 
 
 @mcp.tool()
-def bill_history(play_session_id: str) -> str:
+def flag_board_game_damaged(play_session_id: str, board_game_id: str) -> str:
+    """Flag a board game as damaged (MAINTENANCE) and add it to the session's penalty list.
+    Use this when a game is confirmed broken during or after a session.
+    The penalty cost (game price) will be added to the session bill at checkout.
+    e.g. flag_board_game_damaged("PS-00000", "BG-00000")
+    """
+    try:
+        res = system.return_board_game(play_session_id, board_game_id, is_damaged=True)
+        return (
+            f"Board game '{res.name}' (ID: {res.game_id}) flagged as MAINTENANCE. "
+            f"A penalty of ฿{res.price:.2f} will be charged at checkout."
+        )
+    except Exception as e:
+        return f"Error: {e}"
+
+
+
     """ดูใบเสร็จย้อนหลังของ session ที่ checkout แล้ว (ใช้ PS- เท่านั้น)
     e.g. bill_history("PS-00000")
     """
@@ -511,21 +616,41 @@ def add_staff_to_branch(auth_id: str, branch_id: str, staff_name: str) -> str:
 
 
 @mcp.tool()
-def authorize_add_spent(auth_id: str, customer_id: str, amount: float) -> str:
-    """
-    Add total spent amount for a Member (Requires Owner ID or Manager ID to authorize)
+def authorize_add_spent(
+    auth_id: str,
+    customer_id: str,
+    amount: float,
+    authorizer_id: str = None,
+) -> str:
+    """Add total spent amount for a Member. Requires Owner or Manager to authorize.
+
+    Parameters (both names accepted for the authorizer):
+    - auth_id / authorizer_id : OWNER-PESO67 or MANAGER-XXXXX
+    - customer_id             : MEMBER-XXXXX
+    - amount                  : float, amount to add to total_spent
+
+    Example:
+        authorize_add_spent(auth_id="OWNER-PESO67", customer_id="MEMBER-00003", amount=500)
+        authorize_add_spent(authorizer_id="OWNER-PESO67", customer_id="MEMBER-00003", amount=500)
     """
     try:
-        if not (auth_id.startswith("OWNER") or auth_id.startswith("MANAGER")):
+        # รองรับทั้ง auth_id และ authorizer_id
+        effective_auth = auth_id if auth_id else authorizer_id
+        if not effective_auth:
+            return "Authorization Failed: Must provide auth_id or authorizer_id"
+
+        if not (effective_auth.startswith("OWNER") or effective_auth.startswith("MANAGER")):
             return "Authorization Failed: Only Owner or Manager can authorize adding spent amount"
 
-        person = system.find_person_by_id(auth_id)
+        person = system.find_person_by_id(effective_auth)
         if person is None:
-            return "Authorization Failed: Authorizer not found in the system"
+            return f"Authorization Failed: Authorizer '{effective_auth}' not found in the system"
 
         customer = system.add_spent(customer_id, amount)
-        return (f"Spent amount added successfully Customer ID: {customer.user_id} | "
-                f"Current Total Spent: {customer.total_spent} | Tier: {customer.get_member_tier().value}")
+        return (f"Spent amount added successfully | "
+                f"Customer ID: {customer.user_id} | "
+                f"Current Total Spent: {customer.total_spent:.2f} | "
+                f"Tier: {customer.get_member_tier().value}")
     except Exception as e:
         return f"Error: {e}"
 

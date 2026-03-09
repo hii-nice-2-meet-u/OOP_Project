@@ -50,13 +50,23 @@ class Payment:
             self.__payment_time = datetime.datetime.now()
 
     def __str__(self):
+        method_name = self.__payment_method.__class__.__name__
+        # แสดง change ถ้าจ่ายด้วยเงินสด
+        from BGC_PAYMENT import Cash
+        extra = ""
+        if isinstance(self.__payment_method, Cash):
+            extra = f" | Change: ฿{self.__payment_method.change:.2f}"
+        time_str = self.__payment_time.strftime("%Y-%m-%d %H:%M:%S") if self.__payment_time else "N/A"
         return (
-            f"Payment ID: {self.__payment_id} | "
-            f"Amount: {self.__amount:.2f} | "
-            f"Method: {self.__payment_method.__class__.__name__} | "
-            f"Time: {self.__payment_time}"
+            f"[{self.__payment_id}] "
+            f"฿{self.__amount:.2f} | "
+            f"Method: {method_name}"
+            f"{extra} | "
+            f"Time: {time_str}"
         )
 
+    def __repr__(self):
+        return self.__str__()
     # / ════════════════════════════════════════════════════════════════
     # - Methods
     # / ════════════════════════════════════════════════════════════════

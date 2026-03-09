@@ -310,6 +310,23 @@ class CafeSystem:
         end_time,
         table_id="auto",
     ):
+        # 🟢 ด่านที่ 0: ตรวจ format ของ date/time ก่อนทุกอย่าง
+        # ให้ error ชัดเจนก่อนที่จะไปตรวจ customer หรือ business rules
+        import re
+        if not re.match(r'^\d{4}-\d{2}-\d{2}$', str(date)):
+            raise ValueError(
+                f"Invalid date format: '{date}'. Expected YYYY-MM-DD (e.g. 2024-07-01)")
+        for t_val, t_name in [(start_time, "start_time"), (end_time, "end_time")]:
+            if not re.match(r'^\d{2}:\d{2}$', str(t_val)):
+                raise ValueError(
+                    f"Invalid time format for {t_name}: '{t_val}'. Expected HH:MM (e.g. 18:00)")
+        try:
+            datetime.strptime(date, "%Y-%m-%d")
+            datetime.strptime(start_time, "%H:%M")
+            datetime.strptime(end_time, "%H:%M")
+        except ValueError as e:
+            raise ValueError(f"Invalid date/time value: {e}")
+
         validate_id(customer_id, ["MEMBER", "WALK"])
         validate_id(branch_id, ["BRCH"])
 
@@ -993,12 +1010,40 @@ class CafeSystem:
 
         try:
             table.status = TableStatus.OCCUPIED
-            actual_start = start_time if start_time is not None else datetime.now()
+            # BUG FIX 2: parse start_time string เป็น datetime object เสมอ
+            # เพื่อป้องกัน (datetime - str) TypeError ใน PlaySession.duration()
+            if start_time is None:
+                actual_start = datetime.now()
+            elif isinstance(start_time, datetime):
+                actual_start = start_time
+            else:
+                parsed = None
+                for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M",
+                            "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+                    try:
+                        parsed = datetime.strptime(start_time, fmt)
+                        break
+                    except ValueError:
+                        continue
+                if parsed is None:
+                    raise ValueError(
+                        "start_time format invalid. Use 'YYYY-MM-DD HH:MM' or ISO format")
+                actual_start = parsed
             session = PlaySession(table.table_id, actual_start)
 
             if customer_id == "walk_in":
                 for _ in range(player_amount):
                     session.add_players_id(self.create_customer_walk_in().user_id)
+            elif "," in customer_id:
+                # BUG FIX 4: รองรับ check_in หลาย Member พร้อมกัน
+                # ส่ง comma-separated IDs เช่น "MEMBER-00001,MEMBER-00002"
+                # เพื่อให้ทุกคนถูก track ใน session ตั้งแต่ต้น
+                ids = [mid.strip() for mid in customer_id.split(",") if mid.strip()]
+                for mid in ids:
+                    validate_id(mid, ["MEMBER", "WALK"])
+                    if self.find_person_by_id(mid) is None:
+                        raise ValueError(f"Member ID {mid} not found")
+                    session.add_players_id(mid)
             else:
                 session.add_players_id(customer_id)
 
@@ -1032,7 +1077,10 @@ class CafeSystem:
             if table is None:
                 raise ValueError("Table for this session not found")
 
-            if play_session.get_total_players() >= table.capacity:
+            # BUG FIX: capacity check — named Members can always join even if
+            # anonymous walk_in slots filled the table. Only block new walk_in
+            # entries when truly at capacity. Named member spending must be tracked.
+            if play_session.get_total_players() >= table.capacity and customer_id == "walk_in":
                 raise ValueError(
                     f"Table capacity is full ({table.capacity}/{table.capacity})")
 
@@ -1239,9 +1287,11 @@ class CafeSystem:
         if play_session.payment is not None:
             raise ValueError("This session already checked out")
 
+        play_session.end_time = actual_end_time
+
         total = 0
         try:
-            # 1. Calculate the total bill first without changing state
+            # 1. Calculate the total bill
             for order in play_session.current_order:
                 if order.status in [OrderStatus.PENDING, OrderStatus.PREPARING]:
                     raise ValueError(
@@ -1289,8 +1339,7 @@ class CafeSystem:
         for cp in play_session.current_players_id:
             customer = self.find_person_by_id(cp)
             if isinstance(customer, Member):
-                self.add_spent(cp, Table.price_per_hour *
-                               play_session.duration())
+                self.add_spent(cp, Table.price_per_hour*play_session.duration())
         cafe_branch.end_play_session(
             play_session.session_id, actual_end_time)
 
