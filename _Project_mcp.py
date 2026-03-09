@@ -38,6 +38,17 @@ def make_reservation(
     """Book a table (date_str format: YYYY-MM-DD, time format: HH:MM)
     Example call: make_reservation("MEMBER_A", "Ladkrabang", 4, "2024-07-01", "18:00", "20:00")
     Use branch name for booking instead of ID for testing convenience"""
+    import re
+
+    # ✅ ด่านที่ 0: validate format ก่อน DB lookup ทุกอย่าง
+    if not re.match(r'^\d{4}-\d{2}-\d{2}$', str(date_str)):
+        return f"Invalid date format: '{date_str}'. Expected YYYY-MM-DD (e.g. 2024-07-01)"
+    for t_val, t_name in [(start_t, "start_time"), (end_t, "end_time")]:
+        if not re.match(r'^\d{2}:\d{2}$', str(t_val)):
+            return f"Invalid time format for {t_name}: '{t_val}'. Expected HH:MM (e.g. 18:00)"
+    if not isinstance(players, int) or players <= 0:
+        return "players must be a positive integer"
+
     try:
         member = system.find_person_by_name(customer_name)
         if not member:
@@ -51,7 +62,6 @@ def make_reservation(
         return f"Booking successful! ID: {res.reservation_id} at table {res.table_id}"
     except Exception as e:
         return f"Error occurred: {str(e)}"
-
 
 @mcp.tool()
 def get_all_cafe_branches() -> str:
