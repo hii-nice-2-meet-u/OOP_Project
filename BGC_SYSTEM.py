@@ -1053,8 +1053,6 @@ class CafeSystem:
                 reserved_end_time=actual_res_end
             )
             session.add_players_id(reservation.customer_id)
-            for _ in range(reservation.total_player - 1):
-                session.add_players_id(self.create_customer_walk_in().user_id)
             session.reservation_id = reservation.reservation_id
 
             # BUG FIX: Only mutate state AFTER the session is confirmed created.
