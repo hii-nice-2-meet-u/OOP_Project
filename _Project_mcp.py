@@ -453,6 +453,8 @@ def flag_board_game_damaged(play_session_id: str, board_game_id: str) -> str:
 
 
 
+@mcp.tool()
+def bill_history(play_session_id: str) -> str:
     """ดูใบเสร็จย้อนหลังของ session ที่ checkout แล้ว (ใช้ PS- เท่านั้น)
     e.g. bill_history("PS-00000")
     """
