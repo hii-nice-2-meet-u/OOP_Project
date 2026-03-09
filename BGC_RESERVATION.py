@@ -17,10 +17,13 @@ class Reservation:
         date: str,
         start_time: str,
         end_time: str,
+        total_player: int = 1,
+        current_time: datetime = None
     ):
         self.__reservation_id = "RESV-" + str(Reservation.__counter).zfill(5)
         Reservation.__counter += 1
-        self.__current_reservation_date = datetime.now().date()
+        now = current_time if current_time is not None else datetime.now()
+        self.__current_reservation_date = now.date()
         self.__reservation_time = datetime.strptime(
             f"{date} {start_time}", "%Y-%m-%d %H:%M"
         )
@@ -30,6 +33,7 @@ class Reservation:
         self.__date = date
         self.__start_time = start_time
         self.__end_time = end_time
+        self.__total_player = total_player
         self.__status = ReservationStatus.PENDING
         self.__deposit = 0
 
@@ -84,6 +88,10 @@ class Reservation:
     @property
     def end_time(self):
         return self.__end_time
+
+    @property
+    def total_player(self):
+        return self.__total_player
 
     @property
     def deposit(self):
@@ -153,6 +161,7 @@ class Reservation:
             "date": self.__date,
             "start_time": self.__start_time,
             "end_time": self.__end_time,  # อัปเดตให้ส่ง end_time กลับไป
+            "total_player": self.__total_player,
             "status": self.__status.value,
         }
 
