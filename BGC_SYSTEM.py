@@ -988,11 +988,15 @@ class CafeSystem:
             raise ValueError("Wrong personal ID")
 
         try:
+            session = PlaySession(reservation.table_id, now)
+            session.add_players_id(reservation.customer_id)
+
+            # BUG FIX: Only mutate state AFTER the session is confirmed created.
+            # Setting reservation.status=COMPLETED and table.status=OCCUPIED
+            # before add_play_session means a failure corrupts state irreversibly.
+            branch.add_play_session(session)
             reservation.status = ReservationStatus.COMPLETED
             table.status = TableStatus.OCCUPIED
-            session = PlaySession(reservation.table_id, now)
-            branch.add_play_session(session)
-            session.add_players_id(reservation.customer_id) 
 
             return session
         except (TypeError, ValueError) as e:
