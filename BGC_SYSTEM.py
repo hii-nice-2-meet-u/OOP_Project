@@ -1807,18 +1807,12 @@ class CafeBranch:
         return None
 
     def search_board_game_by_min_players(self, min_players):
-        return [
-            board_game
-            for board_game in self.__board_games
-            if board_game.min_players >= min_players
-        ]
+        return [bg for bg in self.__board_games
+                if bg.min_players <= min_players <= bg.max_players]
 
     def search_board_game_by_max_players(self, max_players):
-        return [
-            board_game
-            for board_game in self.__board_games
-            if board_game.max_players <= max_players
-        ]
+        return [bg for bg in self.__board_games
+                if bg.min_players <= max_players <= bg.max_players]
 
     def remove_board_game_by_id(self, board_game_id):
         self.__board_games = [
