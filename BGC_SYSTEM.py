@@ -1157,7 +1157,7 @@ class CafeSystem:
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to return board game: {e}")
 
-    # # 10% chance of damage : simulate chance of damage in real life situation
+    # 10% chance of damage : simulate chance of damage in real life situation
     def check_board_game_damage(self):
         return random.random() < 0.1
 
