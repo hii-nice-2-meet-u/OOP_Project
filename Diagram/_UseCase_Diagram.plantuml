@@ -2,149 +2,189 @@
 left to right direction
 skinparam packageStyle rectangle
 
-actor Owner
-actor Manager
-actor Staff
-actor Customer
-actor "Payment Gateway" as Bank
+title Board Game Cafe System Use Case Diagram
 
+' -------------------------------
+' Actors Definition
+' -------------------------------
+actor "Bank" as bank
+actor "Person" as person
+actor "Customer" as customer
+actor "Guest Customer\n(Walk-in)" as guest
+actor "Member" as member
+
+actor "NonCustomer\n(Staff/Manager/Owner)" as nonCustomer
+actor "Staff" as staff
+actor "Manager" as manager
+actor "Owner" as owner
+
+' Actor Relationships based on Class Diagram
+guest -up-|> customer
+member -up-|> customer
+customer -up-|> person
+
+staff -up-|> nonCustomer
+manager -up-|> nonCustomer
+owner -up-|> nonCustomer
+nonCustomer -up-|> person
+
+' -------------------------------
+' Core System Use Cases
+' -------------------------------
 rectangle "Board Game Cafe System" {
 
-' ===============================
-' MEMBER & AUTH
-' ===============================
+    ' Authentication & Registration
+    usecase "Member Registration" as UC_Reg #LightBlue
+    usecase "Member Registration\n(Online)" as UC_RegOnline #LightBlue
+    usecase "Input Account Data" as UC_InputAcc #LightYellow
+    usecase "Check Duplicate Registration" as UC_CheckDup #LightYellow
+    
+    guest --> UC_Reg
+    guest --> UC_RegOnline
+    UC_Reg <.. UC_InputAcc : <<extend>>
+    UC_RegOnline <.. UC_InputAcc : <<extend>>
+    UC_InputAcc ..>  UC_CheckDup : <<include>>
+    staff --> UC_CheckDup
 
-usecase "Register Member" as UC_Register
-usecase "Login" as UC_Login
-usecase "View Menu & Board Games" as UC_ViewCatalog
+    ' Reservation Flow
+    usecase "Make Reservation" as UC_MakeResv #LightBlue
+    usecase "Request Make Reservation\n(Online)" as UC_ReqMakeResv #LightBlue
+    usecase "Select Date, Time,\nTable, Pax" as UC_SelectDetails #LightYellow
+    usecase "Check Available Tables\n& Assign Reservation" as UC_CheckAssignResv #LightYellow
+    usecase "Make Deposit Payment" as UC_Deposit #LightYellow
+    
+    member --> UC_MakeResv
+    member --> UC_ReqMakeResv
+    UC_MakeResv ..> UC_SelectDetails : <<include>>
+    UC_ReqMakeResv ..> UC_SelectDetails : <<include>>
+    UC_SelectDetails ..> UC_CheckAssignResv : <<include>>
+    
+    staff --> UC_CheckAssignResv
+    
+    bank --> UC_Deposit
+    UC_MakeResv ..> UC_Deposit : <<include>>
+    UC_CheckAssignResv ..> UC_Deposit : <<include>>
 
-Customer --> UC_Register
-Customer --> UC_Login
-Customer --> UC_ViewCatalog
+    usecase "Check-in Reservation" as UC_CheckIn #LightYellow
+    usecase "Verify Check-in" as UC_VerifyCheckIn #LightYellow
+    member --> UC_CheckIn
+    UC_CheckIn ..> UC_VerifyCheckIn  : <<include>>
+    staff --> UC_VerifyCheckIn
 
+    usecase "Cancel Reservation" as UC_CancelResv #LightBlue
+    usecase "Request Cancel Reservation\n(Online)" as UC_ReqCancel #LightBlue
+    usecase "Confirm Cancel Reservation" as UC_ConfirmCancel #LightYellow
+    
+    member --> UC_CancelResv
+    member --> UC_ReqCancel
+    UC_ReqCancel ..> UC_ConfirmCancel : <<include>>
+    staff --> UC_ConfirmCancel
 
-' ===============================
-' RESERVATION SYSTEM
-' ===============================
+    ' Walk-in & Interactive Session
+    usecase "Walk-in Request" as UC_Walkin #LightYellow
+    usecase "Check Available Tables\n(Walk-in)" as UC_CheckTablesWalkin #LightYellow
+    usecase "Join Existing Session" as UC_JoinSession #LightYellow
 
-usecase "Create Reservation" as UC_CreateRes
-usecase "Update Reservation Status" as UC_UpdateRes
-usecase "Cancel Reservation" as UC_CancelRes
-usecase "Check Table Availability" as UC_CheckTable
+    customer --> UC_Walkin
+    customer --> UC_JoinSession
+    
+    UC_Walkin ..> UC_CheckTablesWalkin : <<include>>
+    staff --> UC_CheckTablesWalkin
 
-Customer --> UC_CreateRes
-Customer --> UC_CancelRes
+    ' Menu & Ordering
+    usecase "View Menu" as UC_ViewMenu #LightBlue
+    usecase "Order Menu" as UC_OrderMenu #LightYellow
+    usecase "Taking Orders" as UC_TakeOrder #LightYellow
+    usecase "Serve Orders" as UC_ServeOrder #LightYellow
 
-UC_CreateRes --> UC_CheckTable : <<include>>
-UC_CancelRes --> UC_UpdateRes : <<include>>
+    customer --> UC_ViewMenu
+    UC_ViewMenu <.. UC_OrderMenu : <<extend>>
+    UC_OrderMenu ..> UC_TakeOrder : <<include>>
+    staff --> UC_TakeOrder
+    staff --> UC_ServeOrder
 
+    ' Board Game Flow
+    usecase "Search Board Game" as UC_SearchBG #LightYellow
+    usecase "Borrow Board Game" as UC_BorrowBG #LightBlue
+    usecase "Check Available BoardGame" as UC_CheckBG #LightYellow
+    usecase "Update Game to IN-USE" as UC_UpdateInUse #LightYellow
+    usecase "Assign BoardGame" as UC_AssignBG #LightYellow
+    usecase "Return Board Game" as UC_ReturnBG #LightBlue
+    usecase "Check Game Condition" as UC_CheckCond #LightYellow
+    usecase "Assess Damage Fine" as UC_AssessFine #LightYellow
+    usecase "Send Game to Maintenance" as UC_MaintBG #LightYellow
 
-' ===============================
-' PLAY SESSION
-' ===============================
+    customer --> UC_SearchBG
+    customer --> UC_BorrowBG
+    customer --> UC_ReturnBG
+    
+    staff --> UC_SearchBG
+    UC_BorrowBG ..> UC_CheckBG : <<include>>
+    staff --> UC_CheckBG
+    
+    UC_BorrowBG ..> UC_UpdateInUse : <<include>>
+    UC_UpdateInUse ..> UC_AssignBG : <<include>>
+    staff --> UC_AssignBG
+    
+    UC_ReturnBG ..> UC_CheckCond : <<include>>
+    staff --> UC_CheckCond
+    UC_CheckCond <.. UC_AssessFine : <<extend>>
+    UC_CheckCond <.. UC_MaintBG : <<extend>>
+    staff --> UC_AssessFine
+    staff --> UC_MaintBG
 
-usecase "Open Play Session" as UC_OpenSession
-usecase "Add Players to Session" as UC_AddPlayer
-usecase "End Play Session" as UC_EndSession
+    ' Checkout & Billing
+    usecase "Checkout" as UC_Checkout #LightBlue
+    usecase "Apply Promotion / Discount" as UC_ApplyPromo #LightYellow
+    usecase "Calculate Bill" as UC_CalcBill #LightYellow
+    usecase "Process Payment" as UC_ProcessPay #LightYellow
+    usecase "Confirm/Check Payment" as UC_ConfirmPay #LightYellow
+    usecase "View Bill History" as UC_ViewBillHistory #LightYellow
 
-Staff --> UC_OpenSession
-Staff --> UC_EndSession
+    customer --> UC_Checkout
+    customer --> UC_ViewBillHistory
+    UC_Checkout <.. UC_ApplyPromo : <<extend>>
+    UC_Checkout ..> UC_CalcBill : <<include>>
+    UC_Checkout ..> UC_ProcessPay : <<include>>
+    
+    staff --> UC_ApplyPromo
+    staff --> UC_CalcBill
+    staff --> UC_ProcessPay
+    bank --> UC_ProcessPay
+    
+    UC_ProcessPay ..> UC_ConfirmPay : <<include>>
+    staff --> UC_ConfirmPay
+    bank --> UC_ConfirmPay
+}
 
-UC_OpenSession --> UC_AddPlayer : <<include>>
+' -------------------------------
+' Management System Use Cases
+' -------------------------------
+rectangle "Management Dashboard" {
 
+    usecase "Update Table Status\n(Maintenance)" as UC_UpdateTableStat #LightYellow
+    usecase "Update Game Status\n(Maintenance)" as UC_UpdateGameStat #LightYellow
+    
+    staff --> UC_UpdateTableStat
+    staff --> UC_UpdateGameStat
 
-' ===============================
-' BOARD GAME MANAGEMENT
-' ===============================
+    usecase "Manage Branch Staff" as UC_ManageStaff #LightYellow
+    usecase "Add/Update Board Game" as UC_ManageBG #LightYellow
+    usecase "Add/Update Table" as UC_ManageTable #LightYellow
+    usecase "Add/Update Menu Item" as UC_ManageMenu #LightYellow
+    
+    usecase "View Bill History" as UC_ViewBillHistory #LightYellow
 
-usecase "Borrow Board Game" as UC_BorrowGame
-usecase "Return Board Game" as UC_ReturnGame
-usecase "Update Game Status" as UC_UpdateGame
+    manager --> UC_ManageStaff
+    manager --> UC_ManageBG
+    manager --> UC_ManageTable
+    manager --> UC_ManageMenu
+    manager --> UC_ViewBillHistory
 
-Customer --> UC_BorrowGame
-Customer --> UC_ReturnGame
-
-Staff --> UC_UpdateGame
-
-UC_BorrowGame --> UC_UpdateGame : <<include>>
-UC_ReturnGame --> UC_UpdateGame : <<include>>
-
-
-' ===============================
-' FOOD & DRINK ORDER
-' ===============================
-
-usecase "Create Order" as UC_CreateOrder
-usecase "Add Menu Item to Order" as UC_AddItem
-usecase "Cancel Order" as UC_CancelOrder
-usecase "Serve Order" as UC_ServeOrder
-
-Customer --> UC_CreateOrder
-Staff --> UC_AddItem
-Staff --> UC_ServeOrder
-
-UC_CreateOrder --> UC_AddItem : <<include>>
-
-
-' ===============================
-' PAYMENT
-' ===============================
-
-usecase "Process Payment" as UC_Payment
-usecase "Select Payment Method" as UC_SelectMethod
-usecase "Verify Payment" as UC_VerifyPay
-
-Customer --> UC_Payment
-Staff --> UC_Payment
-
-UC_Payment --> UC_SelectMethod : <<include>>
-UC_SelectMethod --> UC_VerifyPay : <<include>>
-
-Bank --> UC_VerifyPay
-
-
-' ===============================
-' MENU & INVENTORY
-' ===============================
-
-usecase "Manage Menu" as UC_ManageMenu
-usecase "Add Food Item" as UC_AddFood
-usecase "Add Drink Item" as UC_AddDrink
-usecase "Remove Menu Item" as UC_RemoveMenu
-
-Manager --> UC_ManageMenu
-
-UC_ManageMenu --> UC_AddFood : <<include>>
-UC_ManageMenu --> UC_AddDrink : <<include>>
-UC_ManageMenu --> UC_RemoveMenu : <<include>>
-
-
-' ===============================
-' BRANCH MANAGEMENT
-' ===============================
-
-usecase "Create Cafe Branch" as UC_CreateBranch
-usecase "Add Table to Branch" as UC_AddTable
-usecase "Add Board Game to Branch" as UC_AddGame
-
-Owner --> UC_CreateBranch
-Manager --> UC_AddTable
-Manager --> UC_AddGame
-
-
-' ===============================
-' STAFF MANAGEMENT
-' ===============================
-
-usecase "Add Staff" as UC_AddStaff
-usecase "Assign Manager to Branch" as UC_AssignManager
-usecase "View Reports" as UC_Report
-
-Owner --> UC_AddStaff
-Owner --> UC_AssignManager
-Owner --> UC_Report
-Manager --> UC_Report
-
+    usecase "Add/Remove Manager to Branch" as UC_ManageMgrBranch #LightYellow
+    usecase "Create New Cafe Branch" as UC_ManageBranches #LightYellow
+    owner --> UC_ManageMgrBranch
+    owner --> UC_ManageBranches
 }
 
 @enduml
