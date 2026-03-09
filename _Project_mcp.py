@@ -461,6 +461,16 @@ def take_order(play_session_id: str, menu_item_id: str, current_time: str = None
 
 
 @mcp.tool()
+def update_order_preparing(play_session_id: str, order_id: str) -> str:
+    """Update order status to preparing (kitchen has started on the order)"""
+    try:
+        system.update_order_preparing(play_session_id, order_id)
+        return "Order status updated to preparing"
+    except Exception as e:
+        return f"Error: {e}"
+
+
+@mcp.tool()
 def update_order_serve(play_session_id: str, order_id: str) -> str:
     """Update order status to served"""
     try:
@@ -823,12 +833,13 @@ def get_active_sessions(branch_id: str) -> str:
         if not sessions:
             return "No active sessions"
         lines = []
+        now = system.get_time()  # BUG FIX: use simulated time instead of datetime.now() via is_time_up
         for s in sessions:
             players = ", ".join(s.current_players_id) or "(none)"
             time_info = ""
             if s.reserved_end_time:
                 end_str = s.reserved_end_time.strftime('%H:%M')
-                status_str = " [⚠️ TIME UP!]" if s.is_time_up else ""
+                status_str = " [⚠️ TIME UP!]" if s.check_time_up(now) else ""
                 time_info = f" | Ends: {end_str}{status_str}"
             
             lines.append(
@@ -850,7 +861,8 @@ def get_overstayed_sessions(branch_id: str) -> str:
         if branch is None:
             return "Error: Branch not found"
         sessions = branch.get_play_sessions()
-        overstayed = [s for s in sessions if s.is_time_up]
+        now = system.get_time()  # BUG FIX: use simulated time instead of datetime.now() via is_time_up
+        overstayed = [s for s in sessions if s.check_time_up(now)]
         if not overstayed:
             return "No overstayed sessions. All tables are within their time limits."
         
@@ -944,8 +956,9 @@ def get_active_bill(play_session_id: str, current_time: str = None) -> str:
 
         for order in session.current_order:
             if order.status.value == "Served":
-                lines.append(f"  [Order] {order.menu_items.name}: ฿{order.menu_items.price:.2f}")
-                total += order.menu_items.price
+                # Use snapshotted price/name (same as check_out) to avoid stale data
+                lines.append(f"  [Order] {order.snapshot_name}: ฿{order.snapshot_price:.2f}")
+                total += order.snapshot_price
 
         lines.append(f"")
         lines.append(f"  Estimated TOTAL: ฿{total:.2f} (before discount/penalty)")
@@ -1014,6 +1027,13 @@ def resolve_checkin_conflict(
     current_time format: 'YYYY-MM-DD HH:MM' or ISO.
     """
     try:
+        # BUG FIX: validate staff_id exists in the system before calling auto_force_checkout
+        if not staff_id.startswith("STAFF"):
+            return "Authorization Failed: Only Staff can resolve check-in conflicts"
+        person = system.find_person_by_id(staff_id)
+        if person is None:
+            return f"Authorization Failed: Staff ID {staff_id} not found in the system"
+
         parsed_time = None
         if current_time is not None:
             for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
