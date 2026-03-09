@@ -1158,8 +1158,8 @@ class CafeSystem:
             raise ValueError(f"Failed to return board game: {e}")
 
     # # 10% chance of damage : simulate chance of damage in real life situation
-    # def check_board_game_damage(self):
-    #     return random.random() < 0.1
+    def check_board_game_damage(self):
+        return random.random() < 0.1
 
     def maintenance_board_game(self, board_game_id):
         validate_id(board_game_id, ["BG"])
