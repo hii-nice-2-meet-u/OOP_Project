@@ -299,9 +299,15 @@ class CafeSystem:
         return None
 
     def find_play_session_by_id(self, any_id):
-        """Finds an active play session by ID or Table ID across all branches."""
         for branch in self.__cafe_branches:
             session = branch.find_play_session_by_id(any_id)
+            if session:
+                return session
+        return None
+
+    def find_play_session_history_by_id(self, any_id):
+        for branch in self.__cafe_branches:
+            session = branch.find_play_session_history_by_id(any_id)
             if session:
                 return session
         return None
