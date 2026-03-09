@@ -983,12 +983,26 @@ class CafeSystem:
         if table.status == TableStatus.OCCUPIED:
             raise ValueError("Check-in failed: The table is still occupied by another session.")
 
-        if customer.user_id != reservation.customer_id:
-            raise ValueError("Wrong personal ID")
-
         try:
-            session = PlaySession(reservation.table_id, now)
+            # Calculate reserved duration in hours
+            res_start = datetime.strptime(reservation.start_time, "%H:%M")
+            res_end = datetime.strptime(reservation.end_time, "%H:%M")
+            res_duration = (res_end - res_start).total_seconds() / 3600.0
+            if res_duration < 0: res_duration += 24 # Overflow cross midnight
+            
+            # Create full datetime for reserved_end_time
+            # Note: reservation.reservation_time is the start datetime
+            # We add the duration to it
+            actual_res_end = reservation.reservation_time + timedelta(hours=res_duration)
+
+            session = PlaySession(
+                reservation.table_id, 
+                now, 
+                reserved_duration=math.ceil(res_duration),
+                reserved_end_time=actual_res_end
+            )
             session.add_players_id(reservation.customer_id)
+            session.reservation_id = reservation.reservation_id
 
             # BUG FIX: Only mutate state AFTER the session is confirmed created.
             # Setting reservation.status=COMPLETED and table.status=OCCUPIED
@@ -1162,6 +1176,8 @@ class CafeSystem:
         play_session = cafe_branch.find_play_session_by_id(any_id)
         if play_session is None:
             raise ValueError("Play Session not found")
+        
+        self.__validate_session_time(play_session)
 
         if len(play_session.current_board_games_id) + 1 > 2:
             raise ValueError("Maximum 2 board games per session")
@@ -1246,6 +1262,9 @@ class CafeSystem:
         play_session = cafe_branch.find_play_session_by_id(any_id)
         if play_session is None:
             raise ValueError("Play Session not found")
+        
+        self.__validate_session_time(play_session)
+
 
         menu_item = cafe_branch.find_menu_item_by_id(menu_item_id)
         if menu_item is None:
@@ -1352,8 +1371,8 @@ class CafeSystem:
 
         # Compute duration locally WITHOUT setting play_session.end_time early
         # This prevents a corrupted end_time if payment later fails
-        raw_seconds = (actual_end_time - play_session.start_time).total_seconds()
-        actual_duration = max(1, math.ceil(raw_seconds / 3600.0)) if raw_seconds >= 0 else 0
+        # Use session.duration() logic which now considers reserved_duration
+        actual_duration = play_session.duration(actual_end_time)
 
         total = 0
         try:
@@ -1501,6 +1520,29 @@ class CafeSystem:
                 if person_id in session.current_players_id:
                     return True
         return False
+
+    def __check_future_reservations(self, table_id, current_time=None):
+        if current_time is None:
+            current_time = datetime.now()
+        
+        # Check if there is any PENDING reservation for this table starting within the next 30 mins
+        # or already started but not yet checked in.
+        for res in self.__reservations:
+            if res.table_id == table_id and res.status == ReservationStatus.PENDING:
+                # If reservation starts within 30 mins from now or has already started
+                time_diff = (res.reservation_time - current_time).total_seconds() / 60.0
+                if -15 <= time_diff <= 30: # From 15 mins late to 30 mins in future
+                    return True
+        return False
+
+    def __validate_session_time(self, play_session):
+        if play_session.is_time_up:
+            if self.__check_future_reservations(play_session.table_id):
+                raise ValueError("Time up! This table is reserved for the next guest. Please proceed to Checkout.")
+            else:
+                # We raise a specific message that UI/User can interpret as "Ask for extension"
+                # but for now it's still a blocking error for new activities
+                raise ValueError("Time up! Your reserved time has ended. Would you like to extend your session? (Please contact staff)")
 
     def __calculate_bill(self, session) -> list:
         cafe_branch = self.find_cafe_branch_by_id(session.session_id)

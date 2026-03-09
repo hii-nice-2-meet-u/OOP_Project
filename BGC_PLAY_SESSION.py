@@ -163,7 +163,7 @@ class Table:
 class PlaySession:
     __counter = 0
 
-    def __init__(self, table_id, start_time):
+    def __init__(self, table_id, start_time, reserved_duration=0, reserved_end_time=None):
         self.__session_id = "PS-" + str(PlaySession.__counter).zfill(5)
         PlaySession.__counter += 1
         self.__table_id = table_id
@@ -175,6 +175,8 @@ class PlaySession:
         self.__reservation_id = None
         self.__payment = None
         self.__game_penalty = []
+        self.__reserved_duration = reserved_duration
+        self.__reserved_end_time = reserved_end_time
 
     # / ════════════════════════════════════════════════════════════════
     # - Getters
@@ -220,6 +222,20 @@ class PlaySession:
     def game_penalty(self):
         return self.__game_penalty.copy()
 
+    @property
+    def reserved_duration(self):
+        return self.__reserved_duration
+
+    @property
+    def reserved_end_time(self):
+        return self.__reserved_end_time
+
+    @property
+    def is_time_up(self):
+        if self.__reserved_end_time is None:
+            return False
+        return datetime.datetime.now() >= self.__reserved_end_time
+
     # / ════════════════════════════════════════════════════════════════
     # - Setters
     # / ════════════════════════════════════════════════════════════════
@@ -233,6 +249,10 @@ class PlaySession:
         if not isinstance(payment, Payment):
             raise ValueError("Invalid payment")
         self.__payment = payment
+
+    @reservation_id.setter
+    def reservation_id(self, value):
+        self.__reservation_id = value
 
     # / ════════════════════════════════════════════════════════════════
     # - Methods
@@ -264,19 +284,22 @@ class PlaySession:
     def remove_players_id(self, player_id):
         self.__current_players_id.remove(player_id)
 
-    def duration(self):
+    def duration(self, end_time=None):
         start = self.__start_time
-        end = self.__end_time if self.__end_time is not None else datetime.datetime.now()
+        # Use provided end_time, or stored end_time, or now
+        if end_time is None:
+            end = self.__end_time if self.__end_time is not None else datetime.datetime.now()
+        else:
+            end = end_time
 
         if start is None:
             return 0
         
-        # Ensure minimum 1 hour if the session has started
         diff_seconds = (end - start).total_seconds()
-        if diff_seconds < 0:
-            return 0
-            
-        return max(1, math.ceil(diff_seconds / 3600.0))
+        calculated_duration = math.ceil(diff_seconds / 3600.0)
+        
+        # Ensure minimum 1 hour and at least reserved_duration if the session has started
+        return max(1, calculated_duration, self.__reserved_duration)
         
  
     # / ════════════════════════════════════════════════════════════════
