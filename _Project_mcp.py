@@ -919,7 +919,7 @@ def get_active_bill(play_session_id: str, current_time: str = None) -> str:
         if session.payment is not None:
             return "This session is already checked out. Use bill_history() instead."
 
-        now = parsed_time if parsed_time else datetime.now()
+        now = parsed_time if parsed_time else system.get_time()
         # Use the new duration logic from PlaySession which handles reserved_duration correctly
         duration = session.duration(now)
 
@@ -975,6 +975,66 @@ def repair_board_game(auth_id: str, board_game_id: str) -> str:
         return f"Board game {board_game_id} has been repaired and is now AVAILABLE"
     except Exception as e:
         return f"Error: {e}"
+
+
+@mcp.tool()
+def set_system_time(time_str: str) -> str:
+    """Sets the system-wide simulated time. 
+    Format: 'YYYY-MM-DD HH:MM' or 'YYYY-MM-DDTHH:MM:SS'. 
+    Pass an empty string to reset to real-time.
+    """
+    try:
+        reset = not time_str or not time_str.strip()
+        result = system.set_simulated_time(None if reset else time_str)
+        return result
+    except Exception as e:
+        return f"Error: {e}"
+
+@mcp.tool()
+def get_system_time() -> str:
+    """Returns the current system time (either simulated or real)."""
+    try:
+        now = system.get_time()
+        is_simulated = system._CafeSystem__simulated_time is not None
+        type_str = "(SIMULATED)" if is_simulated else "(REAL-TIME)"
+        return f"{now.strftime('%Y-%m-%d %H:%M:%S')} {type_str}"
+    except Exception as e:
+        return f"Error: {e}"
+
+@mcp.tool()
+def resolve_checkin_conflict(
+    session_id: str, 
+    staff_id: str, 
+    method_type: str = "cash", 
+    current_time: str = None, 
+    **kwargs
+) -> str:
+    """Resolve a check-in conflict by performing an automated force checkout.
+    e.g. resolve_checkin_conflict(session_id="PS-00000", staff_id="STAFF-00001", method_type="cash")
+    current_time format: 'YYYY-MM-DD HH:MM' or ISO.
+    """
+    try:
+        parsed_time = None
+        if current_time is not None:
+            for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+                try:
+                    parsed_time = datetime.strptime(current_time, fmt)
+                    break
+                except ValueError:
+                    continue
+            if parsed_time is None:
+                return "Error: current_time format invalid. Use 'YYYY-MM-DD HH:MM'"
+
+        # Call the new specialized method in CafeSystem
+        system.auto_force_checkout(
+            session_id, staff_id, method_type=method_type, current_time=parsed_time, **kwargs
+        )
+        return (
+            f"Successfully resolved conflict! Session {session_id} has been force-checked out by {staff_id}. "
+            f"The table is now available for the new guest."
+        )
+    except Exception as e:
+        return f"Error resolving conflict: {e}"
 
 
 if __name__ == "__main__":

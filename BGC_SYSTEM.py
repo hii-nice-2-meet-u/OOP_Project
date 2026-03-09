@@ -37,6 +37,7 @@ class CafeSystem:
         self.__person = []
         self.__cafe_branches = []
         self.__reservations = []
+        self.__simulated_time = None
 
     # / ════════════════════════════════════════════════════════════════
     # - Getters
@@ -53,6 +54,34 @@ class CafeSystem:
     @property
     def reservations(self):
         return self.__reservations.copy()
+
+    def get_time(self):
+        """Returns either the simulated time or the actual current time."""
+        if self.__simulated_time is not None:
+            return self.__simulated_time
+        return datetime.now()
+
+    def set_simulated_time(self, time_str):
+        """Sets the system time to a specific value for testing/simulation.
+        time_str format: 'YYYY-MM-DD HH:MM' or ISO. Pass None to reset to real time.
+        """
+        if time_str is None:
+            self.__simulated_time = None
+            return "System time reset to real-time."
+            
+        formats = (
+            "%Y-%m-%dT%H:%M:%S", 
+            "%Y-%m-%dT%H:%M", 
+            "%Y-%m-%d %H:%M:%S", 
+            "%Y-%m-%d %H:%M"
+        )
+        for fmt in formats:
+            try:
+                self.__simulated_time = datetime.strptime(time_str, fmt)
+                return f"System time set to {self.__simulated_time}"
+            except ValueError:
+                continue
+        raise ValueError(f"Invalid time format: {time_str}")
 
     # / ════════════════════════════════════════════════════════════════
     # - Methods
@@ -1093,7 +1122,7 @@ class CafeSystem:
             # BUG FIX 2: parse start_time string เป็น datetime object เสมอ
             # เพื่อป้องกัน (datetime - str) TypeError ใน PlaySession.duration()
             if start_time is None:
-                actual_start = datetime.now()
+                actual_start = self.get_time()
             elif isinstance(start_time, datetime):
                 actual_start = start_time
             else:
@@ -1382,7 +1411,7 @@ class CafeSystem:
                 f"Invalid payment method: '{method_type}'. Allowed: 'cash', 'card', 'online'"
             )
 
-        actual_end_time = end_time if end_time is not None else datetime.now()
+        actual_end_time = end_time if end_time is not None else self.get_time()
 
         cafe_branch = self.find_cafe_branch_by_id(any_id)
         if cafe_branch is None:
@@ -1533,7 +1562,7 @@ class CafeSystem:
         # Temporarily mock end_time if session is active
         original_end = play_session.end_time
         if current_time is None:
-            current_time = datetime.now()
+            current_time = self.get_time()
             
         play_session.end_time = current_time
         try:
@@ -1578,7 +1607,7 @@ class CafeSystem:
 
     def __check_future_reservations(self, table_id, current_time=None):
         if current_time is None:
-            current_time = datetime.now()
+            current_time = self.get_time()
         
         # Check if there is any PENDING reservation for this table starting within the next 30 mins
         # or already started but not yet checked in.
@@ -1931,8 +1960,9 @@ class CafeBranch:
         self.__play_sessions.remove(play_session)
 
     def end_play_session(self, play_session_id, end_time=None):
+        # Time should be passed from CafeSystem.get_time()
         if end_time is None:
-            end_time = datetime.now()
+             raise ValueError("end_time must be provided to end_play_session")
 
         play_session = self.find_play_session_by_id(play_session_id)
         if play_session is None:

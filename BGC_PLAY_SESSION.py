@@ -288,13 +288,10 @@ class PlaySession:
     def remove_players_id(self, player_id):
         self.__current_players_id.remove(player_id)
 
-    def duration(self, end_time=None):
+    def duration(self, current_time=None):
         start = self.__start_time
-        # Use provided end_time, or stored end_time, or now
-        if end_time is None:
-            end = self.__end_time if self.__end_time is not None else datetime.datetime.now()
-        else:
-            end = end_time
+        # Use provided current_time, or stored end_time
+        end = self.__end_time if self.__end_time is not None else current_time
 
         if start is None:
             return 0
