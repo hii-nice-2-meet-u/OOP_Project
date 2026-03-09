@@ -918,8 +918,11 @@ class CafeSystem:
     # \ GAME SESSION - CHECK-IN
 
     def check_in_reserved(
-        self, reservation_id, customer_id, current_time=datetime.now()
-    ):
+        self, reservation_id, customer_id, current_time=None
+    ):  
+        if current_time == None:
+            current_time = datetime.now()
+            
         validate_id(reservation_id, ["RESV"])
         validate_id(customer_id, ["MEMBER", "WALK"])
 
@@ -1464,16 +1467,19 @@ class CafeSystem:
                 (f"Discount ({int(discount * 100)}%)", -discount_amount))
             total -= discount_amount
 
-        # ── ค่าปรับบอร์ดเกม ──────────────────────
+        # ── ค่าปรับบอร์ดเกม ──────────────────────  ← ย้ายมาอยู่หลัง discount
+        penalty_fee = 0.0
         for game_id in session.game_penalty:
             try:
                 board_game = cafe_branch.find_board_game_by_id(game_id)
                 if board_game:
                     items.append(
                         (f"[Penalty] Damaged: {board_game.name}", board_game.price))
-                    total += board_game.price
+                    penalty_fee += board_game.price
             except ValueError:
                 continue
+
+        total += penalty_fee  # ← penalty ไม่ถูก discount (สอดคล้องกับ check_out)
 
         items.append(("TOTAL", total))
         return items

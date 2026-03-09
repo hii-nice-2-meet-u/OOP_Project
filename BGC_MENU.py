@@ -99,7 +99,7 @@ class Food(MenuItem):
 class Drink(MenuItem):
     __counter = 0
 
-    def __init__(self, name, price, description="", is_available=None, cup_size="S"):
+    def __init__(self, name, price, is_available=None , description="", cup_size="S"):
         temp_id = "DRINK-" + str(Drink.__counter).zfill(5)
         Drink.__counter += 1
         super().__init__(temp_id, name, price, is_available, description)
