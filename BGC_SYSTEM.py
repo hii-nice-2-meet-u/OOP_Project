@@ -670,18 +670,29 @@ class CafeSystem:
     def update_reserved_tables(self):
         now = datetime.now()
         for reservation in self.__reservations:
+            if reservation.status != ReservationStatus.PENDING:
+                continue
+            
             try:
                 reservation_time = reservation.reservation_time
                 time_diff = reservation_time - now
-                if timedelta(hours=0) <= time_diff <= timedelta(hours=1):
-                    self.update_table_status(
-                        reservation.table_id, TableStatus.RESERVED)
-                elif time_diff < timedelta(hours=0):
-                    self.update_table_status(
-                        reservation.table_id, TableStatus.AVAILABLE
-                    )
+                
+                # Check table status first to prevent overwriting OCCUPIED tables
+                cafe_branch = self.find_cafe_branch_by_id(reservation.branch_id)
+                if not cafe_branch: continue
+                table = cafe_branch.find_table_by_id(reservation.table_id)
+                if not table or table.status == TableStatus.OCCUPIED:
+                    continue  # Never overwrite an currently active play session
+                
+                # Keep table RESERVED from 1 hour before, up until 15 mins after reservation time
+                if timedelta(minutes=-15) <= time_diff <= timedelta(hours=1):
+                    self.update_table_status(reservation.table_id, TableStatus.RESERVED)
+                elif time_diff < timedelta(minutes=-15):
+                    # More than 15 mins late -> mark as NO_SHOW and free the table
+                    self.update_table_status(reservation.table_id, TableStatus.AVAILABLE)
+                    reservation.status = ReservationStatus.NO_SHOW
             except (ValueError, TypeError):
-                continue  # ข้ามการจองที่มีข้อมูลผิดพลาด
+                continue
 
     def search_available_table(self, branch_id, required_capacity=0):
         validate_id(branch_id, ["BRCH"])
@@ -799,6 +810,12 @@ class CafeSystem:
         cafe_branch = self.find_cafe_branch_by_id(board_game_id)
         if cafe_branch is None:
             raise ValueError("Board Game not found")
+            
+        # BUG FIX: Prevent removing games that are actively being played
+        bg = cafe_branch.find_board_game_by_id(board_game_id)
+        if bg and bg.status != BoardGameStatus.AVAILABLE:
+            raise ValueError("Cannot remove a board game that is currently IN_USE or in MAINTENANCE")
+            
         cafe_branch.remove_board_game_by_id(board_game_id)
 
     # / ════════════════════════════════════════════════════════════════
@@ -918,12 +935,12 @@ class CafeSystem:
     # \ GAME SESSION - CHECK-IN
 
     def check_in_reserved(
-        self, reservation_id, customer_id, current_time=datetime.now()
+        self, reservation_id, customer_id, current_time=None
     ):
         validate_id(reservation_id, ["RESV"])
         validate_id(customer_id, ["MEMBER", "WALK"])
 
-        if not isinstance(current_time, datetime):
+        if current_time is not None and not isinstance(current_time, datetime):
             raise ValueError("current_time must be a datetime object")
 
         reservation = self.find_reservation_by_id(reservation_id)
@@ -934,7 +951,18 @@ class CafeSystem:
         if customer is None:
             raise ValueError("Customer not found")
 
-        now = current_time if current_time else datetime.now()
+        # BUG FIX: Check status FIRST before any time-based logic
+        # so cancelled/no-show reservations get a clear, relevant error message.
+        if reservation.status == ReservationStatus.CANCELLED:
+            raise ValueError("Cannot check-in: This reservation has been cancelled.")
+        if reservation.status == ReservationStatus.NO_SHOW:
+            raise ValueError("Cannot check-in: This reservation was marked as No-Show.")
+        if reservation.status == ReservationStatus.COMPLETED:
+            raise ValueError("Cannot check-in: This reservation is already completed.")
+
+        # BUG FIX: Default to datetime.now() INSIDE the function body, not in
+        # the signature, to avoid the classic 'frozen clock' mutable default bug.
+        now = current_time if current_time is not None else datetime.now()
         if now < reservation.reservation_time:
             raise ValueError("Too early to check-in")
 
@@ -945,10 +973,6 @@ class CafeSystem:
                 "Check-in failed: You are more than 15 minutes late. Marked as No-Show."
             )
 
-        if reservation.status != ReservationStatus.PENDING:
-            raise ValueError(
-                "Can't check in reservation that already completed")
-
         branch = self.find_cafe_branch_by_id(reservation.branch_id)
         if branch is None:
             raise ValueError("Branch not found")
@@ -956,6 +980,9 @@ class CafeSystem:
         table = branch.find_table_by_id(reservation.table_id)
         if table is None:
             raise ValueError("Table not found")
+        
+        if table.status == TableStatus.OCCUPIED:
+            raise ValueError("Check-in failed: The table is still occupied by another session.")
 
         if customer.user_id != reservation.customer_id:
             raise ValueError("Wrong personal ID")
@@ -1048,6 +1075,10 @@ class CafeSystem:
                         raise ValueError(f"Member ID {mid} not found")
                     session.add_players_id(mid)
             else:
+                if self.find_person_by_id(customer_id) is None:
+                    raise ValueError(f"Member ID {customer_id} not found")
+                if customer_id in play_session.current_players_id:
+                    raise ValueError(f"Player {customer_id} is already in this session")
                 session.add_players_id(customer_id)
 
             branch.add_play_session(session)
@@ -1091,6 +1122,10 @@ class CafeSystem:
                 play_session.add_players_id(
                     self.create_customer_walk_in().user_id)
             else:
+                if self.find_person_by_id(customer_id) is None:
+                    raise ValueError(f"Member ID {customer_id} not found")
+                if customer_id in play_session.current_players_id:
+                    raise ValueError(f"Player {customer_id} is already in this session")
                 play_session.add_players_id(customer_id)
             return True
         except (TypeError, ValueError) as e:
@@ -1144,6 +1179,10 @@ class CafeSystem:
         board_game = cafe_branch.find_board_game_by_id(board_game_id)
         if board_game is None:
             raise ValueError("Board Game not found")
+
+        # BUG FIX: Ensure the session actually possesses the game before modifying system state
+        if board_game_id not in play_session.current_board_games_id:
+            raise ValueError("This session did not borrow this board game")
 
         try:
             damage_flag = is_damaged
@@ -1286,7 +1325,15 @@ class CafeSystem:
         if play_session.payment is not None:
             raise ValueError("This session already checked out")
 
-        play_session.end_time = actual_end_time
+        # BUG FIX: Prevent checkout if they haven't returned board games!
+        if play_session.current_board_games_id:
+            raise ValueError("Cannot checkout while there are unreturned board games. Please return them first.")
+
+        # Compute duration locally WITHOUT setting play_session.end_time early
+        # This prevents a corrupted end_time if payment later fails
+        import math
+        raw_seconds = (actual_end_time - play_session.start_time).total_seconds()
+        actual_duration = math.ceil(raw_seconds / 3600.0) if raw_seconds > 0 else 0
 
         total = 0
         try:
@@ -1311,7 +1358,7 @@ class CafeSystem:
 
             total += (
                 Table.price_per_hour
-                * play_session.duration()
+                * actual_duration
                 * play_session.get_total_players()
             )
 
@@ -1329,20 +1376,23 @@ class CafeSystem:
             raise ValueError(f"Error calculating checkout total: {e}")
         
         table = cafe_branch.find_table_by_id(play_session.table_id)
-        if table is not None:
-            table.status = TableStatus.AVAILABLE
 
         payment = self.create_payment(total, method_type, **kwargs)
+        
+        # Only mutate session state AFTER payment has been confirmed successful
+        play_session.end_time = actual_end_time
         play_session.payment = payment
+
+        # Only release the table AFTER payment has been confirmed successful
+        if table is not None:
+            table.status = TableStatus.AVAILABLE
 
         for cp in play_session.current_players_id:
             customer = self.find_person_by_id(cp)
             if isinstance(customer, Member):
-                self.add_spent(cp, Table.price_per_hour*play_session.duration())
+                self.add_spent(cp, Table.price_per_hour * actual_duration)
         cafe_branch.end_play_session(
             play_session.session_id, actual_end_time)
-
-
 
         return payment, total
 
