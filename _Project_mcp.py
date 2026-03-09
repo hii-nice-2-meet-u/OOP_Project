@@ -796,9 +796,15 @@ def get_active_sessions(branch_id: str) -> str:
         lines = []
         for s in sessions:
             players = ", ".join(s.current_players_id) or "(none)"
+            time_info = ""
+            if s.reserved_end_time:
+                end_str = s.reserved_end_time.strftime('%H:%M')
+                status_str = " [⚠️ TIME UP!]" if s.is_time_up else ""
+                time_info = f" | Ends: {end_str}{status_str}"
+            
             lines.append(
                 f"Session: {s.session_id} | Table: {s.table_id} | "
-                f"Players: {s.get_total_players()} ({players})"
+                f"Players: {s.get_total_players()} ({players}){time_info}"
             )
         return "\n".join(lines)
     except Exception as e:
@@ -845,16 +851,26 @@ def get_active_bill(play_session_id: str) -> str:
             return "This session is already checked out. Use bill_history() instead."
 
         now = datetime.now()
-        raw_seconds = (now - session.start_time).total_seconds()
-        duration = math.ceil(raw_seconds / 3600.0) if raw_seconds > 0 else 0
+        # Use the new duration logic from PlaySession which handles reserved_duration correctly
+        duration = session.duration(now)
 
         total = 0.0
         lines = [f"=== Active Bill Preview for {session.session_id} ==="]
-        lines.append(f"  Start: {session.start_time.strftime('%Y-%m-%d %H:%M')} | Now: {now.strftime('%H:%M')} | Duration: {duration} hr")
+        time_limit_str = f" | Reserved until: {session.reserved_end_time.strftime('%H:%M')}" if session.reserved_end_time else ""
+        lines.append(f"  Start: {session.start_time.strftime('%Y-%m-%d %H:%M')} | Now: {now.strftime('%H:%M')}{time_limit_str} | Duration: {duration} hr")
+        if session.is_time_up:
+            lines.append("  ⚠️ ALERT: TIME IS UP!")
         lines.append("")
 
         table_cost = Table.price_per_hour * duration * session.get_total_players()
-        lines.append(f"  Table fee ({duration}hr x {session.get_total_players()} players @ ฿{Table.price_per_hour}/hr): ฿{table_cost:.2f}")
+        # If duration was bumped up by reserved_duration, mention it
+        actual_hrs = math.ceil((now - session.start_time).total_seconds() / 3600.0)
+        table_label = f"Table fee ({duration}hr"
+        if duration > max(1, actual_hrs):
+            table_label += f" [Reserved {session.reserved_duration}hr]"
+        table_label += f" x {session.get_total_players()} players @ ฿{Table.price_per_hour}/hr)"
+
+        lines.append(f"  {table_label}: ฿{table_cost:.2f}")
         total += table_cost
 
         for order in session.current_order:
