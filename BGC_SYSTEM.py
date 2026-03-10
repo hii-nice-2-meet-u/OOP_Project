@@ -1188,7 +1188,7 @@ class CafeSystem:
             if table is None:
                 raise ValueError("Table for this session not found")
 
-            if play_session.get_total_players() >= table.capacity and customer_id == "walk_in":
+            if play_session.get_total_players() >= table.capacity:
                 raise ValueError(
                     f"Table capacity is full ({table.capacity}/{table.capacity})")
 
@@ -1467,7 +1467,9 @@ class CafeSystem:
                     pass
         cafe_branch.end_play_session(
             play_session.session_id, actual_end_time)
-
+        
+        if table is not None:
+            table.status = TableStatus.AVAILABLE
         return payment, total
 
     # / ════════════════════════════════════════════════════════════════
@@ -1921,7 +1923,6 @@ class CafeBranch:
         self.__play_sessions.remove(play_session)
 
     def end_play_session(self, play_session_id, end_time=None):
-        # Time should be passed from CafeSystem.get_time()
         if end_time is None:
              raise ValueError("end_time must be provided to end_play_session")
 
