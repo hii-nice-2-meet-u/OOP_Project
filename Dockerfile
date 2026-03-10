@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 WORKDIR /app
 
@@ -19,3 +19,15 @@ ENV PYTHONUNBUFFERED=1
 
 CMD ["python", "_Project_mcp.py"]
 
+# รัน docker
+# docker build -t bgc-mcp .
+# docker run -it bgc-mcp
+# config claude
+# {
+#   "mcpServers": {
+#     "BoardGameCafe": {
+#       "command": "docker",
+#       "args": ["run", "-i", "--rm", "bgc-mcp"]
+#     }
+#   }
+# }
