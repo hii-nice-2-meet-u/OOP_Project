@@ -441,6 +441,7 @@ def join_session(play_session_id: str, customer_id: str = "walk_in") -> str:
     customer_id: MEMBER-ID of the member joining, or "walk_in" for anonymous.
     Use a real MEMBER-ID (not walk_in) to ensure this player's spending is
     tracked toward their tier at checkout.
+    if walk in try to join multiple table customer_id input must be last for previous id make walk in same id can join 
     """
     try:
         system.join_session(play_session_id, customer_id)

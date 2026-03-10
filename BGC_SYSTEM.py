@@ -14,6 +14,7 @@ from ENUM_STATUS import *
 # | #FFFF67
 
 
+
 def get_validate_id(_id, list_type_id):
     for type_id in list_type_id:
         if _id.startswith(type_id):
@@ -31,7 +32,7 @@ def validate_id(_id, list_type_id):
 # | ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 # | #EFFF11
 
-
+temp_previous = ""
 class CafeSystem:
     def __init__(self):
         self.__person = []
@@ -452,7 +453,7 @@ class CafeSystem:
         if method_type.lower() == "cash":
             raise ValueError("Reservation deposit cannot be paid in cash. Please use Online or Credit Card.")
         
-        deposit_amount = 30.0
+        deposit_amount = 15.0
         try:
             # สร้าง Payment Record สำหรับมัดจำ
             self.create_payment(deposit_amount, method_type=method_type, **kwargs)
@@ -1250,10 +1251,10 @@ class CafeSystem:
 
     def join_session(self, any_id, customer_id="walk_in"):
         validate_id(any_id, ["TABLE", "PS"])
-
+        
         if not isinstance(customer_id, str):
             raise ValueError("Invalid ID : Customer ID must be a string")
-        if customer_id != "walk_in":
+        if customer_id != "walk_in" or customer_id != "last":
             validate_id(customer_id, ["MEMBER", "WALK"])
 
         # Find the branch that owns this table/session
@@ -1273,8 +1274,8 @@ class CafeSystem:
         if play_session is None:
             raise ValueError("Play Session not found")
 
-        if customer_id != "walk_in" and self.__is_person_in_active_session(customer_id):
-            raise ValueError(f"Player {customer_id} is already in an active session")
+        # if customer_id != "walk_in" and self.__is_person_in_active_session(customer_id):
+        #     raise ValueError(f"Player {customer_id} is already in an active session")
 
         try:
             table = cafe_branch.find_table_by_id(play_session.table_id)
@@ -1286,14 +1287,22 @@ class CafeSystem:
                     f"Table capacity is full ({table.capacity}/{table.capacity})")
 
             if customer_id == "walk_in":
+                walker = self.create_customer_walk_in()
                 play_session.add_players_id(
-                    self.create_customer_walk_in().user_id)
+                    walker.user_id)
+                temp_previous = walker
+            elif customer_id == "last":
+                play_session.add_players_id(
+                    "WALK-"+)
             else:
-                if self.find_person_by_id(customer_id) is None:
+                player = self.find_person_by_id(customer_id)
+                if player is None:
                     raise ValueError(f"Member ID {customer_id} not found")
                 if customer_id in play_session.current_players_id:
                     raise ValueError(f"Player {customer_id} is already in this session")
                 play_session.add_players_id(customer_id)
+                temp_previous = player
+                
             return True
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to join session: {e}")
@@ -1867,10 +1876,9 @@ class CafeSystem:
         total += penalty_fee
 
         # ── หักเงินมัดจำ (ถ้ามี) ──────────────────
-        if session.deposit > 0:
-            items.append(("Reservation Deposit Deduction", -session.deposit))
-            total -= session.deposit
-
+        # if session.deposit > 0:
+        #     items.append(("Reservation Deposit Deduction", -session.deposit))
+        #     total -= session.deposit
         items.append(("TOTAL", total))
         return items
 # | ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
