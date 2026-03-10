@@ -1562,64 +1562,44 @@ class CafeSystem:
 
         actual_duration = play_session.duration(actual_end_time)
 
-        total = 0
         try:
-            # 1. Calculate the total bill
-            for order in play_session.current_order:
-                if order.status in [OrderStatus.PENDING, OrderStatus.PREPARING]:
-                    raise ValueError(
-                        "Cannot checkout while there are pending or preparing orders. Please serve or cancel them first.")
-                if order.status == OrderStatus.SERVED:
-                    total += order.snapshot_price
-
-            discount = 0
-            members_in_session = []
-            for player_id in play_session.current_players_id:
-                try:
-                    player = self.find_person_by_id(player_id)
-                    if isinstance(player, Member):
-                        members_in_session.append(player)
-                        discount = max(discount, player.get_discount())
-                except ValueError:
-                    continue
-
-            total += (
-                Table.price_per_hour
-                * actual_duration
-                * play_session.get_total_players()
-            )
-
-            penalty_fee = 0
-            for penalty in play_session.game_penalty:
-                penalty_fee += penalty.get("price", 0.0)
-
-            total = (total * (1 - discount)) + penalty_fee
-            
-            # Deduct deposit
-            if play_session.deposit > 0:
-                total -= play_session.deposit
-        except (TypeError, ValueError) as e:
-            raise ValueError(f"Error calculating checkout total: {e}")
+            items = self.__calculate_bill(play_session)
+            total = 0.0
+            for label, amount in items:
+                if label == "TOTAL":
+                    total = amount
+                    break
+        except Exception as e:
+            raise ValueError(f"Error calculating bill: {e}")
         
         table = cafe_branch.find_table_by_id(play_session.table_id)
 
+        # 2. Process Payment (raises if insufficient cash)
         payment = self.create_payment(total, method_type, **kwargs)
         
         play_session.end_time = actual_end_time
         payment.payment_time = actual_end_time
         play_session.payment = payment
 
-        for cp in play_session.current_players_id:
-            customer = self.find_person_by_id(cp)
-            if isinstance(customer, Member):
-                self.add_spent(cp, Table.price_per_hour * actual_duration)
-            elif isinstance(customer, WalkInCustomer):
-                try:
-                    self.remove_person_by_id(cp)
-                except ValueError:
-                    pass
-        cafe_branch.end_play_session(
-            play_session.session_id, actual_end_time)
+        # 3. Update Member Stats (Side effects - should not block checkout completion)
+        try:
+            for cp in play_session.current_players_id:
+                customer = self.find_person_by_id(cp)
+                if isinstance(customer, Member):
+                    # Table cost part of the spent (roughly)
+                    duration_cost = Table.price_per_hour * actual_duration
+                    self.add_spent(cp, duration_cost)
+                elif isinstance(customer, WalkInCustomer):
+                    try:
+                        self.remove_person_by_id(cp)
+                    except ValueError:
+                        pass
+        except Exception as e:
+            # We log the error but don't fail the checkout because money was paid
+            print(f"Checkout log: Side-effect error (spent update): {e}")
+
+        # 4. Finalize Session (Remove from active list)
+        cafe_branch.end_play_session(play_session.session_id, actual_end_time)
         
         if table is not None:
             table.status = TableStatus.AVAILABLE
