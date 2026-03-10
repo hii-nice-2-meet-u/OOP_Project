@@ -326,6 +326,29 @@ def check_in(
 def check_in_reserved(reservation_id: str, customer_id: str, current_time: str = None) -> str:
     """Check in using a reservation.
     current_time format: 'YYYY-MM-DD HH:MM' or ISO. Leave blank to use current time.
+
+    IMPORTANT — FORCE CHECKOUT FLOW:
+    If this tool returns an error starting with "Error: FORCE CHECKOUT REQUIRED:",
+    DO NOT retry check_in_reserved immediately. Instead, follow these exact steps:
+
+    STEP 1: Parse the error to extract the expired session_id (e.g. "PS-00000")
+            and the estimated total amount from the error message.
+
+    STEP 2: Inform the user clearly:
+            - Which session is blocking (session_id)
+            - The estimated bill total (฿X.XX)
+            Then ask: "ต้องการชำระด้วยวิธีใด? (cash / card / online)"
+
+    STEP 3: Collect required payment arguments based on method:
+            - cash   → ask for paid_amount (float, must be >= total)
+            - card   → ask for card_number, expiry_date, cvv
+            - online → ask for email
+
+    STEP 4: Call check_out() using the expired session_id and the collected payment info.
+            Do NOT proceed until check_out() returns success.
+
+    STEP 5: Only AFTER check_out() succeeds, call check_in_reserved() again
+            with the original reservation_id, customer_id, and current_time.
     """
     try:
         parsed_time = None
