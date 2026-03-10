@@ -39,10 +39,10 @@ def make_reservation(
     end_t: str,
     table_id: str = "auto",
     payment_method: str = "online",
-    card_number: str = None,
-    expiry_date: str = None,
-    cvv: str = None,
-    email: str = None
+    card_number: str = "",
+    expiry_date: str = "",
+    cvv: str = "",
+    email: str = ""
 ) -> str:
     """Book a table in advance with a mandatory 30 THB deposit (Non-cash only).
     IMPORTANT: Only registered Members (MEMBER-XXXXX) can make reservations.
@@ -51,10 +51,9 @@ def make_reservation(
     date_str format: YYYY-MM-DD, time format: HH:MM
     table_id: specific TABLE-XXXXX to book, or 'auto' to let system pick the best fit.
     payment_method: 'online' or 'card' (Cash is not allowed for reservations).
-    For 'card': provide card_number, expiry_date, cvv.
-    For 'online': provide email."""
+    For 'card': provide card_number (e.g. "1234-5678-9012-3456"), expiry_date (e.g. "12/28"), cvv (e.g. "123").
+    For 'online': provide email (e.g. "user@example.com")."""
 
-    # ✅ ด่านที่ 0: validate format ก่อน DB lookup ทุกอย่าง
     if not re.match(r'^\d{4}-\d{2}-\d{2}$', str(date_str)):
         return f"Invalid date format: '{date_str}'. Expected YYYY-MM-DD (e.g. 2024-07-01)"
     for t_val, t_name in [(start_t, "start_time"), (end_t, "end_time")]:
@@ -63,9 +62,15 @@ def make_reservation(
     if not isinstance(players, int) or players <= 0:
         return "players must be a positive integer"
 
-    # Normalize payment_method alias: "credit_card" → "card"
     if payment_method == "credit_card":
         payment_method = "card"
+
+    if payment_method == "card":
+        if not card_number or not expiry_date or not cvv:
+            return "For card payment, please provide card_number, expiry_date, and cvv."
+    elif payment_method == "online":
+        if not email:
+            return "For online payment, please provide email."
 
     try:
         member = system.find_person_by_name(customer_name)
@@ -74,7 +79,7 @@ def make_reservation(
         branch = system.find_cafe_branch_by_name(branch_name)
         if not branch:
             return "Branch not found"
-            
+
         kwargs = {}
         if payment_method == "card":
             kwargs = {"card_number": card_number, "expiry_date": expiry_date, "cvv": cvv}
@@ -82,7 +87,7 @@ def make_reservation(
             kwargs = {"email": email}
 
         res = system.make_reservation(
-            member.user_id, branch.branch_id, players, date_str, start_t, end_t, 
+            member.user_id, branch.branch_id, players, date_str, start_t, end_t,
             table_id=table_id, method_type=payment_method, **kwargs
         )
         return f"Booking successful! ID: {res.reservation_id} (Deposit ฿30 paid via {payment_method}) at table {res.table_id}"
@@ -1055,25 +1060,25 @@ def get_system_time() -> str:
 
 @mcp.tool()
 def resolve_checkin_conflict(
-    session_id: str, 
-    staff_id: str, 
-    method_type: str = "cash", 
-    current_time: str = None, 
-    paid_amount: float = None,
-    email: str = None,
-    card_number: str = None,
-    expiry_date: str = None,
-    cvv: str = None,
-    **kwargs
+    session_id: str,
+    staff_id: str,
+    method_type: str = "cash",
+    current_time: str = "",
+    paid_amount: float = 0.0,
+    email: str = "",
+    card_number: str = "",
+    expiry_date: str = "",
+    cvv: str = ""
 ) -> str:
-    """Resolve a check-in conflict by performing an automated force checkout.
-    e.g. resolve_checkin_conflict(session_id="PS-00000", staff_id="STAFF-00001", method_type="cash", paid_amount=150.0)
-    e.g. resolve_checkin_conflict(session_id="PS-00000", staff_id="STAFF-00001", method_type="card", card_number="1234...", expiry_date="12/26", cvv="123")
-    
-    current_time format: 'YYYY-MM-DD HH:MM' or ISO.
+    """Resolve a check-in conflict by force-checking out the blocking session.
+    Use this when check_in_reserved returns 'FORCE CHECKOUT REQUIRED'.
+    method_type: 'cash', 'card', or 'online'.
+    For 'cash': provide paid_amount (must be >= bill total).
+    For 'card': provide card_number (e.g. "1234-5678-9012-3456"), expiry_date (e.g. "12/28"), cvv (e.g. "123").
+    For 'online': provide email (e.g. "user@example.com").
+    current_time format: 'YYYY-MM-DD HH:MM'. Leave blank to use system time.
     """
     try:
-        # BUG FIX: validate staff_id exists in the system before calling auto_force_checkout
         if not staff_id.startswith("STAFF"):
             return "Authorization Failed: Only Staff can resolve check-in conflicts"
         person = system.find_person_by_id(staff_id)
@@ -1081,7 +1086,7 @@ def resolve_checkin_conflict(
             return f"Authorization Failed: Staff ID {staff_id} not found in the system"
 
         parsed_time = None
-        if current_time is not None:
+        if current_time and current_time.strip():
             for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
                 try:
                     parsed_time = datetime.strptime(current_time, fmt)
@@ -1091,9 +1096,21 @@ def resolve_checkin_conflict(
             if parsed_time is None:
                 return "Error: current_time format invalid. Use 'YYYY-MM-DD HH:MM'"
 
-        # Call the new specialized method in CafeSystem
+        pay_kwargs = {}
+        if method_type == "cash":
+            if paid_amount and paid_amount > 0:
+                pay_kwargs["paid_amount"] = paid_amount
+        elif method_type == "card":
+            if not card_number or not expiry_date or not cvv:
+                return "For card payment, please provide card_number, expiry_date, and cvv."
+            pay_kwargs = {"card_number": card_number, "expiry_date": expiry_date, "cvv": cvv}
+        elif method_type == "online":
+            if not email:
+                return "For online payment, please provide email."
+            pay_kwargs["email"] = email
+
         system.auto_force_checkout(
-            session_id, staff_id, method_type=method_type, current_time=parsed_time, **kwargs
+            session_id, staff_id, method_type=method_type, current_time=parsed_time, **pay_kwargs
         )
         return (
             f"Successfully resolved conflict! Session {session_id} has been force-checked out by {staff_id}. "
@@ -1101,45 +1118,60 @@ def resolve_checkin_conflict(
         )
     except Exception as e:
         return f"Error resolving conflict: {e}"
-
 @mcp.tool()
 def auto_force_checkout(
-    session_id: str, 
-    staff_id: str, 
-    method_type: str = "cash", 
-    current_time: str = None, 
-    paid_amount: float = None,
-    email: str = None,
-    card_number: str = None,
-    expiry_date: str = None,
-    cvv: str = None,
-    **kwargs
+    session_id: str,
+    staff_id: str,
+    method_type: str = "cash",
+    current_time: str = "",
+    paid_amount: float = 0.0,
+    email: str = "",
+    card_number: str = "",
+    expiry_date: str = "",
+    cvv: str = ""
 ) -> str:
     """Force checkout a play session. Requires Staff authorization.
-    Supports 'cash', 'card', and 'online' payment methods.
+    Automatically returns unreturned board games and cancels pending orders before checkout.
+    method_type: 'cash', 'card', or 'online'.
+    For 'cash': provide paid_amount (must be >= bill total).
+    For 'card': provide card_number (e.g. "1234-5678-9012-3456"), expiry_date (e.g. "12/28"), cvv (e.g. "123").
+    For 'online': provide email (e.g. "user@example.com").
+    current_time format: 'YYYY-MM-DD HH:MM'. Leave blank to use system time.
     """
     try:
         if not staff_id.startswith("STAFF"):
             return "Authorization Failed: Only Staff can perform force checkout"
-        
+
         parsed_time = None
-        if current_time is not None:
+        if current_time and current_time.strip():
             for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
                 try:
                     parsed_time = datetime.strptime(current_time, fmt)
                     break
                 except ValueError:
                     continue
-        
+            if parsed_time is None:
+                return "Error: current_time format invalid. Use 'YYYY-MM-DD HH:MM'"
+
+        pay_kwargs = {}
+        if method_type == "cash":
+            if paid_amount and paid_amount > 0:
+                pay_kwargs["paid_amount"] = paid_amount
+        elif method_type == "card":
+            if not card_number or not expiry_date or not cvv:
+                return "For card payment, please provide card_number, expiry_date, and cvv."
+            pay_kwargs = {"card_number": card_number, "expiry_date": expiry_date, "cvv": cvv}
+        elif method_type == "online":
+            if not email:
+                return "For online payment, please provide email."
+            pay_kwargs["email"] = email
+
         system.auto_force_checkout(
-            session_id, staff_id, method_type=method_type, current_time=parsed_time,
-            paid_amount=paid_amount, email=email, card_number=card_number,
-            expiry_date=expiry_date, cvv=cvv, **kwargs
+            session_id, staff_id, method_type=method_type, current_time=parsed_time, **pay_kwargs
         )
         return f"Successfully force-checked out session {session_id} using {method_type}."
     except Exception as e:
         return f"Error during force checkout: {e}"
-
 
 if __name__ == "__main__":
     mcp.run()

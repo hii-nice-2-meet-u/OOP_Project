@@ -1575,6 +1575,9 @@ class CafeSystem:
 
         actual_duration = play_session.duration(actual_end_time)
 
+        # FIX: set end_time BEFORE calculate_bill so duration() uses correct simulated time
+        play_session.end_time = actual_end_time
+
         try:
             items = self.__calculate_bill(play_session)
             total = 0.0
@@ -1583,14 +1586,18 @@ class CafeSystem:
                     total = amount
                     break
         except Exception as e:
+            play_session.end_time = None  # rollback
             raise ValueError(f"Error calculating bill: {e}")
-        
+
         table = cafe_branch.find_table_by_id(play_session.table_id)
 
         # 2. Process Payment (raises if insufficient cash)
-        payment = self.create_payment(total, method_type, **kwargs)
-        
-        play_session.end_time = actual_end_time
+        try:
+            payment = self.create_payment(total, method_type, **kwargs)
+        except Exception:
+            play_session.end_time = None  # rollback so session stays active
+            raise
+
         payment.payment_time = actual_end_time
         play_session.payment = payment
 
