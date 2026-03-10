@@ -184,7 +184,7 @@ run("member จองได้ (ภายใน 5 วัน)",
         "2026-04-04", "14:00", "16:00", method_type="online", email="alice@test.com") is not None)
 
 expect_error("member จองด้วย cash ไม่ได้",
-    lambda: sys2.make_reservation(member.user_id, bid, 2,
+    lambda: sys2.make_reservation(sys2.create_customer_member("Carol").user_id, bid, 2,
         "2026-04-03", "14:00", "16:00", method_type="cash"),
     keyword="cash")
 
