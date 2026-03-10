@@ -44,7 +44,10 @@ def make_reservation(
     cvv: str = None,
     email: str = None
 ) -> str:
-    """Book a table with a mandatory 30 THB deposit (Non-cash only).
+    """Book a table in advance with a mandatory 30 THB deposit (Non-cash only).
+    IMPORTANT: Only registered Members (MEMBER-XXXXX) can make reservations.
+    Walk-in customers CANNOT book in advance — they should register as Members first.
+    customer_name: full name of the registered Member (not walk-in).
     date_str format: YYYY-MM-DD, time format: HH:MM
     table_id: specific TABLE-XXXXX to book, or 'auto' to let system pick the best fit.
     payment_method: 'online' or 'credit_card' (Cash is not allowed for reservations).
@@ -262,13 +265,11 @@ def get_play_session_orders(any_id: str) -> str:
     e.g. get_play_session_orders("PS-00000")
     """
     try:
-        cafe_branch = system.find_cafe_branch_by_id(any_id)
-        if cafe_branch is None:
-            return "Error: Session not found"
-        orders = cafe_branch.get_play_session_orders(any_id)
+        # ใช้ logic จาก BGC_SYSTEM โดยตรงในการหา branch และ orders
+        orders = system.get_play_session_orders(any_id)
         return (
             "\n".join(
-                [f"Order ID: {o.order_id} | {o.menu_items.name} | Status: {o.status.value}"
+                [f"Order ID: {o.order_id} | {o.snapshot_name} | Status: {o.status.value}"
                  for o in orders])
             if orders
             else "Currently No Orders"
@@ -938,12 +939,17 @@ def get_active_bill(play_session_id: str, current_time: str = None) -> str:
             if parsed_time is None:
                 return "Error: current_time format invalid. Use 'YYYY-MM-DD HH:MM'"
 
-        cafe_branch = system.find_cafe_branch_by_id(play_session_id)
-        if cafe_branch is None:
-            return "Error: Session not found"
-        session = cafe_branch.find_play_session_by_id(play_session_id)
+        # Find the session using BGC_SYSTEM's internal logic
+        session = None
+        for branch in system.get_cafe_branches():
+            found = branch.find_play_session_by_id(play_session_id)
+            if found:
+                session = found
+                break
+        
         if session is None:
             return "Error: Active play session not found"
+            
         if session.payment is not None:
             return "This session is already checked out. Use bill_history() instead."
 
@@ -951,10 +957,12 @@ def get_active_bill(play_session_id: str, current_time: str = None) -> str:
         # Use the system's core calculation logic to ensure consistency with check_out
         active_bill = system.get_active_bill(play_session_id, current_time=now)
         
+        duration = session.duration(now) # BUG FIX: added duration calculation
+        
         lines = [f"=== Active Bill Preview for {session.session_id} ==="]
-        time_limit_str = f" | Reserved until: {session.reserved_end_time.strftime('%H:%M')}" if session.reserved_end_time else ""
-        lines.append(f"  Start: {session.start_time.strftime('%Y-%m-%d %H:%M')} | Now: {now.strftime('%H:%M')}{time_limit_str} | Duration: {duration} hr")
-        if session.check_time_up(now):
+        time_limit_str = f" | Reserved until: {session.reserved_end_time.strftime('%H:%M')}" if hasattr(session, 'reserved_end_time') and session.reserved_end_time else ""
+        lines.append(f"  Start: {session.start_time.strftime('%Y-%m-%d %H:%M')} | Now: {now.strftime('%H:%M')}{time_limit_str} | Duration: {duration:.2f} hr")
+        if hasattr(session, 'check_time_up') and session.check_time_up(now):
             lines.append("  ⚠️ ALERT: TIME IS UP!")
         lines.append("")
 
