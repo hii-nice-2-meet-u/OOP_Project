@@ -439,7 +439,7 @@ Manager "1" --> "0..1" CafeBranch : manages >
 Owner "1" --> "*" CafeBranch : owns >
 Staff "*" --> "0..1" CafeBranch : assigned to >
 
-Reservation "*" --> "1" Customer : reserved by >
+Reservation "*" --> "1" Member : reserved by >
 Reservation "*" --> "1" Table : reserves >
 Reservation "*" --> "1" CafeBranch : booked at >
 
