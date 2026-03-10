@@ -20,7 +20,7 @@ ENV PYTHONUNBUFFERED=1
 CMD ["python", "_Project_mcp.py"]
 
 # รัน docker
-# docker build -t bgc-mcp .
+# docker pull ipao69/bgc-mcp:latest  
 # docker run -it bgc-mcp
 # config claude
 # {
