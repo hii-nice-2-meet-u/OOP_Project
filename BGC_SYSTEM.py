@@ -378,7 +378,7 @@ class CafeSystem:
         except ValueError as e:
             raise ValueError(f"Invalid date/time value: {e}")
 
-        validate_id(customer_id, ["MEMBER"])
+        validate_id(customer_id, ["MEMBER", "WALK"])
         validate_id(branch_id, ["BRCH"])
 
         if not isinstance(total_player, int) or total_player <= 0:
