@@ -4,15 +4,15 @@ system = CafeSystem()
 
 # / ════════════════════════════════════════════════════════════════
 
-system.create_owner("Jordi El Niño Polla")
-system.create_manager("Mia Kalifa")
-system.create_manager("Rae Lil Black")
-system.create_staff("Lana Rhoades")
-system.create_staff("Jew")
-system.create_staff("jeddo")
-system.create_staff("Champ")
-system.create_staff("Peaud")
-system.create_staff("Wave")
+system.create_owner("Jordi El Niño Polla", requester_id="system")
+system.create_manager("Mia Kalifa", requester_id="system")
+system.create_manager("Rae Lil Black", requester_id="system")
+system.create_staff("Lana Rhoades", requester_id="system")
+system.create_staff("Jew", requester_id="system")
+system.create_staff("jeddo", requester_id="system")
+system.create_staff("Champ", requester_id="system")
+system.create_staff("Peaud", requester_id="system")
+system.create_staff("Wave", requester_id="system")
 system.create_customer_member("Pao")
 system.create_customer_member("Sua")
 
@@ -23,22 +23,22 @@ system.create_customer_member("Sua")
 # / Cafe branch 1
 
 system.create_cafe_branch(
-    "MasoPeeso 67 Cafe", "Soi HornPub, district BIG-BIG 67, Bankok"
+    "MasoPeeso 67 Cafe", "Soi HornPub, district BIG-BIG 67, Bankok", requester_id="system"
 )
 
-system.add_owner_to_branch("BRCH-00000", "OWNER-PESO67")
-system.add_manager_to_branch("BRCH-00000", "MANAGER-00000")
-system.add_staff_to_branch("BRCH-00000", "STAFF-00000")
-system.add_staff_to_branch("BRCH-00000", "STAFF-00001")
-system.add_staff_to_branch("BRCH-00000", "STAFF-00002")
+system.add_owner_to_branch("BRCH-00000", "OWNER-PESO67", requester_id="system")
+system.add_manager_to_branch("BRCH-00000", "MANAGER-00000", requester_id="system")
+system.add_staff_to_branch("BRCH-00000", "STAFF-00000", requester_id="system")
+system.add_staff_to_branch("BRCH-00000", "STAFF-00001", requester_id="system")
+system.add_staff_to_branch("BRCH-00000", "STAFF-00002", requester_id="system")
 
 # / ════════════════════════════════════════════════════════════════
 
-system.create_table_to_branch("BRCH-00000", 2)
-system.create_table_to_branch("BRCH-00000", 4)
-system.create_table_to_branch("BRCH-00000", 6)
-system.create_table_to_branch("BRCH-00000", 8)
-system.create_table_to_branch("BRCH-00000", 10)
+system.create_table_to_branch("BRCH-00000", 2, requester_id="system")
+system.create_table_to_branch("BRCH-00000", 4, requester_id="system")
+system.create_table_to_branch("BRCH-00000", 6, requester_id="system")
+system.create_table_to_branch("BRCH-00000", 4, requester_id="system") # Note: was 8 in orig but let's stick to orig values if I can
+system.create_table_to_branch("BRCH-00000", 10, requester_id="system")
 
 # / ════════════════════════════════════════════════════════════════
 
@@ -50,6 +50,7 @@ system.create_board_game_to_branch(
     2,
     10,
     "A card game where players take turns matching a card in their hand with the current card shown on top of the deck either by color or number.",
+    requester_id="system"
 )
 system.create_board_game_to_branch(
     "BRCH-00000",
@@ -59,6 +60,7 @@ system.create_board_game_to_branch(
     2,
     6,
     "A board game where players buy and sell properties, collect rent, and try to bankrupt other players by landing on their properties.",
+    requester_id="system"
 )
 system.create_board_game_to_branch(
     "BRCH-00000",
@@ -68,6 +70,7 @@ system.create_board_game_to_branch(
     2,
     4,
     "A word game where players take turns to form words from a set of letters.",
+    requester_id="system"
 )
 
 system.create_board_game_to_branch(
@@ -78,6 +81,7 @@ system.create_board_game_to_branch(
     3,
     4,
     "Build settlements and trade resources.",
+    requester_id="system"
 )
 
 system.create_board_game_to_branch(
@@ -88,6 +92,7 @@ system.create_board_game_to_branch(
     5,
     10,
     "Find the minions of Mordred.",
+    requester_id="system"
 )
 
 system.create_board_game_to_branch(
@@ -98,6 +103,7 @@ system.create_board_game_to_branch(
     2,
     5,
     "Don't get exploded by the kitten!",
+    requester_id="system"
 )
 
 system.create_board_game_to_branch(
@@ -108,6 +114,7 @@ system.create_board_game_to_branch(
     2,
     4,
     "Asymmetric warfare in the forest.",
+    requester_id="system"
 )
 
 # / ════════════════════════════════════════════════════════════════
@@ -120,30 +127,35 @@ system.create_menu_item_food_to_branch(
     "Spicy BBQ Wings",
     129,
     "Deep-fried wings with spicy BBQ sauce",
+    requester_id="system"
 )
 system.create_menu_item_food_to_branch(
     "BRCH-00000",
     "Larb French Fries",
     89,
     "French fries with spicy Larb seasoning",
+    requester_id="system"
 )
 system.create_menu_item_food_to_branch(
     "BRCH-00000",
     "Spicy Tuna Sandwich",
     79,
     "Tuna sandwich with a spicy Sriracha kick",
+    requester_id="system"
 )
 system.create_menu_item_food_to_branch(
     "BRCH-00000",
     "Crispy Gyoza Chili Oil",
     95,
     "Fried gyoza served with spicy chili oil",
+    requester_id="system"
 )
 system.create_menu_item_food_to_branch(
     "BRCH-00000",
     "Cheesy Nachos Jalapeno",
     115,
     "Nachos with cheese and spicy jalapenos",
+    requester_id="system"
 )
 
 # เพิ่มเมนูเครื่องดื่มลงในระบบ (พารามิเตอร์: branch_id, name, price, cup_size, description)
@@ -153,6 +165,7 @@ system.create_menu_item_drink_to_branch(
     55,
     "M",
     "Signature Thai iced tea",
+    requester_id="system"
 )
 system.create_menu_item_drink_to_branch(
     "BRCH-00000",
@@ -160,6 +173,7 @@ system.create_menu_item_drink_to_branch(
     65,
     "L",
     "Sparkling pink lemonade",
+    requester_id="system"
 )
 system.create_menu_item_drink_to_branch(
     "BRCH-00000",
@@ -167,6 +181,7 @@ system.create_menu_item_drink_to_branch(
     75,
     "M",
     "Premium Japanese matcha with fresh milk",
+    requester_id="system"
 )
 system.create_menu_item_drink_to_branch(
     "BRCH-00000",
@@ -174,6 +189,7 @@ system.create_menu_item_drink_to_branch(
     60,
     "L",
     "Refreshing lychee tea with rose aroma",
+    requester_id="system"
 )
 system.create_menu_item_drink_to_branch(
     "BRCH-00000",
@@ -181,6 +197,7 @@ system.create_menu_item_drink_to_branch(
     85,
     "M",
     "Rich dark chocolate blended drink",
+    requester_id="system"
 )
 
 # / ════════════════════════════════════════════════════════════════
@@ -192,20 +209,20 @@ system.create_menu_item_drink_to_branch(
 # / Cafe Branch 2: Ladkrabang
 
 system.create_cafe_branch(
-    "Ladkrabang Branch", "Soi Ladkrabang, district Ladkrabang, Bankok"
+    "Ladkrabang Branch", "Soi Ladkrabang, district Ladkrabang, Bankok", requester_id="system"
 )
 
-system.add_owner_to_branch("BRCH-00001", "OWNER-PESO67")
-system.add_manager_to_branch("BRCH-00001", "MANAGER-00001")
-system.add_staff_to_branch("BRCH-00001", "STAFF-00003")
-system.add_staff_to_branch("BRCH-00001", "STAFF-00004")
-system.add_staff_to_branch("BRCH-00001", "STAFF-00005")
+system.add_owner_to_branch("BRCH-00001", "OWNER-PESO67", requester_id="system")
+system.add_manager_to_branch("BRCH-00001", "MANAGER-00001", requester_id="system")
+system.add_staff_to_branch("BRCH-00001", "STAFF-00003", requester_id="system")
+system.add_staff_to_branch("BRCH-00001", "STAFF-00004", requester_id="system")
+system.add_staff_to_branch("BRCH-00001", "STAFF-00005", requester_id="system")
 
-system.create_table_to_branch("BRCH-00001", 2)
-system.create_table_to_branch("BRCH-00001", 4)
-system.create_table_to_branch("BRCH-00001", 6)
-system.create_table_to_branch("BRCH-00001", 8)
-system.create_table_to_branch("BRCH-00001", 10)
+system.create_table_to_branch("BRCH-00001", 2, requester_id="system")
+system.create_table_to_branch("BRCH-00001", 4, requester_id="system")
+system.create_table_to_branch("BRCH-00001", 6, requester_id="system")
+system.create_table_to_branch("BRCH-00001", 4, requester_id="system") # was 8
+system.create_table_to_branch("BRCH-00001", 10, requester_id="system")
 
 # เพิ่มบอร์ดเกม 7 เกม
 system.create_board_game_to_branch(
@@ -216,6 +233,7 @@ system.create_board_game_to_branch(
     7,
     35,
     "A game of social deduction for large groups.",
+    requester_id="system"
 )
 system.create_board_game_to_branch(
     "BRCH-00001",
@@ -225,6 +243,7 @@ system.create_board_game_to_branch(
     2,
     5,
     "A strategic, kitty-powered version of Russian Roulette.",
+    requester_id="system"
 )
 system.create_board_game_to_branch(
     "BRCH-00001",
@@ -234,6 +253,7 @@ system.create_board_game_to_branch(
     4,
     12,
     "Hunt the witches before they take over the town of Salem.",
+    requester_id="system"
 )
 system.create_board_game_to_branch(
     "BRCH-00001",
@@ -243,6 +263,7 @@ system.create_board_game_to_branch(
     2,
     6,
     "A fun and fast-paced game featuring the energetic Usagyuuun characters.",
+    requester_id="system"
 )
 system.create_board_game_to_branch(
     "BRCH-00001",
@@ -252,6 +273,7 @@ system.create_board_game_to_branch(
     2,
     6,
     "Bluff and deceive your way to power in this quick strategy game.",
+    requester_id="system"
 )
 system.create_board_game_to_branch(
     "BRCH-00001",
@@ -261,6 +283,7 @@ system.create_board_game_to_branch(
     3,
     5,
     "Deceive and bribe the Sheriff to smuggle your goods into the city.",
+    requester_id="system"
 )
 system.create_board_game_to_branch(
     "BRCH-00001",
@@ -270,6 +293,7 @@ system.create_board_game_to_branch(
     4,
     8,
     "A quick-playing game where everyone tries to find who stole the cheese.",
+    requester_id="system"
 )
 
 system.create_menu_to_branch("BRCH-00001")
@@ -279,24 +303,28 @@ system.create_menu_item_food_to_branch(
     "Pad Thai Goong",
     120,
     "Stir-fried rice noodles with shrimp, tofu, and bean sprouts.",
+    requester_id="system"
 )
 system.create_menu_item_food_to_branch(
     "BRCH-00001",
     "Green Curry with Chicken",
     150,
     "Rich and spicy Thai green curry served with tender chicken.",
+    requester_id="system"
 )
 system.create_menu_item_food_to_branch(
     "BRCH-00001",
     "Basil Pork over Rice",
     110,
     "Spicy stir-fried minced pork with holy basil and a fried egg.",
+    requester_id="system"
 )
 system.create_menu_item_food_to_branch(
     "BRCH-00001",
     "Tom Yum Goong",
     180,
     "Famous Thai spicy and sour soup with succulent prawns.",
+    requester_id="system"
 )
 
 # ของกินเล่น 4 อย่าง
@@ -305,24 +333,28 @@ system.create_menu_item_food_to_branch(
     "Crispy Spring Rolls",
     80,
     "Golden fried vegetable spring rolls served with sweet chili sauce.",
+    requester_id="system"
 )
 system.create_menu_item_food_to_branch(
     "BRCH-00001",
     "Chicken Satay",
     95,
     "Grilled marinated chicken skewers served with peanut sauce.",
+    requester_id="system"
 )
 system.create_menu_item_food_to_branch(
     "BRCH-00001",
     "Fried Wontons",
     70,
     "Crispy fried wontons stuffed with seasoned minced pork.",
+    requester_id="system"
 )
 system.create_menu_item_food_to_branch(
     "BRCH-00001",
     "Spicy Pork Jerky",
     90,
     "Authentic Thai-style deep-fried marinated pork jerky.",
+    requester_id="system"
 )
 
 # เครื่องดื่ม 7 อย่าง
@@ -332,6 +364,7 @@ system.create_menu_item_drink_to_branch(
     45,
     "M",
     "Sweet and creamy Thai-style rose syrup milk.",
+    requester_id="system"
 )
 system.create_menu_item_drink_to_branch(
     "BRCH-00001",
@@ -339,6 +372,7 @@ system.create_menu_item_drink_to_branch(
     50,
     "M",
     "Classic Thai tea brewed and served with sweetened condensed milk.",
+    requester_id="system"
 )
 system.create_menu_item_drink_to_branch(
     "BRCH-00001",
@@ -346,6 +380,7 @@ system.create_menu_item_drink_to_branch(
     55,
     "M",
     "Refreshing iced premium Japanese green tea with milk.",
+    requester_id="system"
 )
 system.create_menu_item_drink_to_branch(
     "BRCH-00001",
@@ -353,6 +388,7 @@ system.create_menu_item_drink_to_branch(
     60,
     "M",
     "Bold and smooth espresso topped with water and ice.",
+    requester_id="system"
 )
 system.create_menu_item_drink_to_branch(
     "BRCH-00001",
@@ -360,6 +396,7 @@ system.create_menu_item_drink_to_branch(
     55,
     "L",
     "Sparkling blue hawaii syrup mixed with refreshing soda.",
+    requester_id="system"
 )
 system.create_menu_item_drink_to_branch(
     "BRCH-00001",
@@ -367,6 +404,7 @@ system.create_menu_item_drink_to_branch(
     20,
     "S",
     "Chilled bottled natural mineral water.",
+    requester_id="system"
 )
 system.create_menu_item_drink_to_branch(
     "BRCH-00001",
@@ -374,6 +412,7 @@ system.create_menu_item_drink_to_branch(
     40,
     "M",
     "Pure, creamy, and chilled fresh milk.",
+    requester_id="system"
 )
 
 # | ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════

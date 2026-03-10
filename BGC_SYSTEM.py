@@ -359,6 +359,8 @@ class CafeSystem:
         start_time,
         end_time,
         table_id="auto",
+        method_type="online",
+        **kwargs
     ):
         import re
         if not re.match(r'^\d{4}-\d{2}-\d{2}$', str(date)):
@@ -437,6 +439,17 @@ class CafeSystem:
         # 🟢 ด่านที่ 3: ตรวจสอบโควตาการจองของสมาชิก
         self.__validate_active_quota(customer_id, tier)
 
+        # 🟢 ด่านที่ 3.5: จัดการเงินมัดจำ (Deposit) 30 บาท (ห้ามใช้เงินสด)
+        if method_type.lower() == "cash":
+            raise ValueError("Reservation deposit cannot be paid in cash. Please use Online or Credit Card.")
+        
+        deposit_amount = 30.0
+        try:
+            # สร้าง Payment Record สำหรับมัดจำ
+            self.create_payment(deposit_amount, method_type=method_type, **kwargs)
+        except Exception as e:
+            raise ValueError(f"Deposit payment failed: {e}")
+
         # 🟢 ด่านที่ 4: สร้างการจอง
         try:
             new_reservation = Reservation(
@@ -447,7 +460,8 @@ class CafeSystem:
                 start_time,
                 end_time,
                 total_player=total_player,
-                current_time=self.get_time()
+                current_time=self.get_time(),
+                deposit=deposit_amount
             )
             new_reservation.status = ReservationStatus.PENDING
             self.add_reservation(new_reservation)
@@ -1102,7 +1116,8 @@ class CafeSystem:
                 reservation.table_id, 
                 now, 
                 reserved_duration=math.ceil(res_duration),
-                reserved_end_time=actual_res_end
+                reserved_end_time=actual_res_end,
+                deposit=reservation.deposit
             )
             session.add_players_id(reservation.customer_id)
             session.reservation_id = reservation.reservation_id
@@ -1579,6 +1594,10 @@ class CafeSystem:
                 penalty_fee += penalty.get("price", 0.0)
 
             total = (total * (1 - discount)) + penalty_fee
+            
+            # Deduct deposit
+            if play_session.deposit > 0:
+                total -= play_session.deposit
         except (TypeError, ValueError) as e:
             raise ValueError(f"Error calculating checkout total: {e}")
         
@@ -1847,6 +1866,11 @@ class CafeSystem:
                 penalty_fee += price_val
 
         total += penalty_fee
+
+        # ── หักเงินมัดจำ (ถ้ามี) ──────────────────
+        if session.deposit > 0:
+            items.append(("Reservation Deposit Deduction", -session.deposit))
+            total -= session.deposit
 
         items.append(("TOTAL", total))
         return items

@@ -18,7 +18,8 @@ class Reservation:
         start_time: str,
         end_time: str,
         total_player: int = 1,
-        current_time: datetime = None
+        current_time: datetime = None,
+        deposit: float = 0.0
     ):
         self.__reservation_id = "RESV-" + str(Reservation.__counter).zfill(5)
         Reservation.__counter += 1
@@ -35,7 +36,7 @@ class Reservation:
         self.__end_time = end_time
         self.__total_player = total_player
         self.__status = ReservationStatus.PENDING
-        self.__deposit = 0
+        self.__deposit = deposit
 
     # / ════════════════════════════════════════════════════════════════
     # - Getters

@@ -38,10 +38,18 @@ def make_reservation(
     start_t: str,
     end_t: str,
     table_id: str = "auto",
+    payment_method: str = "online",
+    card_number: str = None,
+    expiry_date: str = None,
+    cvv: str = None,
+    email: str = None
 ) -> str:
-    """Book a table (date_str format: YYYY-MM-DD, time format: HH:MM)
+    """Book a table with a mandatory 30 THB deposit (Non-cash only).
+    date_str format: YYYY-MM-DD, time format: HH:MM
     table_id: specific TABLE-XXXXX to book, or 'auto' to let system pick the best fit.
-    Use branch name for booking instead of ID for testing convenience"""
+    payment_method: 'online' or 'credit_card' (Cash is not allowed for reservations).
+    For 'credit_card': provide card_number, expiry_date, cvv.
+    For 'online': provide email."""
 
     # ✅ ด่านที่ 0: validate format ก่อน DB lookup ทุกอย่าง
     if not re.match(r'^\d{4}-\d{2}-\d{2}$', str(date_str)):
@@ -59,10 +67,18 @@ def make_reservation(
         branch = system.find_cafe_branch_by_name(branch_name)
         if not branch:
             return "Branch not found"
+            
+        kwargs = {}
+        if payment_method == "credit_card":
+            kwargs = {"card_number": card_number, "expiry_date": expiry_date, "cvv": cvv}
+        elif payment_method == "online":
+            kwargs = {"email": email}
+
         res = system.make_reservation(
-            member.user_id, branch.branch_id, players, date_str, start_t, end_t, table_id
+            member.user_id, branch.branch_id, players, date_str, start_t, end_t, 
+            table_id=table_id, method_type=payment_method, **kwargs
         )
-        return f"Booking successful! ID: {res.reservation_id} at table {res.table_id}"
+        return f"Booking successful! ID: {res.reservation_id} (Deposit ฿30 paid via {payment_method}) at table {res.table_id}"
     except Exception as e:
         return f"Error occurred: {str(e)}"
 
