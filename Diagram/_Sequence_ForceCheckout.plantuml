@@ -1,0 +1,63 @@
+@startuml
+skinparam style strictuml
+skinparam sequenceMessageAlign center
+skinparam defaultFontSize 11
+skinparam MaxMessageSize 150
+
+title Sequence Diagram: UC14 — Force Checkout (Administrative Overstay Resolution)
+
+actor "Staff" as staff
+participant ":CafeSystem" as system
+participant "branch:CafeBranch" as branch
+participant "table:Table" as table
+participant "session:PlaySession" as session
+
+== Phase 1: Identify Overstayed Sessions ==
+
+staff -> system : get_overstayed_sessions(branch_id)
+activate system
+
+    system -> system : find_cafe_branch_by_id(branch_id)
+    system -> branch : get_play_sessions()
+    activate branch
+    branch --> system : sessionsList
+    deactivate branch
+    
+    system -> system : get_time()
+    
+    loop for each s in sessionsList
+        system -> session : check_time_up(now)
+        activate session
+        session --> system : isExpired
+        deactivate session
+        
+        alt isExpired == true
+            system -> system : list.append(s)
+        end
+    end
+    
+    system --> staff : return list of overstayed sessions
+deactivate system
+
+== Phase 2: Perform Mandatory Checkout ==
+
+staff -> system : check_out(session_id, method_type, ...)
+activate system
+    system -> branch : find_play_session_by_id(session_id)
+    system -> session : table_id
+    system -> branch : find_table_by_id(table_id)
+    activate branch
+    branch --> system : table
+    deactivate branch
+    
+    ' Transactional Logic
+    system -> branch : end_play_session(session_id, now)
+    activate branch
+    branch -> branch : remove_play_session(session_id)
+    branch -> branch : add_to_history(session)
+    deactivate branch
+    
+    system --> staff : return checkout success
+deactivate system
+
+@enduml

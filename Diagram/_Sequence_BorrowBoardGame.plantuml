@@ -1,0 +1,90 @@
+@startuml
+skinparam style strictuml
+skinparam sequenceMessageAlign center
+skinparam defaultFontSize 11
+skinparam MaxMessageSize 150
+
+title Sequence Diagram: UC9 — Borrow Board Game (Detailed Implementation)
+
+actor "Customer/Staff" as user
+participant ":CafeSystem" as system
+participant "branch:CafeBranch" as branch
+participant "session:PlaySession" as session
+participant "game:BoardGame" as bg
+
+user -> system : borrow_board_game(any_id, board_game_id)
+activate system
+
+    system -> system : validate_id(any_id, board_game_id)
+
+    ' 1. Context Lookup
+    system -> system : find_cafe_branch_by_id(any_id)
+    activate system
+    system --> system : branch
+    deactivate system
+    
+    system -> branch : find_play_session_by_id(any_id)
+    activate branch
+    branch --> system : session
+    deactivate branch
+    
+    ' 2. Session Time Validation
+    group __validate_session_time
+        system -> system : get_time()
+        activate system
+        system --> system : now
+        deactivate system
+        
+        system -> session : check_time_up(now)
+        activate session
+        session --> system : is_time_up
+        deactivate session
+        
+        alt is_time_up == True
+            system -> system : __check_future_reservations(table_id, now)
+            note over system : raise ValueError if time is up
+        end
+    end
+
+    ' 3. Quota Enforcement
+    system -> session : current_board_games_id
+    activate session
+    session --> system : borrowed_list
+    deactivate session
+    
+    note over system : logic: len(borrowed_list) + 1 > 2
+    alt quota exceeded
+        system --> user : ValueError("Maximum 2 board games per session")
+    end
+
+    ' 4. Game Lookup & Availability
+    system -> branch : find_board_game_by_id(board_game_id)
+    activate branch
+    branch --> system : game
+    deactivate branch
+    
+    alt game is None
+        system --> user : ValueError("Board Game not found")
+    end
+    
+    system -> bg : status
+    activate bg
+    bg --> system : bg_status
+    deactivate bg
+    
+    alt bg_status != AVAILABLE
+        system --> user : ValueError("Board Game is not available")
+    end
+
+    ' 5. Perform Borrow Logic
+    system -> session : add_board_games_id(bg_id)
+    activate session
+    session --> system : success
+    deactivate session
+    
+    system -> bg : set status = IN_USE
+    
+    system --> user : return game
+deactivate system
+
+@enduml

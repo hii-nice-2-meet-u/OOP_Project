@@ -6,11 +6,14 @@ title Board Game Cafe System Class Diagram
 ' ==========================================
 
 package "Management Core" {
-    class CafeSystem{
-        - person : List
-        - cafe_branches : List
-        - reservations : List
+    class CafeSystem {
+        - person : List<Person>
+        - cafe_branches : List<CafeBranch>
+        - reservations : List<Reservation>
+        - simulated_time : datetime
 
+        + get_time() : datetime
+        + set_simulated_time(time_str)
         + add_person(person)
         + create_owner(name)
         + create_manager(name)
@@ -43,11 +46,6 @@ package "Management Core" {
         + set_reservation_cancel_by_id(reservation_id)
         + set_reservation_no_show_by_id(reservation_id)
         + set_reservation_complete_by_id(reservation_id)
-        - __is_table_free(table_id, date_str, start_time, end_time)
-        - __validate_active_quota(customer_id, tier)
-        - __validate_advance_booking(date_str, tier)
-        - __validate_duration(start_time, end_time, tier)
-        - __validate_minimum_lead_time(date_str, start_time)
         + create_table_to_branch(branch_id, capacity)
         + get_branch_tables(branch_id)
         + update_reserved_tables()
@@ -73,35 +71,40 @@ package "Management Core" {
         + check_in_reserved(reservation_id, customer_id, current_time)
         + check_in(branch_id, player_amount, customer_id, table_id, start_time)
         + join_session(any_id, customer_id)
-        + borrow_board_game(any_id, board_game_id)
+        + borrow_board_game(any_id, board_game_id, current_time)
         + return_board_game(any_id, board_game_id, is_damaged)
         + maintenance_board_game(board_game_id)
-        + take_order(any_id, menu_item_id)
-        + get_all_orders(branch_id)
+        + take_order(any_id, menu_item_id, current_time)
+        + get_play_session_orders(any_id)
         + update_order(play_session_id, order_id, session_status)
         + update_order_preparing(play_session_id, order_id)
         + update_order_serve(play_session_id, order_id)
         + update_order_cancel(play_session_id, order_id)
         + check_out(any_id, method_type, end_time)
         + create_payment(total, method_type)
+        + get_active_bill(session_id, current_time)
         + bill_history(session_id)
         + bill_history_by_person(person_id)
-        - __calculate_bill(session)
+        + find_play_session_by_id(any_id)
+        + find_play_session_history_by_id(any_id)
+        + auto_force_checkout(session_id, staff_id, method_type, current_time)
     }
 
-    class CafeBranch{
+    class CafeBranch {
         - branch_id : str
         - name : str
         - location : str
-        - tables : List
-        - board_games : List
+        - tables : List<Table>
+        - board_games : List<BoardGame>
         - menu_list : MenuList
-        - staff_id : List
+        - staff_id : List<str>
         - manager_id : str
         - owner_id : str
-        - play_sessions : List
-        - play_sessions_history : List
+        - play_sessions : List<PlaySession>
+        - play_sessions_history : List<PlaySession>
 
+        + total_tables : int
+        + total_board_games : int
         + add_table(capacity)
         + get_tables()
         + find_table_by_id(table_id)
@@ -121,7 +124,7 @@ package "Management Core" {
         + find_menu_item_by_id(menu_item_id)
         + remove_menu_item_by_id(menu_item_id)
         + update_menu_item_by_id(menu_item_id, name, price, description)
-        + get_all_orders()
+        + get_play_session_orders(any_id)
         + get_play_sessions_history()
         + add_play_session(play_session)
         + get_play_sessions()
@@ -139,21 +142,9 @@ package "Management Core" {
         + get_owner()
         + remove_owner()
     }
-
-    enum TableStatus {
-        AVAILABLE
-        RESERVED
-        OCCUPIED
-        MAINTENANCE
-    }
-
-    class Table{
-        - table_id : str
-        - capacity : int
-        - status : Enum
-        {static} + price_per_hour : int = 15
-    }
 }
+
+' ==========================================
 
 package "Person & Auth" {
     abstract class Person {
@@ -161,24 +152,24 @@ package "Person & Auth" {
         - user_id : str
     }
 
-    class Manager {
-        - managed_branches : List
-    }
-
     class NonCustomer {
         - salary : float
     }
-    
+
+    class Manager {
+        - managed_branches : str
+    }
+
     class Owner {
-        - owned_branches : List
+        - owned_branches : List<str>
         + add_owned_branch(branch_id)
     }
-    
+
     class Staff {
         - assigned_branch : str
     }
 
-    class Customer {
+    abstract class Customer {
         - phone_number : str
         - note : str
         - email : str
@@ -198,21 +189,23 @@ package "Person & Auth" {
 
     class Member {
         - total_spent : float
-        - member_tier : Enum
+        - member_tier : MemberTier
         - birth_date : str
 
         + get_total_spent()
-        + get_member_tier()
+        + get_member_tier() : MemberTier
         + update_member_tier()
-        + get_discount()
+        + get_discount() : float
     }
 
     class WalkInCustomer {
         + get_total_spent()
-        + get_member_tier()
-        + get_discount()
+        + get_member_tier() : MemberTier
+        + get_discount() : float
     }
 }
+
+' ==========================================
 
 package "Inventory & Menu" {
 
@@ -228,12 +221,14 @@ package "Inventory & Menu" {
         IN_USE
         MAINTENANCE
         UNAVAILABLE
-    } 
+    }
 
     class Order {
         - order_id : str
         - menu_items : MenuItem
-        - status : Enum
+        - status : OrderStatus
+        - snapshot_price : float
+        - snapshot_name : str
 
         + set_order_status(status)
         + set_order_preparing()
@@ -242,7 +237,7 @@ package "Inventory & Menu" {
     }
 
     class MenuList {
-        - menu_items : List
+        - menu_items : List<MenuItem>
 
         + add_menu_item(menu_item)
         + get_menu_item(item_id)
@@ -257,7 +252,7 @@ package "Inventory & Menu" {
         - item_id : str
         - name : str
         - price : float
-        - is_available : str
+        - is_available : bool
         - description : str
     }
 
@@ -268,22 +263,39 @@ package "Inventory & Menu" {
         - cup_size : str
     }
 
-    class BoardGame{
-        - board_game_id : str
+    class BoardGame {
+        - game_id : str
         - name : str
         - genre : str
         - price : float
-        - status : Enum
+        - status : BoardGameStatus
         - min_players : int
         - max_players : int
         - description : str
     }
 }
 
-package "Operations (Order & Resv)" {
+' ==========================================
+
+package "Operations (Session & Reservation)" {
+
+    enum TableStatus {
+        AVAILABLE
+        RESERVED
+        OCCUPIED
+        MAINTENANCE
+    }
+
+    class Table {
+        - table_id : str
+        - capacity : int
+        - status : TableStatus
+        {static} + price_per_hour : int = 15
+    }
+
     class Reservation {
         - reservation_id : str
-        - current_reservation_date : datetime.date
+        - current_reservation_date : date
         - reservation_time : datetime
         - customer_id : str
         - branch_id : str
@@ -291,7 +303,8 @@ package "Operations (Order & Resv)" {
         - date : str
         - start_time : str
         - end_time : str
-        - status : Enum
+        - total_player : int
+        - status : ReservationStatus
         - deposit : int
 
         + update_status(new_status)
@@ -305,11 +318,48 @@ package "Operations (Order & Resv)" {
         NO_SHOW
     }
 
+    class PlaySession {
+        - session_id : str
+        - table_id : str
+        - start_time : datetime
+        - end_time : datetime
+        - current_players_id : List<str>
+        - current_board_games_id : List<str>
+        - current_order : List<Order>
+        - reservation_id : str
+        - payment : Payment
+        - game_penalty : List<GamePenalty>
+        - reserved_duration : int
+        - reserved_end_time : datetime
+
+        + add_players_id(player_id)
+        + add_board_games_id(board_game_id)
+        + add_game_penalty(game_id, price)
+        + get_total_players() : int
+        + take_order(menu_item) : Order
+        + remove_board_games_id(board_game_id)
+        + remove_players_id(player_id)
+        + duration(current_time) : int
+        + check_time_up(current_time) : bool
+        + is_time_up : bool
+    }
+
+    class GamePenalty {
+        - game_id : str
+        - price : float
+    }
+}
+
+' ==========================================
+
+package "Payment" {
     class Payment {
         - payment_id : str
         - amount : float
         - payment_method : PaymentMethod
         - payment_time : datetime
+
+        + process_payment : bool
     }
 
     abstract class PaymentMethod {
@@ -324,6 +374,7 @@ package "Operations (Order & Resv)" {
 
         + validate_method()
     }
+
     class CreditCard {
         - card_number : str
         - expiry_date : str
@@ -331,42 +382,15 @@ package "Operations (Order & Resv)" {
 
         + validate_method()
     }
+
     class OnlinePayment {
         - email : str
 
         + validate_method()
     }
-
-    interface PaymentGateway <<External API>> {
-        + verify_transaction(amount : float, method_details : str) : bool
-        + refund_transaction(transaction_id : str) : bool
-    }
-
-    class PlaySession{
-        - session_id : str
-        - table_id : str
-        - start_time : datetime
-        - end_time : datetime
-        - current_players_id : List
-        - current_board_games_id : List
-        - current_order : List
-        - reservation_id : str
-        - payment : Payment
-        - game_penalty : List
-
-        + add_players_id(player_id)
-        + add_board_games_id(board_game_id)
-        + add_game_penalty(game_id)
-        + get_total_players()
-        + take_order(menu_item)
-        + remove_board_games_id(board_game_id)
-        + remove_players_id(player_id)
-        + duration()
-    }
 }
 
 ' ==========================================
-
 ' --- Inheritance ---
 Person <|-- NonCustomer
 NonCustomer <|-- Manager
@@ -383,7 +407,7 @@ PaymentMethod <|-- Cash
 PaymentMethod <|-- CreditCard
 PaymentMethod <|-- OnlinePayment
 
-' --- Composition ---
+' --- Composition (lifecycle dependent) ---
 CafeSystem "1" *--> "*" CafeBranch
 CafeSystem "1" *--> "*" Person
 CafeSystem "1" *--> "*" Reservation
@@ -394,35 +418,29 @@ CafeBranch "1" *--> "*" Table
 CafeBranch "1" *--> "1" MenuList
 
 PlaySession "1" *--> "*" Order
+PlaySession "1" *--> "*" GamePenalty
 
 ' --- Aggregation ---
 MenuList "1" o--> "*" MenuItem
 
 ' --- Association ---
-Table "1" --> "0..*" Customer : serves >
-Table "1" --> "0..*" BoardGame : holds >
+Manager "1" --> "0..1" CafeBranch : manages >
+Owner "1" --> "*" CafeBranch : owns >
+Staff "*" --> "0..1" CafeBranch : assigned to >
 
-Manager "1" --> "*" CafeBranch : managed_branches >
-Owner "1" --> "*" CafeBranch : owned_branches >
-Staff "*" --> "1" CafeBranch : assigned_branch >
-
-Reservation "*" --> "1" Customer : reserves for >
+Reservation "*" --> "1" Customer : reserved by >
 Reservation "*" --> "1" Table : reserves >
-Reservation "*" --> "1" CafeBranch : books at >
+Reservation "*" --> "1" CafeBranch : booked at >
 
-Payment "1" --> "1" PaymentMethod
+Payment "1" --> "1" PaymentMethod : paid via >
 Order "*" --> "1" MenuItem : contains >
 
 Member "*" --> "1" MemberTier : tiered as >
 
-' --- PlaySession Associations ---
-PlaySession "1" --> "0..1" Reservation : linked to >
 PlaySession "*" --> "1" Table : uses >
-PlaySession "1" --> "1..*" Customer : current_players_id >
+PlaySession "1" --> "0..1" Reservation : linked to >
 PlaySession "1" --> "0..1" Payment : paid via >
-PlaySession "1" --> "0..*" BoardGame : current_board_games_id >
 
-' --- External Associations ---
-CreditCard "1" --> "1" PaymentGateway : <<uses>>
-OnlinePayment "1" --> "1" PaymentGateway : <<uses>>
+GamePenalty "*" --> "1" BoardGame : penalizes >
+
 @enduml
