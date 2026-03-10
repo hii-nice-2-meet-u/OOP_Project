@@ -349,6 +349,7 @@ class CafeSystem:
         end_time,
         table_id="auto",
     ):
+        #import re ใช้เรียง format เวลา 
         import re
         if not re.match(r'^\d{4}-\d{2}-\d{2}$', str(date)):
             raise ValueError(
