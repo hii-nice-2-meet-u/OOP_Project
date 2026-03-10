@@ -163,7 +163,7 @@ class Table:
 class PlaySession:
     __counter = 0
 
-    def __init__(self, table_id, start_time, reserved_duration=0, reserved_end_time=None):
+    def __init__(self, table_id, start_time, reserved_duration=0, reserved_end_time=None, deposit=0.0):
         self.__session_id = "PS-" + str(PlaySession.__counter).zfill(5)
         PlaySession.__counter += 1
         self.__table_id = table_id
@@ -177,6 +177,7 @@ class PlaySession:
         self.__game_penalty = []
         self.__reserved_duration = reserved_duration
         self.__reserved_end_time = reserved_end_time
+        self.__deposit = deposit
 
     # / ════════════════════════════════════════════════════════════════
     # - Getters
@@ -229,6 +230,10 @@ class PlaySession:
     @property
     def reserved_end_time(self):
         return self.__reserved_end_time
+
+    @property
+    def deposit(self):
+        return self.__deposit
 
     def check_time_up(self, current_time=None):
         if self.__reserved_end_time is None:
