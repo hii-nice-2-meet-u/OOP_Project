@@ -1,0 +1,112 @@
+@startuml
+skinparam style strictuml
+skinparam sequenceMessageAlign center
+skinparam defaultFontSize 11
+skinparam MaxMessageSize 150
+
+title Sequence Diagram: UC11 — Checkout & Process Payment (Detailed Implementation)
+
+actor "Staff" as staff
+participant ":CafeSystem" as system
+participant "branch:CafeBranch" as branch
+participant "session:PlaySession" as session
+participant "order:Order" as order
+participant "player:Member" as member
+participant "table:Table" as table
+participant "payMethod:PaymentMethod" as payMethod
+participant "payment:Payment" as payment
+
+staff -> system : check_out(any_id, method_type, end_time, **kwargs)
+activate system
+
+    ' 1. Logic to find context
+    system -> system : find_cafe_branch_by_id(any_id)
+    system -> branch : find_play_session_by_id(any_id)
+    activate branch
+    branch --> system : session
+    deactivate branch
+    
+    ' 2. Validation
+    system -> session : current_board_games_id
+    activate session
+    session --> system : bg_ids
+    deactivate session
+    alt bg_ids is not empty
+        system --> staff : ValueError("Return board games first")
+    end
+
+    ' 3. Bill Calculation
+    system -> session : duration(actual_end_time)
+    activate session
+    session --> system : actual_duration
+    deactivate session
+
+    group Calculate Total
+        loop for each order in session.current_order
+            system -> order : status
+            system -> order : snapshot_price
+            note over system : Only sum SERVED orders
+        end
+        
+        loop for each player_id in session.current_players_id
+            system -> system : find_person_by_id(player_id)
+            alt player is Member
+                system -> member : get_discount()
+                activate member
+                member --> system : d
+                deactivate member
+                note over system : discount = max(discount, d)
+            end
+        end
+        
+        system -> table : price_per_hour
+        activate table
+        table --> system : hr_price
+        deactivate table
+        
+        system -> session : get_total_players()
+        note over system : total += hr_price * duration * players
+        
+        loop for each penalty in session.game_penalty
+            note over system : total += penalty.price
+        end
+        
+        note over system : final_total = (total * (1 - discount)) + penalty_fee
+    end
+
+    ' 4. Payment Preparation
+    system -> system : create_payment(final_total, method_type, **kwargs)
+    activate system
+        create payMethod
+        system -> payMethod : new(method_details)
+        
+        system -> payMethod : validate_method()
+        activate payMethod
+        payMethod --> system : isValid
+        deactivate payMethod
+        
+        create payment
+        system -> payment : Payment(final_total, payMethod)
+        system --> system : paymentObj
+    deactivate system
+
+    ' 5. Mutate State (ONLY after successful payment)
+    system -> session : set_end_time(actual_end_time)
+    system -> payment : set_payment_time(actual_end_time)
+    system -> session : set_payment(paymentObj)
+    
+    loop for each player_id in session.current_players_id
+        system -> system : find_person_by_id(player_id)
+        alt player is Member
+            system -> system : add_spent(player_id, Table.price_per_hour * duration)
+        else player is WalkInCustomer
+            system -> system : remove_person_by_id(player_id)
+        end
+    end
+    
+    system -> branch : end_play_session(session_id, actual_end_time)
+    
+    system --> staff : return (paymentObj, final_total)
+deactivate system
+
+@enduml

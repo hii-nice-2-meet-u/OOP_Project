@@ -1,0 +1,100 @@
+@startuml
+skinparam style strictuml
+skinparam sequenceMessageAlign center
+skinparam defaultFontSize 11
+skinparam MaxMessageSize 150
+
+title Sequence Diagram: UC3 — Cancel Reservation (Detailed Implementation)
+
+actor "Member" as member
+participant ":CafeSystem" as system
+participant "res:Reservation" as res
+participant "branch:CafeBranch" as branch
+participant "table:Table" as table
+
+member -> system : cancel_reservation(reservation_id)
+activate system
+
+    system -> system : validate_id(res_id, "RESV")
+    
+    ' 1. Fetch Reservation
+    system -> system : find_reservation_by_id(res_id)
+    activate system
+    system --> system : res
+    deactivate system
+    
+    alt res is None
+        system --> member : ValueError("Reservation not found")
+    end
+
+    ' 2. Check current status
+    system -> res : status
+    activate res
+    res --> system : current_status
+    deactivate res
+    
+    alt current_status == CANCELLED or != PENDING
+        system --> member : ValueError("Cannot cancel. Invalid status")
+    end
+
+    ' 3. Check time validity
+    system -> system : get_time()
+    activate system
+    system --> system : now
+    deactivate system
+    
+    system -> res : date
+    activate res
+    res --> system : res_date
+    deactivate res
+    
+    system -> res : start_time
+    activate res
+    res --> system : res_start
+    deactivate res
+    
+    system -> system : combine res_date + res_start (datetime.strptime)
+    
+    alt now > reservation_time
+        system --> member : ValueError("Time has already passed")
+    end
+
+    ' 4. Perform Cancellation
+    system -> res : set status = CANCELLED
+    
+    ' 5. Restore Table status
+    system -> res : branch_id
+    activate res
+    res --> system : b_id
+    deactivate res
+    
+    system -> system : find_cafe_branch_by_id(b_id)
+    activate system
+    system --> system : branch
+    deactivate system
+    
+    system -> res : table_id
+    activate res
+    res --> system : t_id
+    deactivate res
+    
+    system -> branch : find_table_by_id(t_id)
+    activate branch
+    branch --> system : table
+    deactivate branch
+    
+    opt table is not None
+        system -> table : status
+        activate table
+        table --> system : t_status
+        deactivate table
+        
+        alt t_status == RESERVED
+            system -> table : set status = AVAILABLE
+        end
+    end
+
+    system --> member : return True
+deactivate system
+
+@enduml
