@@ -140,7 +140,7 @@ member --> UC_ReturnBG
 member --> UC_OrderFood
 member --> UC_Checkout
 member --> UC_ViewBill
-member --> UC_ManageStaff : Update own profile
+
 
 ' --- Walk-in Guest ---
 guest --> UC_WalkIn

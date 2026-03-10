@@ -50,8 +50,8 @@ def make_reservation(
     customer_name: full name of the registered Member (not walk-in).
     date_str format: YYYY-MM-DD, time format: HH:MM
     table_id: specific TABLE-XXXXX to book, or 'auto' to let system pick the best fit.
-    payment_method: 'online' or 'credit_card' (Cash is not allowed for reservations).
-    For 'credit_card': provide card_number, expiry_date, cvv.
+    payment_method: 'online' or 'card' (Cash is not allowed for reservations).
+    For 'card': provide card_number, expiry_date, cvv.
     For 'online': provide email."""
 
     # ✅ ด่านที่ 0: validate format ก่อน DB lookup ทุกอย่าง
@@ -63,6 +63,10 @@ def make_reservation(
     if not isinstance(players, int) or players <= 0:
         return "players must be a positive integer"
 
+    # Normalize payment_method alias: "credit_card" → "card"
+    if payment_method == "credit_card":
+        payment_method = "card"
+
     try:
         member = system.find_person_by_name(customer_name)
         if not member:
@@ -72,7 +76,7 @@ def make_reservation(
             return "Branch not found"
             
         kwargs = {}
-        if payment_method == "credit_card":
+        if payment_method == "card":
             kwargs = {"card_number": card_number, "expiry_date": expiry_date, "cvv": cvv}
         elif payment_method == "online":
             kwargs = {"email": email}
