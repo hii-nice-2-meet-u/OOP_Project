@@ -1,4 +1,4 @@
-@startuml
+@startuml UC14_ForceCheckout
 skinparam style strictuml
 skinparam sequenceMessageAlign center
 skinparam defaultFontSize 11
@@ -12,52 +12,55 @@ participant "branch:CafeBranch" as branch
 participant "table:Table" as table
 participant "session:PlaySession" as session
 
-== Phase 1: Identify Overstayed Sessions ==
+== Phase 1: Detection via Check-in Attempt ==
 
-staff -> system : get_overstayed_sessions(branch_id)
+staff -> system : check_in_reserved(res_id, cust_id)
 activate system
-
-    system -> system : find_cafe_branch_by_id(branch_id)
-    system -> branch : get_play_sessions()
-    activate branch
-    branch --> system : sessionsList
-    deactivate branch
+    system -> table : status
+    system -> branch : find_play_session_by_id(table_id)
+    system -> session : check_time_up(now)
+    activate session
+    session --> system : isExpired (True)
+    deactivate session
     
-    system -> system : get_time()
-    
-    loop for each s in sessionsList
-        system -> session : check_time_up(now)
-        activate session
-        session --> system : isExpired
-        deactivate session
-        
-        alt isExpired == true
-            system -> system : list.append(s)
-        end
-    end
-    
-    system --> staff : return list of overstayed sessions
+    system -> system : get_active_bill(session_id)
+    system --> staff : ValueError("FORCE CHECKOUT REQUIRED...")
 deactivate system
 
-== Phase 2: Perform Mandatory Checkout ==
+== Phase 2: Perform Auto Force Checkout ==
 
-staff -> system : check_out(session_id, method_type, ...)
+staff -> system : auto_force_checkout(session_id, staff_id, method, ...)
 activate system
-    system -> branch : find_play_session_by_id(session_id)
-    system -> session : table_id
-    system -> branch : find_table_by_id(table_id)
-    activate branch
-    branch --> system : table
-    deactivate branch
+    system -> system : find_person_by_id(staff_id)
+    system -> system : find_play_session_by_id(session_id)
     
-    ' Transactional Logic
-    system -> branch : end_play_session(session_id, now)
-    activate branch
-    branch -> branch : remove_play_session(session_id)
-    branch -> branch : add_to_history(session)
-    deactivate branch
+    group Smart Cleanup [Loop for borrowed games]
+        system -> system : return_board_game(session_id, game_id)
+        activate system
+        system --> system : success
+        deactivate system
+    end
     
-    system --> staff : return checkout success
+    group Smart Cleanup [Loop for pending orders]
+        system -> system : update_order_cancel(session_id, order_id)
+        activate system
+        system --> system : success
+        deactivate system
+    end
+    
+    system -> system : check_out(session_id, method, ...)
+    activate system
+        system -> branch : end_play_session(session_id, now)
+        activate branch
+            branch -> branch : remove_play_session(session_id)
+            branch -> branch : add_to_history(session)
+        deactivate branch
+        
+        system -> table : set_status(AVAILABLE)
+        system --> system : (payment, total)
+    deactivate system
+    
+    system --> staff : return (payment, total)
 deactivate system
 
 @enduml

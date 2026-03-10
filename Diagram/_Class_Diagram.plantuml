@@ -1,4 +1,4 @@
-@startuml
+@startuml Board_Game_Cafe_System_Class_Diagram
 skinparam classAttributeIconSize 0
 
 title Board Game Cafe System Class Diagram
@@ -15,79 +15,80 @@ package "Management Core" {
         + get_time() : datetime
         + set_simulated_time(time_str)
         + add_person(person)
-        + create_owner(name)
-        + create_manager(name)
-        + create_staff(name)
+        + create_owner(name, requester_id=None)
+        + create_manager(name, requester_id=None)
+        + create_staff(name, requester_id=None)
         + create_customer_member(name)
         + create_customer_walk_in()
-        + add_owner_to_branch(branch_id, owner_id)
-        + add_manager_to_branch(branch_id, manager_id)
-        + add_staff_to_branch(branch_id, staff_id)
+        + add_owner_to_branch(branch_id, owner_id, requester_id=None)
+        + add_manager_to_branch(branch_id, manager_id, requester_id=None)
+        + add_staff_to_branch(branch_id, staff_id, requester_id=None)
         + get_person()
         + get_person_by_type(person_type)
         + find_person_by_id(user_id)
         + find_person_by_name(name)
-        + remove_person_by_id(user_id)
-        + update_person_by_id(user_id, name)
+        + remove_person_by_id(user_id, requester_id=None)
+        + update_person_by_id(user_id, name, requester_id=None)
         + add_spent(customer_id, amount)
-        + create_cafe_branch(cafe_branch_name, cafe_branch_location)
+        + create_cafe_branch(cafe_branch_name, cafe_branch_location="", requester_id=None)
         + get_cafe_branches()
         + find_cafe_branch_by_id(_id)
         + find_cafe_branch_by_name(name)
-        + remove_cafe_branch_by_id(cafe_branch_id)
-        + update_cafe_branch_by_id(branch_id, name, location)
-        + make_reservation(customer_id, branch_id, total_player, date, start_time, end_time, table_id)
+        + remove_cafe_branch_by_id(cafe_branch_id, requester_id=None)
+        + update_cafe_branch_by_id(branch_id, name, location, requester_id=None)
+        + make_reservation(customer_id, branch_id, total_player, date, start_time, end_time, table_id="auto")
         + add_reservation(reservation)
         + get_reservations()
         + find_reservation_by_id(reservation_id)
         + remove_reservation_by_id(reservation_id)
-        + cancel_reservation(reservation_id, current_time)
+        + cancel_reservation(reservation_id, current_time=None)
         + update_reservation_status_by_id(reservation_id, status)
         + set_reservation_cancel_by_id(reservation_id)
         + set_reservation_no_show_by_id(reservation_id)
         + set_reservation_complete_by_id(reservation_id)
-        + create_table_to_branch(branch_id, capacity)
+        + create_table_to_branch(branch_id, capacity, requester_id=None)
         + get_branch_tables(branch_id)
         + update_reserved_tables()
-        + search_available_table(branch_id, required_capacity)
+        + search_available_table(branch_id, required_capacity=0)
         + update_table_status(table_id, status)
-        + create_board_game_to_branch(branch_id, name, genre, price, min_players, max_players, description)
+        + create_board_game_to_branch(branch_id, name, genre, price, min_players, max_players, description="", requester_id=None)
         + get_branch_board_games(branch_id)
         + find_board_game_by_id(board_game_id)
         + search_board_game_by_min_players(branch_id, min_players)
         + search_board_game_by_max_players(branch_id, max_players)
         + update_board_game_status(board_game_id, status)
-        + remove_board_game_by_id(board_game_id)
+        + remove_board_game_by_id(board_game_id, requester_id=None)
         + create_menu_to_branch(branch_id)
-        + create_menu_item_food_to_branch(branch_id, name, price, description)
-        + create_menu_item_drink_to_branch(branch_id, name, price, cup_size, description)
+        + create_menu_item_food_to_branch(branch_id, name, price, description="", requester_id=None)
+        + create_menu_item_drink_to_branch(branch_id, name, price, cup_size, description="", requester_id=None)
         + get_branch_menu(branch_id)
         + get_branch_menu_item(branch_id)
         + get_branch_menu_item_food(branch_id)
         + get_branch_menu_item_drink(branch_id)
         + find_menu_item_by_id(menu_item_id)
-        + remove_menu_item_by_id(menu_item_id)
-        + update_menu_item_by_id(menu_item_id, name, price, description)
-        + check_in_reserved(reservation_id, customer_id, current_time)
-        + check_in(branch_id, player_amount, customer_id, table_id, start_time)
-        + join_session(any_id, customer_id)
-        + borrow_board_game(any_id, board_game_id, current_time)
-        + return_board_game(any_id, board_game_id, is_damaged)
-        + maintenance_board_game(board_game_id)
-        + take_order(any_id, menu_item_id, current_time)
+        + remove_menu_item_by_id(menu_item_id, requester_id=None)
+        + update_menu_item_by_id(menu_item_id, name, price, description="", requester_id=None)
+        + check_in_reserved(reservation_id, customer_id, current_time=None)
+        + check_in(branch_id, player_amount, customer_id="walk_in", table_id="auto", start_time=None)
+        + join_session(any_id, customer_id="walk_in")
+        + borrow_board_game(any_id, board_game_id, current_time=None)
+        + return_board_game(any_id, board_game_id, is_damaged=False)
+        + maintenance_board_game(board_game_id, requester_id=None)
+        + take_order(any_id, menu_item_id, current_time=None)
         + get_play_session_orders(any_id)
         + update_order(play_session_id, order_id, session_status)
         + update_order_preparing(play_session_id, order_id)
         + update_order_serve(play_session_id, order_id)
         + update_order_cancel(play_session_id, order_id)
-        + check_out(any_id, method_type, end_time)
-        + create_payment(total, method_type)
-        + get_active_bill(session_id, current_time)
+        + check_out(any_id, method_type="cash", end_time=None, **kwargs)
+        + create_payment(total, method_type="cash", **kwargs)
+        + get_active_bill(session_id, current_time=None)
         + bill_history(session_id)
         + bill_history_by_person(person_id)
         + find_play_session_by_id(any_id)
         + find_play_session_history_by_id(any_id)
-        + auto_force_checkout(session_id, staff_id, method_type, current_time)
+        + auto_force_checkout(session_id, staff_id, method_type="cash", current_time=None, **kwargs)
+        - __authorize(requester_id, allowed_roles)
     }
 
     class CafeBranch {
@@ -108,22 +109,22 @@ package "Management Core" {
         + add_table(capacity)
         + get_tables()
         + find_table_by_id(table_id)
-        + add_board_game(name, genre, price, min_players, max_players, description)
+        + add_board_game(name, genre, price, min_players, max_players, description="")
         + get_board_games()
         + find_board_game_by_id(board_game_id)
         + search_board_game_by_min_players(min_players)
         + search_board_game_by_max_players(max_players)
         + remove_board_game_by_id(board_game_id)
         + create_menu(menu)
-        + create_menu_item_food(name, price, description)
-        + create_menu_item_drink(name, price, cup_size, description)
+        + create_menu_item_food(name, price, description="")
+        + create_menu_item_drink(name, price, cup_size="S", description="")
         + get_menu()
         + get_menu_item()
         + get_menu_item_food()
         + get_menu_item_drink()
         + find_menu_item_by_id(menu_item_id)
         + remove_menu_item_by_id(menu_item_id)
-        + update_menu_item_by_id(menu_item_id, name, price, description)
+        + update_menu_item_by_id(menu_item_id, name, price, description="")
         + get_play_session_orders(any_id)
         + get_play_sessions_history()
         + add_play_session(play_session)
@@ -131,7 +132,7 @@ package "Management Core" {
         + find_play_session_by_id(any_id)
         + find_play_session_history_by_id(any_id)
         + remove_play_session_by_id(play_session_id)
-        + end_play_session(play_session_id, end_time)
+        + end_play_session(play_session_id, end_time=None)
         + add_staff(staff)
         + get_staff()
         + remove_staff_by_id(staff_id)
@@ -157,15 +158,18 @@ package "Person & Auth" {
     }
 
     class Manager {
+        - {static} counter : int = 0
         - managed_branches : str
     }
 
     class Owner {
+        - {static} counter : int = 0
         - owned_branches : List<str>
         + add_owned_branch(branch_id)
     }
 
     class Staff {
+        - {static} counter : int = 0
         - assigned_branch : str
     }
 
@@ -188,6 +192,7 @@ package "Person & Auth" {
     }
 
     class Member {
+        - {static} counter : int = 0
         - total_spent : float
         - member_tier : MemberTier
         - birth_date : str
@@ -199,6 +204,7 @@ package "Person & Auth" {
     }
 
     class WalkInCustomer {
+        - {static} counter : int = 0
         + get_total_spent()
         + get_member_tier() : MemberTier
         + get_discount() : float
@@ -224,12 +230,14 @@ package "Inventory & Menu" {
     }
 
     class Order {
+        - {static} counter : int = 0
         - order_id : str
         - menu_items : MenuItem
         - status : OrderStatus
         - snapshot_price : float
         - snapshot_name : str
 
+        + get_price : float
         + set_order_status(status)
         + set_order_preparing()
         + set_order_serve()
@@ -264,7 +272,8 @@ package "Inventory & Menu" {
     }
 
     class BoardGame {
-        - game_id : str
+        - {static} counter : int = 0
+        - board_game_id : str
         - name : str
         - genre : str
         - price : float
@@ -287,6 +296,7 @@ package "Operations (Session & Reservation)" {
     }
 
     class Table {
+        - {static} counter : int = 0
         - table_id : str
         - capacity : int
         - status : TableStatus
@@ -294,6 +304,7 @@ package "Operations (Session & Reservation)" {
     }
 
     class Reservation {
+        - {static} counter : int = 0
         - reservation_id : str
         - current_reservation_date : date
         - reservation_time : datetime
@@ -319,6 +330,7 @@ package "Operations (Session & Reservation)" {
     }
 
     class PlaySession {
+        - {static} counter : int = 0
         - session_id : str
         - table_id : str
         - start_time : datetime
@@ -328,7 +340,7 @@ package "Operations (Session & Reservation)" {
         - current_order : List<Order>
         - reservation_id : str
         - payment : Payment
-        - game_penalty : List<GamePenalty>
+        - game_penalty : List<Dict>
         - reserved_duration : int
         - reserved_end_time : datetime
 
@@ -343,17 +355,13 @@ package "Operations (Session & Reservation)" {
         + check_time_up(current_time) : bool
         + is_time_up : bool
     }
-
-    class GamePenalty {
-        - game_id : str
-        - price : float
-    }
 }
 
 ' ==========================================
 
 package "Payment" {
     class Payment {
+        - {static} counter : int = 0
         - payment_id : str
         - amount : float
         - payment_method : PaymentMethod
@@ -369,6 +377,7 @@ package "Payment" {
     }
 
     class Cash {
+        - {static} counter : int = 0
         - paid_amount : float
         - change : float
 
@@ -376,6 +385,7 @@ package "Payment" {
     }
 
     class CreditCard {
+        - {static} counter : int = 0
         - card_number : str
         - expiry_date : str
         - cvv : str
@@ -384,6 +394,7 @@ package "Payment" {
     }
 
     class OnlinePayment {
+        - {static} counter : int = 0
         - email : str
 
         + validate_method()
@@ -418,7 +429,7 @@ CafeBranch "1" *--> "*" Table
 CafeBranch "1" *--> "1" MenuList
 
 PlaySession "1" *--> "*" Order
-PlaySession "1" *--> "*" GamePenalty
+' PlaySession "1" *--> "*" GamePenalty (Implemented as List of Dict)
 
 ' --- Aggregation ---
 MenuList "1" o--> "*" MenuItem
@@ -441,6 +452,6 @@ PlaySession "*" --> "1" Table : uses >
 PlaySession "1" --> "0..1" Reservation : linked to >
 PlaySession "1" --> "0..1" Payment : paid via >
 
-GamePenalty "*" --> "1" BoardGame : penalizes >
+' GamePenalty "*" --> "1" BoardGame : penalizes (Not a class)
 
 @enduml

@@ -38,10 +38,18 @@ def make_reservation(
     start_t: str,
     end_t: str,
     table_id: str = "auto",
+    payment_method: str = "online",
+    card_number: str = None,
+    expiry_date: str = None,
+    cvv: str = None,
+    email: str = None
 ) -> str:
-    """Book a table (date_str format: YYYY-MM-DD, time format: HH:MM)
+    """Book a table with a mandatory 30 THB deposit (Non-cash only).
+    date_str format: YYYY-MM-DD, time format: HH:MM
     table_id: specific TABLE-XXXXX to book, or 'auto' to let system pick the best fit.
-    Use branch name for booking instead of ID for testing convenience"""
+    payment_method: 'online' or 'credit_card' (Cash is not allowed for reservations).
+    For 'credit_card': provide card_number, expiry_date, cvv.
+    For 'online': provide email."""
 
     # ✅ ด่านที่ 0: validate format ก่อน DB lookup ทุกอย่าง
     if not re.match(r'^\d{4}-\d{2}-\d{2}$', str(date_str)):
@@ -59,10 +67,18 @@ def make_reservation(
         branch = system.find_cafe_branch_by_name(branch_name)
         if not branch:
             return "Branch not found"
+            
+        kwargs = {}
+        if payment_method == "credit_card":
+            kwargs = {"card_number": card_number, "expiry_date": expiry_date, "cvv": cvv}
+        elif payment_method == "online":
+            kwargs = {"email": email}
+
         res = system.make_reservation(
-            member.user_id, branch.branch_id, players, date_str, start_t, end_t, table_id
+            member.user_id, branch.branch_id, players, date_str, start_t, end_t, 
+            table_id=table_id, method_type=payment_method, **kwargs
         )
-        return f"Booking successful! ID: {res.reservation_id} at table {res.table_id}"
+        return f"Booking successful! ID: {res.reservation_id} (Deposit ฿30 paid via {payment_method}) at table {res.table_id}"
     except Exception as e:
         return f"Error occurred: {str(e)}"
 
@@ -651,7 +667,7 @@ def add_table_to_branch(auth_id: str, branch_id: str, capacity: int) -> str:
             if branch and branch.manager_id != person.user_id:
                 return f"You are not Manager of {branch.name}"
 
-        table = system.create_table_to_branch(branch_id, capacity)
+        table = system.create_table_to_branch(branch_id, capacity, requester_id=auth_id)
         return f"Table created successfully Table ID: {table.table_id} (Capacity: {capacity} seats) in branch {branch_id}"
     except Exception as e:
         return f"Error: {e}"
@@ -674,7 +690,7 @@ def add_food_to_branch(auth_id: str, branch_id: str, name: str, price: float, de
             if branch and branch.manager_id != person.user_id:
                 return f"You are not Manager of {branch.name}"
 
-        food = system.create_menu_item_food_to_branch(branch_id, name, price, description)
+        food = system.create_menu_item_food_to_branch(branch_id, name, price, description, requester_id=auth_id)
         return f"Food menu added successfully Item ID: {food.item_id} | Name: {food.name} | Price: {price}"
     except Exception as e:
         return f"Error: {e}"
@@ -698,7 +714,7 @@ def add_drink_to_branch(auth_id: str, branch_id: str, name: str, price: float, c
                 return f"You are not Manager of {branch.name}"
 
         drink = system.create_menu_item_drink_to_branch(
-            branch_id, name, price, cup_size, description)
+            branch_id, name, price, cup_size, description, requester_id=auth_id)
         return f"Drink added successfully Item ID: {drink.item_id} | Name: {drink.name} (Size: {cup_size}) | Price: {price}"
     except Exception as e:
         return f"Error: {e}"
@@ -722,8 +738,8 @@ def add_staff_to_branch(auth_id: str, branch_id: str, staff_name: str) -> str:
                 return f"You are not Manager of {branch.name}"
 
         # Create Staff and add to branch
-        new_staff = system.create_staff(staff_name)
-        system.add_staff_to_branch(branch_id, new_staff.user_id)
+        new_staff = system.create_staff(staff_name, requester_id=auth_id)
+        system.add_staff_to_branch(branch_id, new_staff.user_id, requester_id=auth_id)
 
         return f"Staff added successfully Staff ID: {new_staff.user_id} | Name: {new_staff.name} added to branch {branch_id}"
     except Exception as e:
@@ -777,8 +793,8 @@ def create_cafe_branch(auth_id: str, branch_name: str, location: str = "") -> st
         if person is None:
             return f"Authorization Failed: Owner ID {auth_id} not found in the system"
 
-        branch = system.create_cafe_branch(branch_name, location)
-        system.add_owner_to_branch(branch.branch_id, auth_id)
+        branch = system.create_cafe_branch(branch_name, location, requester_id=auth_id)
+        system.add_owner_to_branch(branch.branch_id, auth_id, requester_id=auth_id)
         return f"Branch created! ID: {branch.branch_id} | Name: {branch.name} | Location: {branch.location}"
     except Exception as e:
         return f"Error: {e}"
@@ -797,8 +813,8 @@ def create_manager(auth_id: str, manager_name: str, branch_id: str) -> str:
         if person is None:
             return f"Authorization Failed: Owner ID {auth_id} not found in the system"
 
-        manager = system.create_manager(manager_name)
-        system.add_manager_to_branch(branch_id, manager.user_id)
+        manager = system.create_manager(manager_name, requester_id=auth_id)
+        system.add_manager_to_branch(branch_id, manager.user_id, requester_id=auth_id)
         return f"Manager created! ID: {manager.user_id} | Name: {manager.name} | Assigned to: {branch_id}"
     except Exception as e:
         return f"Error: {e}"
@@ -832,7 +848,7 @@ def add_board_game_to_branch(
                 return f"You are not Manager of {branch.name}"
 
         bg = system.create_board_game_to_branch(
-            branch_id, name, genre, price, min_players, max_players, description)
+            branch_id, name, genre, price, min_players, max_players, description, requester_id=auth_id)
         return (
             f"Board game added! ID: {bg.game_id} | Name: {bg.name} | "
             f"Genre: {bg.genre} | Price: ฿{bg.price:.2f} | "
@@ -1007,7 +1023,7 @@ def repair_board_game(auth_id: str, board_game_id: str) -> str:
         if person is None:
             return f"Authorization Failed: User ID {auth_id} not found"
 
-        system.update_board_game_status(board_game_id, BoardGameStatus.AVAILABLE)
+        system.maintenance_board_game(board_game_id, requester_id=auth_id)
         return f"Board game {board_game_id} has been repaired and is now AVAILABLE"
     except Exception as e:
         return f"Error: {e}"
@@ -1043,10 +1059,17 @@ def resolve_checkin_conflict(
     staff_id: str, 
     method_type: str = "cash", 
     current_time: str = None, 
+    paid_amount: float = None,
+    email: str = None,
+    card_number: str = None,
+    expiry_date: str = None,
+    cvv: str = None,
     **kwargs
 ) -> str:
     """Resolve a check-in conflict by performing an automated force checkout.
-    e.g. resolve_checkin_conflict(session_id="PS-00000", staff_id="STAFF-00001", method_type="cash")
+    e.g. resolve_checkin_conflict(session_id="PS-00000", staff_id="STAFF-00001", method_type="cash", paid_amount=150.0)
+    e.g. resolve_checkin_conflict(session_id="PS-00000", staff_id="STAFF-00001", method_type="card", card_number="1234...", expiry_date="12/26", cvv="123")
+    
     current_time format: 'YYYY-MM-DD HH:MM' or ISO.
     """
     try:
@@ -1078,6 +1101,44 @@ def resolve_checkin_conflict(
         )
     except Exception as e:
         return f"Error resolving conflict: {e}"
+
+@mcp.tool()
+def auto_force_checkout(
+    session_id: str, 
+    staff_id: str, 
+    method_type: str = "cash", 
+    current_time: str = None, 
+    paid_amount: float = None,
+    email: str = None,
+    card_number: str = None,
+    expiry_date: str = None,
+    cvv: str = None,
+    **kwargs
+) -> str:
+    """Force checkout a play session. Requires Staff authorization.
+    Supports 'cash', 'card', and 'online' payment methods.
+    """
+    try:
+        if not staff_id.startswith("STAFF"):
+            return "Authorization Failed: Only Staff can perform force checkout"
+        
+        parsed_time = None
+        if current_time is not None:
+            for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+                try:
+                    parsed_time = datetime.strptime(current_time, fmt)
+                    break
+                except ValueError:
+                    continue
+        
+        system.auto_force_checkout(
+            session_id, staff_id, method_type=method_type, current_time=parsed_time,
+            paid_amount=paid_amount, email=email, card_number=card_number,
+            expiry_date=expiry_date, cvv=cvv, **kwargs
+        )
+        return f"Successfully force-checked out session {session_id} using {method_type}."
+    except Exception as e:
+        return f"Error during force checkout: {e}"
 
 
 if __name__ == "__main__":
