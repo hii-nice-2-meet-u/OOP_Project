@@ -971,10 +971,9 @@ def get_active_bill(play_session_id: str, current_time: str = None) -> str:
             return "This session is already checked out. Use bill_history() instead."
 
         now = parsed_time if parsed_time else system.get_time()
-        # Use the new duration logic from PlaySession which handles reserved_duration correctly
-        duration = session.duration(now)
-
-        total = 0.0
+        # Use the system's core calculation logic to ensure consistency with check_out
+        active_bill = system.get_active_bill(play_session_id, current_time=now)
+        
         lines = [f"=== Active Bill Preview for {session.session_id} ==="]
         time_limit_str = f" | Reserved until: {session.reserved_end_time.strftime('%H:%M')}" if session.reserved_end_time else ""
         lines.append(f"  Start: {session.start_time.strftime('%Y-%m-%d %H:%M')} | Now: {now.strftime('%H:%M')}{time_limit_str} | Duration: {duration} hr")
@@ -982,28 +981,17 @@ def get_active_bill(play_session_id: str, current_time: str = None) -> str:
             lines.append("  ⚠️ ALERT: TIME IS UP!")
         lines.append("")
 
-        table_cost = Table.price_per_hour * duration * session.get_total_players()
-        # If duration was bumped up by reserved_duration, mention it
-        actual_hrs = math.ceil((now - session.start_time).total_seconds() / 3600.0)
-        table_label = f"Table fee ({duration}hr"
-        if duration > max(1, actual_hrs):
-            table_label += f" [Reserved {session.reserved_duration}hr]"
-        table_label += f" x {session.get_total_players()} players @ ฿{Table.price_per_hour}/hr)"
+        for label, amount in active_bill["items"]:
+            if label == "TOTAL":
+                continue
+            lines.append(f"  {label:<50} : ฿{amount:8.2f}")
 
-        lines.append(f"  {table_label}: ฿{table_cost:.2f}")
-        total += table_cost
-
-        for order in session.current_order:
-            if order.status.value == "Served":
-                # Use snapshotted price/name (same as check_out) to avoid stale data
-                lines.append(f"  [Order] {order.snapshot_name}: ฿{order.snapshot_price:.2f}")
-                total += order.snapshot_price
-
-        lines.append(f"")
-        lines.append(f"  Estimated TOTAL: ฿{total:.2f} (before discount/penalty)")
+        lines.append("-" * 65)
+        lines.append(f"  Estimated TOTAL {' ':<32} : ฿{active_bill['total_amount']:8.2f}")
+        
         unreturned = session.current_board_games_id
         if unreturned:
-            lines.append(f"  ⚠️  Unreturned board games: {', '.join(unreturned)}")
+            lines.append(f"\n  ⚠️  Unreturned board games: {', '.join(unreturned)}")
         return "\n".join(lines)
     except Exception as e:
         return f"Error: {e}"
