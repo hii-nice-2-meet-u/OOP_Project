@@ -1,0 +1,96 @@
+@startuml
+skinparam style strictuml
+skinparam sequenceMessageAlign center
+skinparam defaultFontSize 11
+skinparam MaxMessageSize 150
+
+title Sequence Diagram: UC2 — Make Reservation (Final Detailed Implementation)
+
+actor "Member" as member
+participant ":CafeSystem" as system
+participant "cust:Member" as customer
+participant "branch:CafeBranch" as branch
+participant "table:Table" as table
+participant "newRes:Reservation" as res
+
+member -> system : make_reservation(cust_id, branch_id, players, date, start, end)
+activate system
+
+    ' Stage 0: Basic Validations
+    system -> system : validate_id (cust_id, branch_id)
+    
+    ' find customer and tier
+    system -> system : find_person_by_id(cust_id)
+    activate system
+    system --> system : cust
+    deactivate system
+    
+    system -> customer : get_member_tier()
+    activate customer
+    customer --> system : tier
+    deactivate customer
+
+    ' Stage 1: Business Rules (Time/Tier checks)
+    system -> system : __validate_minimum_lead_time(date, start)
+    system -> system : __validate_advance_booking(date, tier)
+    system -> system : __validate_duration(start, end, tier)
+
+    ' Stage 2: Find Branch and Table
+    system -> system : find_cafe_branch_by_id(branch_id)
+    activate system
+    system --> system : branch
+    deactivate system
+
+    alt table_id == "auto"
+        group Search for Best-Fit Table
+            loop each table in branch.tables
+                system -> branch : tables[i]
+                system -> table : capacity
+                activate table
+                table --> system : cap
+                deactivate table
+                
+                alt cap >= total_player
+                    system -> system : __is_table_free(table_id, date, start, end)
+                    activate system
+                    system --> system : is_free
+                    deactivate system
+                    
+                    opt is_free == true
+                        note over system : add to available_tables list
+                    end
+                end
+            end
+            note over system : Choose smallest table from available_tables
+        end
+    else specific table_id provided
+        system -> branch : find_table_by_id(table_id)
+        activate branch
+        branch --> system : target_table
+        deactivate branch
+        system -> system : validate target_table (capacity/availability)
+    end
+
+    ' Stage 3: Quota Check
+    system -> system : __validate_active_quota(cust_id, tier)
+
+    ' Stage 4: Creation
+    system -> system : get_time()
+    activate system
+    system --> system : current_system_time
+    deactivate system
+    
+    create res
+    system -> res : Reservation(cust_id, branch_id, table_id, ..., current_time)
+    activate res
+    res --> system : newRes
+    deactivate res
+    
+    note over res : set res.status = ReservationStatus.PENDING
+    
+    system -> system : add_reservation(newRes)
+    
+    system --> member : return newRes
+deactivate system
+
+@enduml

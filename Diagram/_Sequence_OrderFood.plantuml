@@ -1,0 +1,83 @@
+@startuml
+skinparam style strictuml
+skinparam sequenceMessageAlign center
+skinparam defaultFontSize 11
+skinparam MaxMessageSize 150
+
+title Sequence Diagram: UC7 — Order Food & Drinks (Detailed Implementation)
+
+actor "Customer" as customer
+participant ":CafeSystem" as system
+participant "branch:CafeBranch" as branch
+participant "session:PlaySession" as session
+participant "item:MenuItem" as menu
+participant "newOrder:Order" as order
+
+customer -> system : take_order(any_id, menu_item_id)
+activate system
+
+    system -> system : validate_id(any_id, menu_item_id)
+
+    ' 1. Logic to find context (Branch/Session)
+    system -> system : find_cafe_branch_by_id(any_id)
+    activate system
+    system --> system : branch
+    deactivate system
+    
+    system -> branch : find_play_session_by_id(any_id)
+    activate branch
+    branch --> system : session
+    deactivate branch
+    
+    ' 2. Validation
+    alt session is None
+        system --> customer : ValueError("Play Session not found")
+    end
+    
+    system -> system : get_time()
+    activate system
+    system --> system : now
+    deactivate system
+    system -> system : __validate_session_time(session, now)
+    
+    ' 3. Find Menu Item
+    system -> branch : find_menu_item_by_id(menu_item_id)
+    activate branch
+    branch --> system : item
+    deactivate branch
+    
+    alt item is None
+        system --> customer : ValueError("Menu Item not found")
+    end
+
+    ' 4. Create Order
+    system -> session : take_order(item)
+    activate session
+        
+        session -> session : validate item is MenuItem
+        
+        create order
+        session -> order : Order(item)
+        activate order
+            order -> menu : price
+            activate menu
+            menu --> order : p
+            deactivate menu
+            
+            order -> menu : name
+            activate menu
+            menu --> order : n
+            deactivate menu
+            
+            note over order : snapshot price and name
+            order --> session : newOrder
+        deactivate order
+        
+        session -> session : add newOrder to __current_order
+        session --> system : newOrder
+    deactivate session
+
+    system --> customer : return newOrder
+deactivate system
+
+@enduml

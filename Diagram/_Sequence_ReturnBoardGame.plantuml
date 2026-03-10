@@ -1,0 +1,70 @@
+@startuml
+skinparam style strictuml
+skinparam sequenceMessageAlign center
+skinparam defaultFontSize 11
+skinparam MaxMessageSize 150
+
+title Sequence Diagram: UC10 — Return Board Game (Detailed Implementation)
+
+actor "Customer/Staff" as user
+participant ":CafeSystem" as system
+participant "branch:CafeBranch" as branch
+participant "session:PlaySession" as session
+participant "game:BoardGame" as bg
+
+user -> system : return_board_game(any_id, board_game_id, is_damaged)
+activate system
+
+    system -> system : validate_id(any_id, board_game_id)
+
+    ' 1. Logic to find context (Branch/Session/Game)
+    system -> system : find_cafe_branch_by_id(any_id)
+    activate system
+    system --> system : branch
+    deactivate system
+    
+    system -> branch : find_play_session_by_id(any_id)
+    activate branch
+    branch --> system : session
+    deactivate branch
+    
+    system -> branch : find_board_game_by_id(board_game_id)
+    activate branch
+    branch --> system : game
+    deactivate branch
+
+    ' 2. Validation
+    alt branch or session or game is None
+        system --> user : ValueError("Not found")
+    end
+    
+    system -> session : current_board_games_id
+    activate session
+    session --> system : borrowed_ids
+    deactivate session
+    
+    alt board_game_id not in borrowed_ids
+        system --> user : ValueError("This session did not borrow this game")
+    end
+
+    ' 3. Perform Return Logic
+    alt is_damaged == True
+        system -> bg : set status = MAINTENANCE
+        system -> bg : price
+        activate bg
+        bg --> system : bg_price
+        deactivate bg
+        system -> session : add_game_penalty(bg_id, bg_price)
+    else is_damaged == False
+        system -> bg : set status = AVAILABLE
+    end
+    
+    system -> session : remove_board_games_id(bg_id)
+    activate session
+    session --> system : success
+    deactivate session
+
+    system --> user : return game
+deactivate system
+
+@enduml

@@ -1,0 +1,93 @@
+@startuml
+skinparam style strictuml
+skinparam sequenceMessageAlign center
+skinparam defaultFontSize 11
+skinparam MaxMessageSize 150
+
+title Sequence Diagram: UC4 — Walk-in Check-in (Detailed Implementation)
+
+actor "Staff" as staff
+participant ":CafeSystem" as system
+participant "branch:CafeBranch" as branch
+participant "table:Table" as table
+participant "session:PlaySession" as session
+participant "guest:WalkInCustomer" as walkin
+
+staff -> system : check_in(branch_id, player_amount, customer_id="walk_in")
+activate system
+
+    ' 1. Time & ID Validation
+    system -> system : get_time()
+    activate system
+    system --> system : actual_start
+    deactivate system
+    
+    system -> system : validate_id(branch_id, "BRCH")
+    
+    ' 2. Find Branch & Table
+    system -> system : update_reserved_tables()
+    
+    system -> system : find_cafe_branch_by_id(branch_id)
+    activate system
+    system --> system : branch
+    deactivate system
+    
+    alt table_id == "auto"
+        system -> system : search_available_table(branch_id, player_amount)
+        activate system
+        system --> system : tables_list
+        deactivate system
+        note over system : select table with smallest capacity
+    else specific table_id provided
+        system -> branch : find_table_by_id(table_id)
+        activate branch
+        branch --> system : table
+        deactivate branch
+    end
+
+    ' 3. Table Availability Logic
+    system -> table : status
+    activate table
+    table --> system : t_status
+    deactivate table
+    
+    alt t_status == OCCUPIED
+        system -> branch : find_play_session_by_id(table_id)
+        activate branch
+        branch --> system : active_session
+        deactivate branch
+        system -> system : check_time_up / get_active_bill
+        note over system : raise ValueError (Force Checkout Required)
+    else t_status != AVAILABLE
+        system --> staff : ValueError("Table not available")
+    end
+
+    ' 4. Create Session & Players
+    create session
+    system -> session : PlaySession(table_id, actual_start)
+    
+    alt customer_id == "walk_in"
+        loop for each player (player_amount)
+            system -> system : create_customer_walk_in()
+            activate system
+                create walkin
+                system -> walkin : WalkInCustomer()
+                system -> system : add_person(guest)
+                system --> system : guest
+            deactivate system
+            system -> session : add_players_id(guest.user_id)
+        end
+    else customer_id is MEMBER
+        system -> system : find_person_by_id(customer_id)
+        system -> system : __is_person_in_active_session(customer_id)
+        system -> session : add_players_id(customer_id)
+    end
+
+    ' 5. Finalize
+    system -> table : set status = OCCUPIED
+    system -> branch : add_play_session(session)
+    
+    system --> staff : return session
+deactivate system
+
+@enduml

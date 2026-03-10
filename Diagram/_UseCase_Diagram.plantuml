@@ -7,184 +7,161 @@ title Board Game Cafe System Use Case Diagram
 ' -------------------------------
 ' Actors Definition
 ' -------------------------------
-actor "Bank" as bank
-actor "Person" as person
-actor "Customer" as customer
-actor "Guest Customer\n(Walk-in)" as guest
 actor "Member" as member
-
-actor "NonCustomer\n(Staff/Manager/Owner)" as nonCustomer
+actor "Walk-in Customer" as guest
 actor "Staff" as staff
 actor "Manager" as manager
 actor "Owner" as owner
+actor "Payment Gateway\n(Bank / Online)" as payGateway
 
-' Actor Relationships based on Class Diagram
-guest -up-|> customer
-member -up-|> customer
-customer -up-|> person
-
-staff -up-|> nonCustomer
-manager -up-|> nonCustomer
-owner -up-|> nonCustomer
-nonCustomer -up-|> person
+' Generalization: Manager IS-A Staff
+manager -up-|> staff
 
 ' -------------------------------
-' Core System Use Cases
+' System Boundary
 ' -------------------------------
 rectangle "Board Game Cafe System" {
 
-    ' Authentication & Registration
-    usecase "Member Registration" as UC_Reg #LightBlue
-    usecase "Member Registration\n(Online)" as UC_RegOnline #LightBlue
-    usecase "Input Account Data" as UC_InputAcc #LightYellow
-    usecase "Check Duplicate Registration" as UC_CheckDup #LightYellow
-    
-    guest --> UC_Reg
-    guest --> UC_RegOnline
-    UC_Reg <.. UC_InputAcc : <<extend>>
-    UC_RegOnline <.. UC_InputAcc : <<extend>>
-    UC_InputAcc ..>  UC_CheckDup : <<include>>
-    staff --> UC_CheckDup
+    ' === REGISTRATION ===
+    usecase "Register as Member" as UC_Register #LightYellow
+    usecase "Validate Unique Name" as UC_ValidateName #LightYellow
+    usecase "Assign Member ID & Tier" as UC_AssignID #LightYellow
+    UC_Register ..> UC_ValidateName : <<include>>
+    UC_Register ..> UC_AssignID : <<include>>
 
-    ' Reservation Flow
+    ' === RESERVATION ===
     usecase "Make Reservation" as UC_MakeResv #LightBlue
-    usecase "Request Make Reservation\n(Online)" as UC_ReqMakeResv #LightBlue
-    usecase "Select Date, Time,\nTable, Pax" as UC_SelectDetails #LightYellow
-    usecase "Check Available Tables\n& Assign Reservation" as UC_CheckAssignResv #LightYellow
-    usecase "Make Deposit Payment" as UC_Deposit #LightYellow
-    
-    member --> UC_MakeResv
-    member --> UC_ReqMakeResv
-    UC_MakeResv ..> UC_SelectDetails : <<include>>
-    UC_ReqMakeResv ..> UC_SelectDetails : <<include>>
-    UC_SelectDetails ..> UC_CheckAssignResv : <<include>>
-    
-    staff --> UC_CheckAssignResv
-    
-    bank --> UC_Deposit
-    UC_MakeResv ..> UC_Deposit : <<include>>
-    UC_CheckAssignResv ..> UC_Deposit : <<include>>
-
-    usecase "Check-in Reservation" as UC_CheckIn #LightYellow
-    usecase "Verify Check-in" as UC_VerifyCheckIn #LightYellow
-    member --> UC_CheckIn
-    UC_CheckIn ..> UC_VerifyCheckIn  : <<include>>
-    staff --> UC_VerifyCheckIn
+    usecase "Validate Booking Rules" as UC_ValidateRules #LightYellow
+    usecase "Check Table Availability" as UC_CheckTable #LightYellow
+    usecase "Assign Table to Reservation" as UC_AssignTable #LightYellow
+    UC_MakeResv ..> UC_ValidateRules : <<include>>
+    UC_MakeResv ..> UC_CheckTable : <<include>>
+    UC_CheckTable ..> UC_AssignTable : <<include>>
 
     usecase "Cancel Reservation" as UC_CancelResv #LightBlue
-    usecase "Request Cancel Reservation\n(Online)" as UC_ReqCancel #LightBlue
-    usecase "Confirm Cancel Reservation" as UC_ConfirmCancel #LightYellow
-    
-    member --> UC_CancelResv
-    member --> UC_ReqCancel
-    UC_ReqCancel ..> UC_ConfirmCancel : <<include>>
-    staff --> UC_ConfirmCancel
+    usecase "Check Cancellation Window" as UC_CheckCancelWindow #LightYellow
+    usecase "Update Status to CANCELLED" as UC_SetCancelled #LightYellow
+    UC_CancelResv ..> UC_CheckCancelWindow : <<include>>
+    UC_CancelResv ..> UC_SetCancelled : <<include>>
 
-    ' Walk-in & Interactive Session
-    usecase "Walk-in Request" as UC_Walkin #LightYellow
-    usecase "Check Available Tables\n(Walk-in)" as UC_CheckTablesWalkin #LightYellow
+    ' === CHECK-IN ===
+    usecase "Walk-in Check-in" as UC_WalkIn #LightBlue
+    usecase "Open Play Session\n& Assign Table" as UC_OpenSession #LightYellow
+    usecase "Create Walk-in Profile" as UC_CreateWalkIn #LightYellow
+    UC_WalkIn ..> UC_CreateWalkIn : <<include>>
+    UC_WalkIn ..> UC_OpenSession : <<include>>
+
+    usecase "Check-in via Reservation" as UC_CheckInResv #LightBlue
+    usecase "Verify Reservation\n& Time Window" as UC_VerifyResv #LightYellow
+    usecase "Mark Reservation COMPLETED" as UC_MarkComplete #LightYellow
+    UC_CheckInResv ..> UC_VerifyResv : <<include>>
+    UC_CheckInResv ..> UC_OpenSession : <<include>>
+    UC_CheckInResv ..> UC_MarkComplete : <<include>>
+
     usecase "Join Existing Session" as UC_JoinSession #LightYellow
+    usecase "Check Session Capacity" as UC_CheckCap #LightYellow
+    UC_JoinSession ..> UC_CheckCap : <<include>>
 
-    customer --> UC_Walkin
-    customer --> UC_JoinSession
-    
-    UC_Walkin ..> UC_CheckTablesWalkin : <<include>>
-    staff --> UC_CheckTablesWalkin
+    ' === IN-SESSION ===
+    usecase "Order Food & Drinks" as UC_OrderFood #LightBlue
+    usecase "Record Order (PENDING)" as UC_RecordOrder #LightYellow
+    UC_OrderFood ..> UC_RecordOrder : <<include>>
 
-    ' Menu & Ordering
-    usecase "View Menu" as UC_ViewMenu #LightBlue
-    usecase "Order Menu" as UC_OrderMenu #LightYellow
-    usecase "Taking Orders" as UC_TakeOrder #LightYellow
-    usecase "Serve Orders" as UC_ServeOrder #LightYellow
+    usecase "Serve & Update Order" as UC_ServeOrder #LightYellow
+    usecase "Update Order Status" as UC_UpdateOrder #LightYellow
+    UC_ServeOrder ..> UC_UpdateOrder : <<include>>
 
-    customer --> UC_ViewMenu
-    UC_ViewMenu <.. UC_OrderMenu : <<extend>>
-    UC_OrderMenu ..> UC_TakeOrder : <<include>>
-    staff --> UC_TakeOrder
-    staff --> UC_ServeOrder
-
-    ' Board Game Flow
-    usecase "Search Board Game" as UC_SearchBG #LightYellow
     usecase "Borrow Board Game" as UC_BorrowBG #LightBlue
-    usecase "Check Available BoardGame" as UC_CheckBG #LightYellow
-    usecase "Update Game to IN-USE" as UC_UpdateInUse #LightYellow
-    usecase "Assign BoardGame" as UC_AssignBG #LightYellow
-    usecase "Return Board Game" as UC_ReturnBG #LightBlue
-    usecase "Check Game Condition" as UC_CheckCond #LightYellow
-    usecase "Assess Damage Fine" as UC_AssessFine #LightYellow
-    usecase "Send Game to Maintenance" as UC_MaintBG #LightYellow
-
-    customer --> UC_SearchBG
-    customer --> UC_BorrowBG
-    customer --> UC_ReturnBG
-    
-    staff --> UC_SearchBG
+    usecase "Check Game Availability" as UC_CheckBG #LightYellow
+    usecase "Check Session Time Limit" as UC_CheckTimeLimit #LightYellow
+    usecase "Mark Game as IN-USE" as UC_MarkInUse #LightYellow
     UC_BorrowBG ..> UC_CheckBG : <<include>>
-    staff --> UC_CheckBG
-    
-    UC_BorrowBG ..> UC_UpdateInUse : <<include>>
-    UC_UpdateInUse ..> UC_AssignBG : <<include>>
-    staff --> UC_AssignBG
-    
-    UC_ReturnBG ..> UC_CheckCond : <<include>>
-    staff --> UC_CheckCond
-    UC_CheckCond <.. UC_AssessFine : <<extend>>
-    UC_CheckCond <.. UC_MaintBG : <<extend>>
-    staff --> UC_AssessFine
-    staff --> UC_MaintBG
+    UC_BorrowBG ..> UC_CheckTimeLimit : <<include>>
+    UC_BorrowBG ..> UC_MarkInUse : <<include>>
 
-    ' Checkout & Billing
-    usecase "Checkout" as UC_Checkout #LightBlue
-    usecase "Apply Promotion / Discount" as UC_ApplyPromo #LightYellow
-    usecase "Calculate Bill" as UC_CalcBill #LightYellow
-    usecase "Process Payment" as UC_ProcessPay #LightYellow
-    usecase "Confirm/Check Payment" as UC_ConfirmPay #LightYellow
-    usecase "View Bill History" as UC_ViewBillHistory #LightYellow
+    usecase "Return Board Game" as UC_ReturnBG #LightBlue
+    usecase "Apply Damage Penalty" as UC_DamagePenalty #LightYellow
+    usecase "Update Game Status" as UC_UpdateGameStatus #LightYellow
+    UC_ReturnBG ..> UC_UpdateGameStatus : <<include>>
+    UC_ReturnBG <.. UC_DamagePenalty : <<extend>>
 
-    customer --> UC_Checkout
-    customer --> UC_ViewBillHistory
-    UC_Checkout <.. UC_ApplyPromo : <<extend>>
-    UC_Checkout ..> UC_CalcBill : <<include>>
+    ' === CHECKOUT & BILLING ===
+    usecase "Checkout & Process Payment" as UC_Checkout #LightBlue
+    usecase "Verify Session State" as UC_VerifySession #LightYellow
+    usecase "Calculate Table Fee" as UC_CalcFee #LightYellow
+    usecase "Apply Member Discount" as UC_ApplyDiscount #LightYellow
+    usecase "Process External Payment" as UC_ProcessPay #LightYellow
+    usecase "Update Member Tier" as UC_UpdateTier #LightYellow
+    UC_Checkout ..> UC_VerifySession : <<include>>
+    UC_Checkout ..> UC_CalcFee : <<include>>
     UC_Checkout ..> UC_ProcessPay : <<include>>
-    
-    staff --> UC_ApplyPromo
-    staff --> UC_CalcBill
-    staff --> UC_ProcessPay
-    bank --> UC_ProcessPay
-    
-    UC_ProcessPay ..> UC_ConfirmPay : <<include>>
-    staff --> UC_ConfirmPay
-    bank --> UC_ConfirmPay
+    UC_Checkout ..> UC_UpdateTier : <<include>>
+    UC_Checkout <.. UC_ApplyDiscount : <<extend>>
+    UC_ProcessPay ..> payGateway : <<include>>
+
+    usecase "Preview Active Bill" as UC_GetActiveBill #LightYellow
+    usecase "View Bill History" as UC_ViewBill #LightYellow
+
+    usecase "Force Checkout\n(Overstay Resolution)" as UC_ForceCheckout #LightBlue
+    UC_ForceCheckout ..> UC_Checkout : <<include>>
 }
 
 ' -------------------------------
-' Management System Use Cases
+' Management Use Cases
 ' -------------------------------
 rectangle "Management Dashboard" {
-
-    usecase "Update Table Status\n(Maintenance)" as UC_UpdateTableStat #LightYellow
-    usecase "Update Game Status\n(Maintenance)" as UC_UpdateGameStat #LightYellow
-    
-    staff --> UC_UpdateTableStat
-    staff --> UC_UpdateGameStat
-
+    usecase "Manage Menu\n(Add / Update Items)" as UC_ManageMenu #LightYellow
+    usecase "Manage Board Games\n(Add / Set Maintenance)" as UC_ManageBG #LightYellow
+    usecase "Manage Tables\n(Add / Monitor Status)" as UC_ManageTables #LightYellow
     usecase "Manage Branch Staff" as UC_ManageStaff #LightYellow
-    usecase "Add/Update Board Game" as UC_ManageBG #LightYellow
-    usecase "Add/Update Table" as UC_ManageTable #LightYellow
-    usecase "Add/Update Menu Item" as UC_ManageMenu #LightYellow
-    
-    usecase "View Bill History" as UC_ViewBillHistory #LightYellow
-
-    manager --> UC_ManageStaff
-    manager --> UC_ManageBG
-    manager --> UC_ManageTable
-    manager --> UC_ManageMenu
-    manager --> UC_ViewBillHistory
-
-    usecase "Add/Remove Manager to Branch" as UC_ManageMgrBranch #LightYellow
-    usecase "Create New Cafe Branch" as UC_ManageBranches #LightYellow
-    owner --> UC_ManageMgrBranch
-    owner --> UC_ManageBranches
+    usecase "Create New Cafe Branch" as UC_CreateBranch #LightYellow
+    usecase "View Bill History " as UC_ViewBillMgr #LightYellow
 }
+
+' -------------------------------
+' Actor Associations
+' -------------------------------
+
+' --- Member ---
+member --> UC_Register
+member --> UC_MakeResv
+member --> UC_CancelResv
+member --> UC_CheckInResv
+member --> UC_JoinSession
+member --> UC_BorrowBG
+member --> UC_ReturnBG
+member --> UC_OrderFood
+member --> UC_Checkout
+member --> UC_ViewBill
+
+' --- Walk-in Guest ---
+guest --> UC_WalkIn
+guest --> UC_JoinSession
+guest --> UC_BorrowBG
+guest --> UC_ReturnBG
+guest --> UC_OrderFood
+guest --> UC_Checkout
+
+' --- Staff (Manager inherits via Generalization) ---
+staff --> UC_WalkIn
+staff --> UC_CheckInResv
+staff --> UC_ForceCheckout
+staff --> UC_ServeOrder
+staff --> UC_GetActiveBill
+
+' --- Manager + Owner (add_table/add_board_game/add_staff require OWNER or MANAGER auth) ---
+manager --> UC_ManageMenu
+manager --> UC_ManageBG
+manager --> UC_ManageTables
+manager --> UC_ManageStaff
+manager --> UC_ViewBillMgr
+
+' --- Member can also preview their own running bill ---
+member --> UC_GetActiveBill
+
+' --- Owner ---
+owner --> UC_CreateBranch
+owner --> UC_ManageStaff
+owner --> UC_ViewBillMgr
 
 @enduml

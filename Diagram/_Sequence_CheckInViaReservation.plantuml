@@ -1,0 +1,94 @@
+@startuml
+skinparam style strictuml
+skinparam sequenceMessageAlign center
+skinparam defaultFontSize 11
+skinparam MaxMessageSize 150
+
+title Sequence Diagram: UC5 — Check-in via Reservation (Detailed Implementation)
+
+actor "Staff" as staff
+participant ":CafeSystem" as system
+participant "resv:Reservation" as resv
+participant "branch:CafeBranch" as branch
+participant "table:Table" as table
+participant "activeSession:PlaySession" as activeSession
+participant "newSession:PlaySession" as newSession
+
+staff -> system : check_in_reserved(reservation_id, customer_id, current_time)
+activate system
+
+    ' 1. Context Lookup
+    system -> system : find_reservation_by_id(reservation_id)
+    system -> system : find_person_by_id(customer_id)
+
+    ' 2. Status & Time Validation
+    system -> resv : status
+    activate resv
+    resv --> system : s
+    deactivate resv
+    
+    alt s == CANCELLED
+        system --> staff : ValueError("Cancelled error")
+    else s == NO_SHOW
+        system --> staff : ValueError("No-Show error")
+    else s == COMPLETED
+        system --> staff : ValueError("Already completed error")
+    end
+
+    system -> system : get_time()
+    system -> resv : reservation_time
+    activate resv
+    resv --> system : startTime
+    deactivate resv
+    
+    alt now < startTime
+        system --> staff : ValueError("Too early to check-in")
+    else now > startTime + 15 mins
+        system -> resv : set_status(NO_SHOW)
+        system --> staff : ValueError("Marked as No-Show")
+    end
+
+    ' 3. Table & Branch Check
+    system -> system : find_cafe_branch_by_id(resv.branch_id)
+    system -> branch : find_table_by_id(resv.table_id)
+    activate branch
+    branch --> system : table
+    deactivate branch
+
+    ' 4. Occupancy check (Force Checkout Logic)
+    alt table.status is OCCUPIED
+        system -> branch : find_play_session_by_id(table.table_id)
+        activate branch
+        branch --> system : activeSession
+        deactivate branch
+        
+        system -> activeSession : check_time_up(now)
+        activate activeSession
+        activeSession --> system : isExpired
+        deactivate activeSession
+        
+        alt isExpired
+            system -> system : get_active_bill(activeSession.session_id)
+            system --> staff : ValueError("FORCE CHECKOUT REQUIRED...")
+        else
+            system --> staff : ValueError("Table still occupied")
+        end
+    end
+
+    ' 5. Session Creation
+    group Create Session
+        note over system : Calculate reserved duration\nfrom resv.start_time & end_time
+        create newSession
+        system -> newSession : PlaySession(table_id, now, duration, actual_res_end)
+        system -> newSession : add_players_id(customer_id)
+        system -> newSession : set_reservation_id(reservation_id)
+        
+        system -> branch : add_play_session(newSession)
+        system -> resv : set_status(COMPLETED)
+        system -> table : set_status(OCCUPIED)
+    end
+
+    system --> staff : return newSession
+deactivate system
+
+@enduml
