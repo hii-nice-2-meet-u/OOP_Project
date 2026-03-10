@@ -89,7 +89,8 @@ class CafeSystem:
             raise TypeError("Type Error : must be an instance of Person")
         self.__person.append(person)
 
-    def create_owner(self, name):
+    def create_owner(self, name, requester_id=None):
+        self.__authorize(requester_id, [Owner])
         try:
             new_owner = Owner(name)
             self.add_person(new_owner)
@@ -97,7 +98,8 @@ class CafeSystem:
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to create owner: {e}")
 
-    def create_manager(self, name):
+    def create_manager(self, name, requester_id=None):
+        self.__authorize(requester_id, [Owner])
         try:
             new_manager = Manager(name)
             self.add_person(new_manager)
@@ -105,7 +107,8 @@ class CafeSystem:
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to create manager: {e}")
 
-    def create_staff(self, name):
+    def create_staff(self, name, requester_id=None):
+        self.__authorize(requester_id, [Owner, Manager])
         try:
             new_staff = Staff(name)
             self.add_person(new_staff)
@@ -129,7 +132,8 @@ class CafeSystem:
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to create walk-in customer: {e}")
 
-    def add_owner_to_branch(self, branch_id, owner_id):
+    def add_owner_to_branch(self, branch_id, owner_id, requester_id=None):
+        self.__authorize(requester_id, [Owner])
         validate_id(branch_id, ["BRCH"])
         validate_id(owner_id, ["OWNER"])
 
@@ -146,7 +150,8 @@ class CafeSystem:
         except TypeError as e:
             raise ValueError(f"Cannot add owner: {e}")
 
-    def add_manager_to_branch(self, branch_id, manager_id):
+    def add_manager_to_branch(self, branch_id, manager_id, requester_id=None):
+        self.__authorize(requester_id, [Owner])
         validate_id(branch_id, ["BRCH"])
         validate_id(manager_id, ["MANAGER"])
 
@@ -164,7 +169,8 @@ class CafeSystem:
         except TypeError as e:
             raise ValueError(f"Cannot add manager: {e}")
 
-    def add_staff_to_branch(self, branch_id, staff_id):
+    def add_staff_to_branch(self, branch_id, staff_id, requester_id=None):
+        self.__authorize(requester_id, [Owner, Manager])
         validate_id(branch_id, ["BRCH"])
         validate_id(staff_id, ["STAFF"])
 
@@ -201,7 +207,8 @@ class CafeSystem:
                 return person
         return None
 
-    def remove_person_by_id(self, user_id):
+    def remove_person_by_id(self, user_id, requester_id=None):
+        self.__authorize(requester_id, [Owner, Manager])
         validate_id(user_id, ["OWNER", "MANAGER", "STAFF", "MEMBER", "WALK"])
 
         person = self.find_person_by_id(user_id)
@@ -210,7 +217,8 @@ class CafeSystem:
 
         self.__person.remove(person)
 
-    def update_person_by_id(self, user_id, name):
+    def update_person_by_id(self, user_id, name, requester_id=None):
+        self.__authorize(requester_id, [Owner, Manager])
         validate_id(user_id, ["OWNER", "MANAGER", "STAFF", "MEMBER", "WALK"])
 
         person = self.find_person_by_id(user_id)
@@ -246,7 +254,8 @@ class CafeSystem:
     # / ════════════════════════════════════════════════════════════════
     # \ CAFE BRANCH
 
-    def create_cafe_branch(self, cafe_branch_name, cafe_branch_location=""):
+    def create_cafe_branch(self, cafe_branch_name, cafe_branch_location="", requester_id=None):
+        self.__authorize(requester_id, [Owner])
         try:
             if not isinstance(cafe_branch_name, str) or not cafe_branch_name.strip():
                 raise ValueError("Branch name must be a non-empty string")
@@ -314,7 +323,8 @@ class CafeSystem:
                 return cafe_branch
         return None
 
-    def remove_cafe_branch_by_id(self, cafe_branch_id):
+    def remove_cafe_branch_by_id(self, cafe_branch_id, requester_id=None):
+        self.__authorize(requester_id, [Owner])
         validate_id(cafe_branch_id, ["BRCH"])
 
         cafe_branch = self.find_cafe_branch_by_id(cafe_branch_id)
@@ -323,7 +333,8 @@ class CafeSystem:
 
         self.__cafe_branches.remove(cafe_branch)
 
-    def update_cafe_branch_by_id(self, branch_id, name, location):
+    def update_cafe_branch_by_id(self, branch_id, name, location, requester_id=None):
+        self.__authorize(requester_id, [Owner])
         validate_id(branch_id, ["BRCH"])
 
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
@@ -512,7 +523,18 @@ class CafeSystem:
             raise ValueError(
                 "Cannot cancel. The reservation time has already passed.")
 
-        reservation.status = ReservationStatus.CANCELLED
+        # 🟢 Cancellation Policy Logic
+        time_diff = (reservation_time - now).total_seconds() / 3600.0
+        if time_diff < 24.0:
+            # Late cancellation: forfeit 50%
+            # Assuming a deposit attribute exists on Reservation object, otherwise this is conceptual.
+            # For now, we update status and possibly a message.
+            # penalty = reservation.deposit * 0.5 # If deposit exists
+            reservation.status = ReservationStatus.CANCELLED
+            # Logic to "keep" 50% would happen at the accounting level (not fully implemented here)
+        else:
+            # Free cancellation: refund 100%
+            reservation.status = ReservationStatus.CANCELLED
 
         try:
             branch = self.find_cafe_branch_by_id(reservation.branch_id)
@@ -677,7 +699,8 @@ class CafeSystem:
     # / ════════════════════════════════════════════════════════════════
     # \ TABLE
 
-    def create_table_to_branch(self, branch_id, capacity):
+    def create_table_to_branch(self, branch_id, capacity, requester_id=None):
+        self.__authorize(requester_id, [Owner, Manager])
         validate_id(branch_id, ["BRCH"])
 
         if not isinstance(capacity, int) or capacity <= 0:
@@ -718,13 +741,22 @@ class CafeSystem:
                 if not table or table.status == TableStatus.OCCUPIED:
                     continue  # Never overwrite an currently active play session
                 
-                # Keep table RESERVED from 1 hour before, up until 15 mins after reservation time
-                if timedelta(minutes=-15) <= time_diff <= timedelta(hours=1):
-                    self.update_table_status(reservation.table_id, TableStatus.RESERVED)
-                elif time_diff < timedelta(minutes=-15):
+                # 🟢 No-Show Threshold Policy: 15 minutes
+                if time_diff < timedelta(minutes=-15):
                     # More than 15 mins late -> mark as NO_SHOW and free the table
                     self.update_table_status(reservation.table_id, TableStatus.AVAILABLE)
                     reservation.status = ReservationStatus.NO_SHOW
+                    # Forfeit 100% of deposit logic would go here if deposit exists
+                    continue # Move to next reservation
+
+                # Keep table RESERVED from 1 hour before, up until 15 mins after reservation time
+                if timedelta(minutes=-15) <= time_diff <= timedelta(hours=1):
+                    self.update_table_status(reservation.table_id, TableStatus.RESERVED)
+                else:
+                    # If outside the reservation window, ensure table is available if it was reserved by this reservation
+                    if table.status == TableStatus.RESERVED:
+                        self.update_table_status(reservation.table_id, TableStatus.AVAILABLE)
+
             except (ValueError, TypeError):
                 continue
 
@@ -753,22 +785,25 @@ class CafeSystem:
         if not isinstance(status, TableStatus):
             raise TypeError("Status must be TableStatus")
 
-        cafe_branch = self.find_cafe_branch_by_id(table_id)
-        if cafe_branch is None:
-            raise ValueError("Cafe Branch not found")
-
-        table = cafe_branch.find_table_by_id(table_id)
-        if table is None:
+        # Find the branch that owns this table
+        found_table = False
+        for branch in self.__cafe_branches:
+            table = branch.find_table_by_id(table_id)
+            if table:
+                table.status = status
+                found_table = True
+                break
+        
+        if not found_table:
             raise ValueError("Table not found")
-
-        table.status = status
 
     # / ════════════════════════════════════════════════════════════════
     # \ BOARD GAME
 
     def create_board_game_to_branch(
-        self, branch_id, name, genre, price, min_players, max_players, description=""
+        self, branch_id, name, genre, price, min_players, max_players, description="", requester_id=None
     ):
+        self.__authorize(requester_id, [Owner, Manager])
         validate_id(branch_id, ["BRCH"])
 
         if not isinstance(price, (int, float)) or price < 0:
@@ -801,15 +836,12 @@ class CafeSystem:
     def find_board_game_by_id(self, board_game_id):
         validate_id(board_game_id, ["BG"])
 
-        cafe_branch = self.find_cafe_branch_by_id(board_game_id)
-        if cafe_branch is None:
-            raise ValueError("Board Game not found")
-
-        board_game = cafe_branch.find_board_game_by_id(board_game_id)
-        if board_game is None:
-            raise ValueError("Board Game not found")
-
-        return board_game
+        # Iterate through all branches to find the board game
+        for branch in self.__cafe_branches:
+            board_game = branch.find_board_game_by_id(board_game_id)
+            if board_game:
+                return board_game
+        raise ValueError("Board Game not found")
 
     def search_board_game_by_min_players(self, branch_id, min_players):
         validate_id(branch_id, ["BRCH"])
@@ -838,19 +870,27 @@ class CafeSystem:
         board_game = self.find_board_game_by_id(board_game_id)
         board_game.status = status
 
-    def remove_board_game_by_id(self, board_game_id):
+    def remove_board_game_by_id(self, board_game_id, requester_id=None):
+        self.__authorize(requester_id, [Owner, Manager])
         validate_id(board_game_id, ["BG"])
 
-        cafe_branch = self.find_cafe_branch_by_id(board_game_id)
-        if cafe_branch is None:
+        # Find the branch that owns this board game
+        found_branch = None
+        for branch in self.__cafe_branches:
+            bg = branch.find_board_game_by_id(board_game_id)
+            if bg:
+                found_branch = branch
+                break
+        
+        if found_branch is None:
             raise ValueError("Board Game not found")
             
         # BUG FIX: Prevent removing games that are actively being played
-        bg = cafe_branch.find_board_game_by_id(board_game_id)
+        bg = found_branch.find_board_game_by_id(board_game_id)
         if bg and bg.status != BoardGameStatus.AVAILABLE:
             raise ValueError("Cannot remove a board game that is currently IN_USE or in MAINTENANCE")
             
-        cafe_branch.remove_board_game_by_id(board_game_id)
+        found_branch.remove_board_game_by_id(board_game_id)
 
     # / ════════════════════════════════════════════════════════════════
     # \ MENU
@@ -869,7 +909,8 @@ class CafeSystem:
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to create menu: {e}")
 
-    def create_menu_item_food_to_branch(self, branch_id, name, price, description=""):
+    def create_menu_item_food_to_branch(self, branch_id, name, price, description="", requester_id=None):
+        self.__authorize(requester_id, [Owner, Manager])
         validate_id(branch_id, ["BRCH"])
 
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
@@ -882,8 +923,9 @@ class CafeSystem:
             raise ValueError(f"Failed to create food item: {e}")
 
     def create_menu_item_drink_to_branch(
-        self, branch_id, name, price, cup_size="S", description=""
+        self, branch_id, name, price, cup_size, description="", requester_id=None
     ):
+        self.__authorize(requester_id, [Owner, Manager])
         validate_id(branch_id, ["BRCH"])
 
         cafe_branch = self.find_cafe_branch_by_id(branch_id)
@@ -932,20 +974,31 @@ class CafeSystem:
     def find_menu_item_by_id(self, menu_item_id):
         validate_id(menu_item_id, ["FOOD", "DRINK"])
 
-        cafe_branch = self.find_cafe_branch_by_id(menu_item_id)
-        if cafe_branch is None:
-            raise ValueError("Menu Item not found")
-        return cafe_branch.find_menu_item_by_id(menu_item_id)
+        # Iterate through all branches to find the menu item
+        for branch in self.__cafe_branches:
+            menu_item = branch.find_menu_item_by_id(menu_item_id)
+            if menu_item:
+                return menu_item
+        raise ValueError("Menu Item not found")
 
-    def remove_menu_item_by_id(self, menu_item_id):
+    def remove_menu_item_by_id(self, menu_item_id, requester_id=None):
+        self.__authorize(requester_id, [Owner, Manager])
         validate_id(menu_item_id, ["FOOD", "DRINK"])
 
-        cafe_branch = self.find_cafe_branch_by_id(menu_item_id)
-        if cafe_branch is None:
+        # Find the branch that owns this menu item
+        found_branch = None
+        for branch in self.__cafe_branches:
+            menu_item = branch.find_menu_item_by_id(menu_item_id)
+            if menu_item:
+                found_branch = branch
+                break
+        
+        if found_branch is None:
             raise ValueError("Menu Item not found")
-        cafe_branch.remove_menu_item_by_id(menu_item_id)
+        found_branch.remove_menu_item_by_id(menu_item_id)
 
-    def update_menu_item_by_id(self, menu_item_id, name, price, description=""):
+    def update_menu_item_by_id(self, menu_item_id, name, price, description="", requester_id=None):
+        self.__authorize(requester_id, [Owner, Manager])
         validate_id(menu_item_id, ["FOOD", "DRINK"])
 
         if not isinstance(name, str) or not name.strip():
@@ -955,12 +1008,19 @@ class CafeSystem:
         if not isinstance(description, str):
             raise ValueError("Description must be a string")
 
-        cafe_branch = self.find_cafe_branch_by_id(menu_item_id)
-        if cafe_branch is None:
+        # Find the branch that owns this menu item
+        found_branch = None
+        for branch in self.__cafe_branches:
+            menu_item = branch.find_menu_item_by_id(menu_item_id)
+            if menu_item:
+                found_branch = branch
+                break
+        
+        if found_branch is None:
             raise ValueError("Menu Item not found")
 
         try:
-            cafe_branch.update_menu_item_by_id(
+            found_branch.update_menu_item_by_id(
                 menu_item_id, name, price, description)
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to update menu item: {e}")
@@ -1172,7 +1232,16 @@ class CafeSystem:
         if customer_id != "walk_in":
             validate_id(customer_id, ["MEMBER", "WALK"])
 
-        cafe_branch = self.find_cafe_branch_by_id(any_id)
+        # Find the branch that owns this table/session
+        cafe_branch = None
+        for branch in self.__cafe_branches:
+            if any_id.startswith("TABLE") and branch.find_table_by_id(any_id):
+                cafe_branch = branch
+                break
+            elif any_id.startswith("PS") and branch.find_play_session_by_id(any_id):
+                cafe_branch = branch
+                break
+
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
@@ -1212,7 +1281,16 @@ class CafeSystem:
         validate_id(any_id, ["TABLE", "PS"])
         validate_id(board_game_id, ["BG"])
 
-        cafe_branch = self.find_cafe_branch_by_id(any_id)
+        # Find the branch that owns this table/session
+        cafe_branch = None
+        for branch in self.__cafe_branches:
+            if any_id.startswith("TABLE") and branch.find_table_by_id(any_id):
+                cafe_branch = branch
+                break
+            elif any_id.startswith("PS") and branch.find_play_session_by_id(any_id):
+                cafe_branch = branch
+                break
+
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
@@ -1244,7 +1322,16 @@ class CafeSystem:
         validate_id(any_id, ["TABLE", "PS"])
         validate_id(board_game_id, ["BG"])
 
-        cafe_branch = self.find_cafe_branch_by_id(any_id)
+        # Find the branch that owns this table/session
+        cafe_branch = None
+        for branch in self.__cafe_branches:
+            if any_id.startswith("TABLE") and branch.find_table_by_id(any_id):
+                cafe_branch = branch
+                break
+            elif any_id.startswith("PS") and branch.find_play_session_by_id(any_id):
+                cafe_branch = branch
+                break
+
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
@@ -1271,12 +1358,20 @@ class CafeSystem:
         except (TypeError, ValueError) as e:
             raise ValueError(f"Failed to return board game: {e}")
 
-    def maintenance_board_game(self, board_game_id):
+    def maintenance_board_game(self, board_game_id, requester_id=None):
+        self.__authorize(requester_id, [Owner, Manager, Staff])
         validate_id(board_game_id, ["BG"])
 
-        cafe_branch = self.find_cafe_branch_by_id(board_game_id)
+        # Find the branch that owns this board game
+        cafe_branch = None
+        for branch in self.__cafe_branches:
+            bg = branch.find_board_game_by_id(board_game_id)
+            if bg:
+                cafe_branch = branch
+                break
+
         if cafe_branch is None:
-            raise ValueError("Cafe Branch not found")
+            raise ValueError("Board Game not found")
 
         board_game = cafe_branch.find_board_game_by_id(board_game_id)
         if board_game is None:
@@ -1296,7 +1391,16 @@ class CafeSystem:
         validate_id(any_id, ["TABLE", "PS"])
         validate_id(menu_item_id, ["FOOD", "DRINK"])
 
-        cafe_branch = self.find_cafe_branch_by_id(any_id)
+        # Find the branch that owns this table/session
+        cafe_branch = None
+        for branch in self.__cafe_branches:
+            if any_id.startswith("TABLE") and branch.find_table_by_id(any_id):
+                cafe_branch = branch
+                break
+            elif any_id.startswith("PS") and branch.find_play_session_by_id(any_id):
+                cafe_branch = branch
+                break
+
         if cafe_branch is None:
             raise ValueError(
                 "Play Session already closed or Cafe Branch not found")
@@ -1321,7 +1425,16 @@ class CafeSystem:
 
         validate_id(any_id, ["PS", "TABLE"])
 
-        cafe_branch = self.find_cafe_branch_by_id(any_id)
+        # Find the branch that owns this table/session
+        cafe_branch = None
+        for branch in self.__cafe_branches:
+            if any_id.startswith("TABLE") and branch.find_table_by_id(any_id):
+                cafe_branch = branch
+                break
+            elif any_id.startswith("PS") and branch.find_play_session_by_id(any_id):
+                cafe_branch = branch
+                break
+
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
         return cafe_branch.get_play_session_orders(any_id)
@@ -1330,7 +1443,13 @@ class CafeSystem:
         validate_id(play_session_id, ["PS"])
         validate_id(order_id, ["ORDER"])
 
-        cafe_branch = self.find_cafe_branch_by_id(play_session_id)
+        # Find the branch that owns this session
+        cafe_branch = None
+        for branch in self.__cafe_branches:
+            if branch.find_play_session_by_id(play_session_id):
+                cafe_branch = branch
+                break
+
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
@@ -1358,7 +1477,13 @@ class CafeSystem:
         validate_id(play_session_id, ["PS"])
         validate_id(order_id, ["ORDER"])
 
-        cafe_branch = self.find_cafe_branch_by_id(play_session_id)
+        # Find the branch that owns this session
+        cafe_branch = None
+        for branch in self.__cafe_branches:
+            if branch.find_play_session_by_id(play_session_id):
+                cafe_branch = branch
+                break
+
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
@@ -1392,7 +1517,16 @@ class CafeSystem:
 
         actual_end_time = end_time if end_time is not None else self.get_time()
 
-        cafe_branch = self.find_cafe_branch_by_id(any_id)
+        # Find the branch that owns this table/session
+        cafe_branch = None
+        for branch in self.__cafe_branches:
+            if any_id.startswith("TABLE") and branch.find_table_by_id(any_id):
+                cafe_branch = branch
+                break
+            elif any_id.startswith("PS") and branch.find_play_session_by_id(any_id):
+                cafe_branch = branch
+                break
+
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
@@ -1471,6 +1605,38 @@ class CafeSystem:
         if table is not None:
             table.status = TableStatus.AVAILABLE
         return payment, total
+
+    def auto_force_checkout(self, session_id, staff_id, method_type="cash", current_time=None, **kwargs):
+        """
+        Force a checkout for an overstayed session. 
+        Requires a valid staff_id and supports all payment methods.
+        Smart Cleanup: Automatically returns board games and cancels pending orders.
+        """
+        # 1. Validate staff
+        staff = self.find_person_by_id(staff_id)
+        if not staff or not isinstance(staff, Staff):
+            raise ValueError("Unauthorized: Only staff members can perform force checkout.")
+
+        # 2. Smart Cleanup
+        session = self.find_play_session_by_id(session_id)
+        if session:
+            # Auto-return board games
+            for bg_id in list(session.current_board_games_id):
+                try:
+                    self.return_board_game(session_id, bg_id, is_damaged=False)
+                except:
+                    pass
+            
+            # Auto-cancel pending/preparing orders
+            for order in list(session.current_order):
+                if order.status in [OrderStatus.PENDING, OrderStatus.PREPARING]:
+                    try:
+                        self.update_order_cancel(session_id, order.order_id)
+                    except:
+                        pass
+
+        # 3. Perform regular checkout with the specified method and extra parameters
+        return self.check_out(session_id, method_type=method_type, end_time=current_time, **kwargs)
 
     # / ════════════════════════════════════════════════════════════════
     # \ PAYMENT
@@ -1565,6 +1731,28 @@ class CafeSystem:
                         (f"Session {session.session_id}", None))  # header
                     items += self.__calculate_bill(session)
         return items
+
+    def __authorize(self, requester_id, allowed_roles):
+        """
+        Check if the requester_id belongs to one of the allowed_roles.
+        allowed_roles can be a list of classes (Owner, Manager, Staff, etc.)
+        Also allowed 'system' as a special requester for bootstrap.
+        """
+        if requester_id == "system":
+            return True
+        
+        # If no owner exists in the system, allow anyone to bootstrap
+        owners = [p for p in self.__person if isinstance(p, Owner)]
+        if not owners:
+            return True
+
+        try:
+            person = self.find_person_by_id(requester_id)
+            if any(isinstance(person, role) for role in allowed_roles):
+                return True
+            raise PermissionError(f"User {requester_id} is not authorized for this action.")
+        except ValueError:
+            raise PermissionError(f"User {requester_id} not found.")
 
     def __is_person_in_active_session(self, person_id: str) -> bool:
         if person_id.startswith("WALK-"):

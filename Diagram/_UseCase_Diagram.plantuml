@@ -12,6 +12,7 @@ actor "Walk-in Customer" as guest
 actor "Staff" as staff
 actor "Manager" as manager
 actor "Owner" as owner
+actor "System Process" as systemProc << (S,#ADF) automated >>
 actor "Payment Gateway\n(Bank / Online)" as payGateway
 
 ' Generalization: Manager IS-A Staff
@@ -24,9 +25,7 @@ rectangle "Board Game Cafe System" {
 
     ' === REGISTRATION ===
     usecase "Register as Member" as UC_Register #LightYellow
-    usecase "Validate Unique Name" as UC_ValidateName #LightYellow
     usecase "Assign Member ID & Tier" as UC_AssignID #LightYellow
-    UC_Register ..> UC_ValidateName : <<include>>
     UC_Register ..> UC_AssignID : <<include>>
 
     ' === RESERVATION ===
@@ -39,7 +38,7 @@ rectangle "Board Game Cafe System" {
     UC_CheckTable ..> UC_AssignTable : <<include>>
 
     usecase "Cancel Reservation" as UC_CancelResv #LightBlue
-    usecase "Check Cancellation Window" as UC_CheckCancelWindow #LightYellow
+    usecase "Check Cancellation Window\n(1-Day Refund Rule)" as UC_CheckCancelWindow #LightYellow
     usecase "Update Status to CANCELLED" as UC_SetCancelled #LightYellow
     UC_CancelResv ..> UC_CheckCancelWindow : <<include>>
     UC_CancelResv ..> UC_SetCancelled : <<include>>
@@ -53,19 +52,27 @@ rectangle "Board Game Cafe System" {
 
     usecase "Check-in via Reservation" as UC_CheckInResv #LightBlue
     usecase "Verify Reservation\n& Time Window" as UC_VerifyResv #LightYellow
+    usecase "Check No-Show Threshold\n(15-Minute Rule)" as UC_CheckNoShow #LightYellow
     usecase "Mark Reservation COMPLETED" as UC_MarkComplete #LightYellow
     UC_CheckInResv ..> UC_VerifyResv : <<include>>
     UC_CheckInResv ..> UC_OpenSession : <<include>>
     UC_CheckInResv ..> UC_MarkComplete : <<include>>
+    UC_CheckInResv ..> UC_CheckNoShow : <<include>>
+    systemProc --> UC_CheckNoShow : periodic check
 
     usecase "Join Existing Session" as UC_JoinSession #LightYellow
-    usecase "Check Session Capacity" as UC_CheckCap #LightYellow
+    usecase "Check Table Capacity" as UC_CheckCap #LightYellow
+    usecase "Validate Player Status\n(Active Session Check)" as UC_ValidateActivePlayer #LightYellow
     UC_JoinSession ..> UC_CheckCap : <<include>>
+    UC_JoinSession ..> UC_ValidateActivePlayer : <<include>>
+
+    usecase "Check Session Time Limit" as UC_CheckTimeLimit #LightYellow
 
     ' === IN-SESSION ===
     usecase "Order Food & Drinks" as UC_OrderFood #LightBlue
     usecase "Record Order (PENDING)" as UC_RecordOrder #LightYellow
     UC_OrderFood ..> UC_RecordOrder : <<include>>
+    UC_OrderFood ..> UC_CheckTimeLimit : <<include>>
 
     usecase "Serve & Update Order" as UC_ServeOrder #LightYellow
     usecase "Update Order Status" as UC_UpdateOrder #LightYellow
@@ -73,7 +80,6 @@ rectangle "Board Game Cafe System" {
 
     usecase "Borrow Board Game" as UC_BorrowBG #LightBlue
     usecase "Check Game Availability" as UC_CheckBG #LightYellow
-    usecase "Check Session Time Limit" as UC_CheckTimeLimit #LightYellow
     usecase "Mark Game as IN-USE" as UC_MarkInUse #LightYellow
     UC_BorrowBG ..> UC_CheckBG : <<include>>
     UC_BorrowBG ..> UC_CheckTimeLimit : <<include>>
@@ -110,11 +116,12 @@ rectangle "Board Game Cafe System" {
 ' Management Use Cases
 ' -------------------------------
 rectangle "Management Dashboard" {
-    usecase "Manage Menu\n(Add / Update Items)" as UC_ManageMenu #LightYellow
-    usecase "Manage Board Games\n(Add / Set Maintenance)" as UC_ManageBG #LightYellow
-    usecase "Manage Tables\n(Add / Monitor Status)" as UC_ManageTables #LightYellow
-    usecase "Manage Branch Staff" as UC_ManageStaff #LightYellow
-    usecase "Create New Cafe Branch" as UC_CreateBranch #LightYellow
+    usecase "Manage Menu\n(Add / Update / Remove)" as UC_ManageMenu #LightYellow
+    usecase "Manage Board Games\n(Add / Update / Remove / Maintenance)" as UC_ManageBG #LightYellow
+    usecase "Manage Tables\n(Add / Update Status)" as UC_ManageTables #LightYellow
+    usecase "Manage Employees\n(Staff / Manager)" as UC_ManageStaff #LightYellow
+    usecase "Manage Cafe Branches\n(CRUD)" as UC_ManageBranches #LightYellow
+    usecase "Manage Management\n(Owner / Manager)" as UC_ManageMgmt #LightYellow
     usecase "View Bill History " as UC_ViewBillMgr #LightYellow
 }
 
@@ -133,6 +140,7 @@ member --> UC_ReturnBG
 member --> UC_OrderFood
 member --> UC_Checkout
 member --> UC_ViewBill
+member --> UC_ManageStaff : Update own profile
 
 ' --- Walk-in Guest ---
 guest --> UC_WalkIn
@@ -149,7 +157,7 @@ staff --> UC_ForceCheckout
 staff --> UC_ServeOrder
 staff --> UC_GetActiveBill
 
-' --- Manager + Owner (add_table/add_board_game/add_staff require OWNER or MANAGER auth) ---
+' --- Manager + Owner (Management Actions) ---
 manager --> UC_ManageMenu
 manager --> UC_ManageBG
 manager --> UC_ManageTables
@@ -159,9 +167,13 @@ manager --> UC_ViewBillMgr
 ' --- Member can also preview their own running bill ---
 member --> UC_GetActiveBill
 
-' --- Owner ---
-owner --> UC_CreateBranch
+' --- Owner (Full Authority) ---
+owner --> UC_ManageMenu
+owner --> UC_ManageBG
+owner --> UC_ManageTables
 owner --> UC_ManageStaff
+owner --> UC_ManageBranches : CRUD
+owner --> UC_ManageMgmt : Create/Update/Remove
 owner --> UC_ViewBillMgr
 
 @enduml
