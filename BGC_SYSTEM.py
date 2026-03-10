@@ -378,7 +378,7 @@ class CafeSystem:
         except ValueError as e:
             raise ValueError(f"Invalid date/time value: {e}")
 
-        validate_id(customer_id, ["MEMBER", "WALK"])
+        validate_id(customer_id, ["MEMBER"])
         validate_id(branch_id, ["BRCH"])
 
         if not isinstance(total_player, int) or total_player <= 0:
@@ -387,6 +387,14 @@ class CafeSystem:
         customer = self.find_person_by_id(customer_id)
         if customer is None:
             raise ValueError("Customer not found.")
+
+        # 🔴 Policy: Walk-in customers cannot make reservations.
+        # They must register as a member first.
+        if isinstance(customer, WalkInCustomer):
+            raise ValueError(
+                "Walk-in customers are not allowed to make reservations. "
+                "Please register as a Member first to enjoy advance booking privileges."
+            )
 
         tier = customer.get_member_tier()
 
@@ -1162,7 +1170,7 @@ class CafeSystem:
         if not isinstance(customer_id, str):
             raise ValueError("Invalid ID : Customer ID must be a string")
         if customer_id != "walk_in":
-            validate_id(customer_id, ["MEMBER"])
+            validate_id(customer_id, ["MEMBER", "WALK"])
 
         if not isinstance(player_amount, int) or player_amount <= 0:
             raise ValueError("player_amount must be a positive integer")
@@ -1261,7 +1269,7 @@ class CafeSystem:
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
-        play_session = cafe_branch.find_play_session_by_id(any_id)
+        play_session = (cafe_branch.find_play_session_by_table_id(any_id) if any_id.startswith("TABLE") else cafe_branch.find_play_session_by_id(any_id))
         if play_session is None:
             raise ValueError("Play Session not found")
 
@@ -1310,7 +1318,7 @@ class CafeSystem:
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
-        play_session = cafe_branch.find_play_session_by_id(any_id)
+        play_session = (cafe_branch.find_play_session_by_table_id(any_id) if any_id.startswith("TABLE") else cafe_branch.find_play_session_by_id(any_id))
         if play_session is None:
             raise ValueError("Play Session not found")
         
@@ -1351,7 +1359,7 @@ class CafeSystem:
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
-        play_session = cafe_branch.find_play_session_by_id(any_id)
+        play_session = (cafe_branch.find_play_session_by_table_id(any_id) if any_id.startswith("TABLE") else cafe_branch.find_play_session_by_id(any_id))
         if play_session is None:
             raise ValueError("Play Session not found")
 
@@ -1421,7 +1429,7 @@ class CafeSystem:
             raise ValueError(
                 "Play Session already closed or Cafe Branch not found")
 
-        play_session = cafe_branch.find_play_session_by_id(any_id)
+        play_session = (cafe_branch.find_play_session_by_table_id(any_id) if any_id.startswith("TABLE") else cafe_branch.find_play_session_by_id(any_id))
         if play_session is None:
             raise ValueError("Play Session not found")
         
@@ -1456,7 +1464,7 @@ class CafeSystem:
         return cafe_branch.get_play_session_orders(any_id)
 
     def update_order(self, play_session_id, order_id, session_status):
-        validate_id(play_session_id, ["PS"])
+        validate_id(play_session_id, ["PS", "TABLE"])
         validate_id(order_id, ["ORDER"])
 
         # Find the branch that owns this session
@@ -1469,7 +1477,7 @@ class CafeSystem:
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
-        play_session = cafe_branch.find_play_session_by_id(play_session_id)
+        play_session = (cafe_branch.find_play_session_by_table_id(play_session_id) if play_session_id.startswith("TABLE") else cafe_branch.find_play_session_by_id(play_session_id))
         if play_session is None:
             raise ValueError("Play Session not found")
 
@@ -1490,20 +1498,21 @@ class CafeSystem:
         self.update_order(play_session_id, order_id, OrderStatus.SERVED)
 
     def update_order_cancel(self, play_session_id, order_id):
-        validate_id(play_session_id, ["PS"])
+        validate_id(play_session_id, ["PS", "TABLE"])
         validate_id(order_id, ["ORDER"])
 
         # Find the branch that owns this session
         cafe_branch = None
         for branch in self.__cafe_branches:
-            if branch.find_play_session_by_id(play_session_id):
+            if (play_session_id.startswith("PS") and branch.find_play_session_by_id(play_session_id)) or \
+               (play_session_id.startswith("TABLE") and branch.find_play_session_by_table_id(play_session_id)):
                 cafe_branch = branch
                 break
 
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
-        play_session = cafe_branch.find_play_session_by_id(play_session_id)
+        play_session = (cafe_branch.find_play_session_by_table_id(play_session_id) if play_session_id.startswith("TABLE") else cafe_branch.find_play_session_by_id(play_session_id))
         if play_session is None:
             raise ValueError("Play Session not found")
 
@@ -1546,7 +1555,7 @@ class CafeSystem:
         if cafe_branch is None:
             raise ValueError("Cafe Branch not found")
 
-        play_session = cafe_branch.find_play_session_by_id(any_id)
+        play_session = (cafe_branch.find_play_session_by_table_id(any_id) if any_id.startswith("TABLE") else cafe_branch.find_play_session_by_id(any_id))
         if play_session is None:
             # Check history to provide a better error message if it was already checked out
             history_session = self.find_play_session_history_by_id(any_id)
@@ -1837,14 +1846,13 @@ class CafeSystem:
         for penalty in session.game_penalty:
             game_id = penalty.get("game_id")
             price_val = penalty.get("price", 0.0)
-            try:
-                board_game = cafe_branch.find_board_game_by_id(game_id)
-                name_str = board_game.name if board_game else game_id
-                items.append((f"[Penalty] Damaged: {name_str}", price_val))
-                penalty_fee += price_val
-            except ValueError:
-                items.append((f"[Penalty] Damaged: {game_id}", price_val))
-                penalty_fee += price_val
+            
+            # Find board game name if possible, otherwise use game_id
+            board_game = cafe_branch.find_board_game_by_id(game_id)
+            name_str = board_game.name if board_game else game_id
+            
+            items.append((f"[Penalty] Damaged: {name_str}", price_val))
+            penalty_fee += price_val
 
         total += penalty_fee
 
