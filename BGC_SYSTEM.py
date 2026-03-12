@@ -1292,8 +1292,7 @@ class CafeSystem:
                     walker.user_id)
                 temp_previous = walker
             elif customer_id == "last":
-                play_session.add_players_id(
-                    "WALK-"+)
+                play_session.add_players_id(temp_previous.user_id)
             else:
                 player = self.find_person_by_id(customer_id)
                 if player is None:
